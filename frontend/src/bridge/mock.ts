@@ -63,9 +63,34 @@ function currentTheme(): ThemeParams & { colorScheme: ColorScheme } {
   },
 };
 
+// Real requests need a real signed initData (plan section 5) — the mock
+// bridge obviously can't produce one (it doesn't have the bot token, and
+// never should). For local dev against a real backend, generate one with
+// `python3 scripts/sign_init_data.py` (in the Goravel project root) and
+// paste it in as ?initData=<value>. Without it, requests still go out for
+// real — they'll just get a real 401, same as a genuinely unauthenticated
+// caller would.
+//
+// Captured into sessionStorage at module load (not lazily inside
+// getEnv()!): React Router's client-side navigate() doesn't preserve query
+// params across routes, so if capture waited for the first API call, a page
+// with no API call of its own (the hub) would navigate away before anything
+// ever read the param — sessionStorage would stay empty and every
+// subsequent request would silently fall back to the fake token and 401.
+const INIT_DATA_STORAGE_KEY = 'workdesk:mockInitDataOverride';
+
+const initDataFromUrl = new URLSearchParams(window.location.search).get('initData');
+if (initDataFromUrl) {
+  sessionStorage.setItem(INIT_DATA_STORAGE_KEY, initDataFromUrl);
+}
+
+function mockInitData(): string {
+  return sessionStorage.getItem(INIT_DATA_STORAGE_KEY) ?? 'mock.init.data';
+}
+
 export const mockBridge: Bridge = {
   getEnv() {
-    return { userId: 'mock-user-1', initData: 'mock.init.data', platform: 'web-mock', version: '0.0-mock' };
+    return { userId: 'mock-user-1', initData: mockInitData(), platform: 'web-mock', version: '0.0-mock' };
   },
   ready() {},
   expand() {},

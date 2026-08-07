@@ -1,4 +1,4 @@
-import { Toast } from 'antd-mobile';
+import { Dialog, Toast } from 'antd-mobile';
 import {
   AppOutline,
   BillOutline,
@@ -8,10 +8,20 @@ import {
   LockOutline,
   TeamOutline,
   UnorderedListOutline,
+  UserOutline,
 } from 'antd-mobile-icons';
 import type { ReactNode } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { apiClient } from '../../shared/api/client';
 import styles from './HomePage.module.css';
+
+interface MeResponse {
+  id: string;
+  firstName: string;
+  lastName: string;
+  username: string;
+  languageCode: string;
+}
 
 interface Tile {
   icon: ReactNode;
@@ -35,6 +45,36 @@ const TILES: Tile[] = [
 export function HomePage() {
   const navigate = useNavigate();
 
+  async function handleShowMe() {
+    try {
+      const me = await apiClient.get<MeResponse>('/me');
+      Dialog.alert({
+        title: 'اطلاعات کاربر (از /api/v1/me)',
+        content: (
+          <div className={styles.meDialog}>
+            <div>
+              <b>id:</b> {me.id}
+            </div>
+            <div>
+              <b>firstName:</b> {me.firstName || '—'}
+            </div>
+            <div>
+              <b>lastName:</b> {me.lastName || '—'}
+            </div>
+            <div>
+              <b>username:</b> {me.username || '—'}
+            </div>
+            <div>
+              <b>languageCode:</b> {me.languageCode || '—'}
+            </div>
+          </div>
+        ),
+      });
+    } catch (error) {
+      Toast.show({ content: error instanceof Error ? error.message : 'دریافت اطلاعات کاربر با خطا مواجه شد' });
+    }
+  }
+
   return (
     <div className={styles.page}>
       <div className={styles.header}>
@@ -42,8 +82,13 @@ export function HomePage() {
           <div className={styles.brandTitle}>ورک‌دسک</div>
           <div className={styles.brandSubtitle}>ابزارهای کاری در دل مسنجر</div>
         </div>
-        <div className={styles.logo}>
-          <AppOutline />
+        <div className={styles.headerActions}>
+          <button type="button" className={styles.iconButton} onClick={handleShowMe} aria-label="نمایش اطلاعات کاربر">
+            <UserOutline />
+          </button>
+          <div className={styles.logo}>
+            <AppOutline />
+          </div>
         </div>
       </div>
 

@@ -2,6 +2,8 @@ import '@fontsource-variable/vazirmatn';
 import './shared/styles/tokens.css';
 import './shared/styles/global.css';
 
+import { setDefaultConfig } from 'antd-mobile';
+import faIR from 'antd-mobile/es/locales/fa-IR';
 import { StrictMode } from 'react';
 import { createRoot } from 'react-dom/client';
 import { App } from './app/App';
@@ -11,6 +13,14 @@ import { bootTheme } from './bridge/theme';
 bootTheme();
 bridge.ready();
 bridge.expand();
+
+// Imperative APIs (Dialog.alert, Toast.show, etc.) read getDefaultConfig(),
+// NOT the <ConfigProvider> React context — App.tsx's <ConfigProvider
+// locale={faIR}> alone doesn't cover them, hence this separate call. Without
+// it they fall back to antd-mobile's default (Chinese) strings, which
+// Vazirmatn has no glyphs for — e.g. Dialog's confirm button silently
+// rendered as tofu boxes until this was added.
+setDefaultConfig({ locale: faIR });
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
