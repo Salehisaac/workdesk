@@ -4,17 +4,37 @@
 import { bridge } from '../../bridge';
 
 const API_BASE = '/api/v1';
+// Plain fetch() has NO default timeout — if the backend is unreachable in a way
+// that doesn't actively refuse the connection (firewalled, DNS black hole,
+// misconfigured proxy target), the request just hangs forever and the UI is
+// stuck on its loading state with no error, no matter how long you wait. Bound
+// every call so it always resolves to a visible error within a fixed window.
+const REQUEST_TIMEOUT_MS = 15_000;
 
 async function request<T>(path: string, init?: RequestInit): Promise<T> {
   const { initData } = bridge.getEnv();
-  const res = await fetch(`${API_BASE}${path}`, {
-    ...init,
-    headers: {
-      ...(init?.body && !(init.body instanceof FormData) ? { 'Content-Type': 'application/json' } : {}),
-      Authorization: `Bearer ${initData}`,
-      ...init?.headers,
-    },
-  });
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), REQUEST_TIMEOUT_MS);
+
+  let res: Response;
+  try {
+    res = await fetch(`${API_BASE}${path}`, {
+      ...init,
+      signal: controller.signal,
+      headers: {
+        ...(init?.body && !(init.body instanceof FormData) ? { 'Content-Type': 'application/json' } : {}),
+        Authorization: `Bearer ${initData}`,
+        ...init?.headers,
+      },
+    });
+  } catch (error) {
+    if (error instanceof DOMException && error.name === 'AbortError') {
+      throw new Error(`API ${path}: پاسخی از سرور دریافت نشد (زمان درخواست به پایان رسید)`);
+    }
+    throw error;
+  } finally {
+    clearTimeout(timeout);
+  }
 
   if (!res.ok) {
     const body = await res.text().catch(() => '');

@@ -27,6 +27,7 @@ function hasRealBridge(): boolean {
   return typeof window !== 'undefined' && !!window.Rasagram?.WebApp && hasNativeTransport();
 }
 
-export const bridge = hasRealBridge() ? adapterBridge : mockBridge;
+export const isMockBridge = !hasRealBridge();
+export const bridge = isMockBridge ? mockBridge : adapterBridge;
 
 export * from './types';
