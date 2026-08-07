@@ -55,6 +55,11 @@ func NewTelegramWebAppGuard(ctx http.Context, _ string, _ contractsauth.UserProv
 
 	user, err := telegramauth.Verify(initData, botToken, initDataMaxAge)
 	if err != nil {
+		// TEMPORARY — logs the raw initData on every verification failure so
+		// a real launch's signature mismatch can be diagnosed against real
+		// data instead of guessed at. Remove once the real bot-token/key
+		// format is confirmed (see plan section 5's open risk on this).
+		facades.Log().Warning("workdesk: initData verification failed: " + err.Error() + " | raw initData: " + initData)
 		guard.err = err
 		return guard, nil
 	}
