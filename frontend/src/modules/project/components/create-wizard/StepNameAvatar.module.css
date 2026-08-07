@@ -1,0 +1,22 @@
+.wrap {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.hint {
+  font-size: 13px;
+  color: var(--rasagram-theme-hint-color);
+}
+
+.row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.input {
+  flex: 1;
+  border-bottom: 1px solid var(--rasagram-theme-secondary-bg-color);
+  padding-bottom: 8px;
+}

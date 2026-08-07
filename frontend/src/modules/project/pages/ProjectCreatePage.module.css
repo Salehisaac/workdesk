@@ -1,0 +1,16 @@
+.page {
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+}
+
+.body {
+  flex: 1;
+  padding: 16px;
+  overflow-y: auto;
+}
+
+.confirm {
+  font-size: 22px;
+  color: var(--rasagram-theme-accent-text-color);
+}

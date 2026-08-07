@@ -1,0 +1,12 @@
+.sheet {
+  padding: 16px 16px calc(16px + env(safe-area-inset-bottom));
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.title {
+  font-size: 15px;
+  font-weight: 600;
+  text-align: center;
+}

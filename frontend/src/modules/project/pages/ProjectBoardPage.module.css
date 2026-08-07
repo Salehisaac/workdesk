@@ -1,0 +1,33 @@
+.page {
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+}
+
+.titleBlock {
+  display: flex;
+  flex-direction: column;
+}
+
+.titleName {
+  font-size: 16px;
+  font-weight: 600;
+}
+
+.titleMeta {
+  font-size: 11px;
+  color: var(--rasagram-theme-hint-color);
+  font-weight: 400;
+}
+
+.body {
+  flex: 1;
+  overflow-y: auto;
+}
+
+.footer {
+  display: flex;
+  justify-content: space-between;
+  padding: 10px 16px calc(10px + env(safe-area-inset-bottom));
+  border-top: 1px solid var(--rasagram-theme-secondary-bg-color);
+}
