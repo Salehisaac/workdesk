@@ -3,11 +3,19 @@ import { TeamOutline } from 'antd-mobile-icons';
 import { useNavigate } from 'react-router-dom';
 import { EmptyState } from '../../../shared/ui/EmptyState';
 import { useProjects } from '../api';
+import { ProjectOnboarding } from '../components/ProjectOnboarding';
 import styles from './ProjectListPage.module.css';
 
 export function ProjectListPage() {
   const navigate = useNavigate();
   const { data: projects, isLoading, isError } = useProjects();
+
+  // No projects yet → the onboarding/"getting started" screen is the landing
+  // page (matches the reference screenshots' first screen). Once the user has
+  // at least one project, this page becomes the actual list on later visits.
+  if (!isLoading && !isError && (projects?.length ?? 0) === 0) {
+    return <ProjectOnboarding />;
+  }
 
   return (
     <div className={styles.page}>
@@ -23,14 +31,6 @@ export function ProjectListPage() {
             icon={<TeamOutline />}
             title="ارتباط برقرار نشد"
             description="بارگذاری پروژه‌ها با خطا مواجه شد. دوباره تلاش کنید."
-          />
-        )}
-
-        {!isLoading && !isError && (projects?.length ?? 0) === 0 && (
-          <EmptyState
-            icon={<TeamOutline />}
-            title="هنوز پروژه‌ای ندارید"
-            description="یک پروژه بسازید، لیستی از کارها تعریف کنید و هرکدام را به یکی از اعضا بسپارید."
           />
         )}
 
