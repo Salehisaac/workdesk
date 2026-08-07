@@ -40,15 +40,13 @@ Any non-2xx response is surfaced to the user as a toast with the raw response bo
 error JSON shape is required for v1. A `{"error": "..."}` body is a reasonable default if you want one, but
 the frontend doesn't parse it specially yet.
 
-## One thing that doesn't work end-to-end yet
+## How the project's group actually gets created
 
-`POST /projects` (below) requires a `chatId` that the **frontend** is supposed to obtain by calling
-`bridge.createGroup()` before the request — but that method **does not exist** in the real
-`Rasagram.WebApp` SDK (confirmed by reading the actual deployed script; see plan section 8 / "Open Risks"
-#1). So the create-project flow can't be exercised end-to-end from the real UI until that's resolved one
-way or another. You can still implement and test this endpoint by passing any string as `chatId` by hand
-(curl, Postman, etc.) — the frontend code and this contract are otherwise ready to go the moment a real
-`chatId` is obtainable.
+Resolved — `bridge.createGroup()` never existed and never will (confirmed absent from the real SDK), so
+the **backend** creates the group itself now, server-side, via Rasagram's internal admin API
+(`app/services/rasagramadmin`), not the frontend. `POST /projects` no longer takes a `chatId` in the
+request at all. See that section below for the exact call sequence
+(login → chat/create → chat/upgradeToSupergroup → chat/enableTopics).
 
 ---
 
@@ -91,7 +89,6 @@ correctly lists projects they created.
   "avatarUrl": "https://.../avatar.png",
   "visibility": "public",
   "joinSlug": "test-project",
-  "chatId": "-1001234567890",
   "members": [
     { "id": "101", "source": "contacts", "displayName": "علی رضایی", "username": "ali", "phone": "989120000001", "online": true }
   ]
@@ -101,20 +98,29 @@ correctly lists projects they created.
 - `avatarUrl` — omitted if no avatar was picked.
 - `joinSlug` — omitted when `visibility` is `"private"`. When present: English letters/digits/`-`/`_`,
   first character a letter (validated client-side already, worth re-validating server-side too).
-- `chatId` — required (see the caveat above for why it can't be exercised from the real UI yet).
+- No `chatId` in the request — the backend creates the group itself (see below).
 - `members[].source` — one of `users` | `contacts` | `groups` | `channels` | `bots` | `recentChats` | `favorites`.
   Store the whole item verbatim (`id` + `source` + denormalized display fields) as an opaque reference —
   don't try to resolve or join it against any other table (plan constraint #3 — no gRPC to teamgram-server).
+  **In practice `id` needs to be a real numeric user id** — it's sent straight through to the admin API's
+  `user_ids` array when creating the group, so a `source: 'contacts'` entry whose `id` isn't actually a
+  platform user id would fail group creation, not just look odd in the UI.
 
-**Backend behavior:**
+**Backend behavior** (`ProjectController.Store`, `app/services/rasagramadmin`):
 
 1. Resolve the authenticated user from initData.
-2. Create the `projects` row.
-3. Insert `project_members`: the authenticated user (as owner) + every item in `members`.
-4. Call the Bot API's `promoteChatMember` (confirmed endpoint, `teamgram.io/bots`' `botway` service —
-   `POST /bot<token>/promoteChatMember`) to give WorkDesk's own bot admin/manage-topics rights in `chatId`,
-   so it can create forum topics later (step below). Best-effort — no user-facing recovery path exists in
-   v1's UI if this fails, so at minimum log it.
+2. Build the group's member list: the bot's own user id (parsed from `RASAGRAM_BOT_TOKEN`'s `<id>:<secret>`
+   prefix) + the authenticated user's id + every `members[].id`, de-duplicated.
+3. Call the internal admin API, in order:
+   - `POST /x/internal/auth/login` (`{"username": ..., "password": ...}` — `RASAGRAM_ADMIN_USERNAME`/
+     `RASAGRAM_ADMIN_PASSWORD`) → a token, cached and reused across requests, re-fetched once on a 401.
+   - `POST /x/internal/chat/create` (`{"title": name, "user_ids": [...]}`) → `chat_id`.
+   - `POST /x/internal/chat/upgradeToSupergroup` (`{"chat_id": ...}`) → `channel_id`.
+   - `POST /x/internal/chat/enableTopics` (`{"channel_id": ..., "enabled": true, "tabs": false}`).
+   - `channel_id` (as a string) becomes `Project.ChatId`. If any of these four calls fails, the whole
+     request fails (502) — no `projects` row gets created for a group that doesn't fully exist.
+4. Create the `projects` row (now including the real `chatId`).
+5. Insert `project_members`: the authenticated user (as owner) + every item in `members`.
 
 **Response 201** — `Project` (same shape as one item from `GET /projects`).
 
@@ -196,8 +202,13 @@ create wizard calls this immediately on file selection).
 
 ## Not in v1 (deliberately out of scope, see plan)
 
-- Adding members to a project after creation (blocked on the same bridge gap as `chatId` — see plan
-  section 8 point 5).
+- Adding members to a project after creation — the admin API's `chat/create` takes an initial member list,
+  but nothing confirmed yet for adding someone to an existing group after the fact. Worth checking whether
+  `rasagram-new-admin` has an equivalent endpoint before assuming this needs a workaround.
+- Per-list forum topics (`createForumTopic`/`deleteForumTopic` on `POST/DELETE .../lists`) — still just
+  logged and skipped in `ProjectListController`. These were scoped against the public Bot API before the
+  internal admin API was known about; worth checking whether topic creation should go through
+  `rasagram-new-admin` too instead, once that's confirmed one way or the other.
 - Editing/deleting a project.
 - Anything about Jobs (tasks inside a List) — the frontend doesn't render or fetch these yet; `List` only
   carries `id`/`projectId`/`name`/`topicId` right now, per the plan's explicit scoping for this round.
