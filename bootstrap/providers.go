@@ -26,6 +26,8 @@ import (
 	"github.com/goravel/gin"
 	"github.com/goravel/openai"
 	"github.com/goravel/postgres"
+
+	"goravel/app/providers"
 )
 
 func Providers() []foundation.ServiceProvider {
@@ -45,6 +47,7 @@ func Providers() []foundation.ServiceProvider {
 		&database.ServiceProvider{},
 		&postgres.ServiceProvider{},
 		&auth.ServiceProvider{},
+		&providers.AuthServiceProvider{},
 		&crypt.ServiceProvider{},
 		&queue.ServiceProvider{},
 		&event.ServiceProvider{},
