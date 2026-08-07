@@ -1,16 +1,7 @@
 // Real implementation — wraps window.Rasagram.WebApp, injected by
 // https://rasagram.rso-co.ir/miniapps/rasagram-web-apps.js (loaded in index.html).
 // This is the ONLY file allowed to touch `window.Rasagram` — see plan section 4.
-import type {
-  Bridge,
-  ColorScheme,
-  CreateGroupOptions,
-  CreateGroupResult,
-  DeviceContact,
-  PickedItem,
-  PickOptions,
-  ThemeParams,
-} from './types';
+import type { Bridge, ColorScheme, DeviceContact, PickedItem, PickOptions, ThemeParams } from './types';
 
 // The real shape of window.Rasagram.WebApp is only partially confirmed (plan
 // section 4 / "Open Risks"). Kept as `any` here rather than a precise type so
@@ -89,16 +80,6 @@ export const adapterBridge: Bridge = {
       return () => bb?.offClick?.(cb);
     },
   },
-  async createGroup(options: CreateGroupOptions): Promise<CreateGroupResult> {
-    const wa = webApp();
-    if (typeof wa.createGroup !== 'function') {
-      throw new Error(
-        'Rasagram.WebApp.createGroup is not implemented by the bridge yet — see plan section 8 / "Open Risks" #1.',
-      );
-    }
-    return wa.createGroup(options);
-  },
-
   // -- confirmed --
   async pick(options: PickOptions): Promise<PickedItem[]> {
     return webApp().pick(options);

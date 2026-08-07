@@ -71,22 +71,6 @@ export interface BridgeEnv {
   version: string;
 }
 
-// NOT confirmed to exist — confirmed ABSENT, in fact: grepped the full
-// script source for createChat/createGroup/create_group/web_app_create* and
-// found nothing. See plan section 8 / "Open Risks" #1 — this is now a known
-// gap, not an open question. Kept here as a placeholder shape so the rest of
-// the app has something to compile against once a real mechanism exists.
-export interface CreateGroupOptions {
-  title: string;
-  forum: true;
-  /** Picked member ids plus WorkDesk's own bot user id. */
-  memberIds: string[];
-}
-
-export interface CreateGroupResult {
-  chatId: string;
-}
-
 export interface Bridge {
   // -- confirmed (see file header) --
   getEnv(): BridgeEnv;
@@ -111,7 +95,4 @@ export interface Bridge {
   pick(options: PickOptions): Promise<PickedItem[]>;
   openContactPicker(): Promise<DeviceContact | null>;
   onEvent(event: string, handler: (payload: any) => void): () => void;
-
-  // -- confirmed absent, see plan "Open Risks" #1 --
-  createGroup(options: CreateGroupOptions): Promise<CreateGroupResult>;
 }

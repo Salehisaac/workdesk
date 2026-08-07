@@ -113,11 +113,6 @@ export const mockBridge: Bridge = {
     hide() {},
     onClick: () => () => {},
   },
-  async createGroup(options) {
-    console.info('[bridge:mock] createGroup', options);
-    await new Promise((resolve) => setTimeout(resolve, 250));
-    return { chatId: `mock-chat-${Math.round(performance.now())}` };
-  },
   async pick(options) {
     const items = FIXTURE_ITEMS.filter((item) => options.sources.includes(item.source));
     const limited = options.multiple ? items.slice(0, options.maxSelection ?? items.length) : items.slice(0, 1);

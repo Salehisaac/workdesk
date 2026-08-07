@@ -2,7 +2,6 @@ import { NavBar, Toast } from 'antd-mobile';
 import { CheckOutline } from 'antd-mobile-icons';
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { bridge } from '../../../bridge';
 import type { PickedItem } from '../../../bridge/types';
 import { StepMembers } from '../components/create-wizard/StepMembers';
 import { StepNameAvatar } from '../components/create-wizard/StepNameAvatar';
@@ -68,23 +67,14 @@ export function ProjectCreatePage() {
   async function handleSubmit() {
     setSubmitting(true);
     try {
-      // Group creation happens client-side, via the bridge, before WorkDesk
-      // ever hears about this project — see plan section 8. bridge.createGroup
-      // is unconfirmed (plan "Open Risks" #1); this call will throw with a
-      // clear message until that method exists on Rasagram.WebApp.
-      const { userId } = bridge.getEnv();
-      const { chatId } = await bridge.createGroup({
-        title: state.name,
-        forum: true,
-        memberIds: [...state.members.map((member) => member.id), userId],
-      });
-
+      // The backend provisions the project's dedicated topic-group itself
+      // now, server-side, via the internal admin API (plan section 8) — no
+      // client-side group creation needed before this call.
       const input: CreateProjectInput = {
         name: state.name,
         avatarUrl: state.avatarUrl ?? undefined,
         visibility: state.visibility,
         joinSlug: state.visibility === 'public' ? state.joinSlug : undefined,
-        chatId,
         members: state.members,
       };
       const project = await createProject.mutateAsync(input);

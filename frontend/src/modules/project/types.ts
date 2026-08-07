@@ -35,7 +35,5 @@ export interface CreateProjectInput {
   avatarUrl?: string;
   visibility: ProjectVisibility;
   joinSlug?: string;
-  /** Created client-side via bridge.createGroup() before this request is sent — plan section 8. */
-  chatId: string;
   members: PickedItem[];
 }
