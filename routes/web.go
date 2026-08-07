@@ -4,8 +4,8 @@ import (
 	"github.com/goravel/framework/contracts/http"
 	"github.com/goravel/framework/support"
 
-	"goravel/app/http/controllers"
 	"goravel/app/facades"
+	"goravel/app/http/controllers"
 )
 
 func Web() {
@@ -16,6 +16,10 @@ func Web() {
 	})
 
 	facades.Route().Static("public", "./public")
+	// Serves whatever UploadController.Store puts on the "public" disk
+	// (storage/app/public), matching that disk's configured URL
+	// (config/filesystems.go: APP_URL + "/storage").
+	facades.Route().Static("storage", "./storage/app/public")
 
 	userController := controllers.NewUserController()
 	facades.Route().Get("/users", userController.Index)
