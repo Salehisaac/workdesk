@@ -46,6 +46,9 @@ def main() -> None:
     parser.add_argument("--language-code", default="fa")
     parser.add_argument("--stale-seconds", type=int, default=0, help="Backdate auth_date to test staleness rejection")
     parser.add_argument("--host", default="http://127.0.0.1:3000", help="Used only to print a ready-to-run curl command")
+    parser.add_argument(
+        "--frontend-host", default="http://localhost:5173", help="Used only to print a ready-to-open browser URL"
+    )
     args = parser.parse_args()
 
     bot_token = args.bot_token or read_bot_token_from_env()
@@ -72,6 +75,17 @@ def main() -> None:
     print(init_data)
     print()
     print(f'curl -s -w "\\nHTTP %{{http_code}}\\n" {args.host}/api/v1/me -H "Authorization: Bearer {init_data}"')
+    print()
+    # init_data itself contains unescaped &/= characters (it's a query string
+    # in its own right), so it can't go into another URL's query string
+    # as-is — the outer URL parser would split it into several unrelated
+    # params at the first &, and the frontend would only ever see the
+    # fragment before that (typically missing `hash` entirely, which is
+    # exactly the "initData has no hash field" error this trips people into).
+    # It has to be percent-encoded a second time so it round-trips as a
+    # single opaque value.
+    encoded = urllib.parse.quote(init_data, safe="")
+    print(f"{args.frontend_host}/?initData={encoded}")
 
 
 if __name__ == "__main__":
