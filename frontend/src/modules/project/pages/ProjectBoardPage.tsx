@@ -35,7 +35,7 @@ export function ProjectBoardPage() {
   if (isError) {
     return (
       <div className={styles.page}>
-        <NavBar onBack={() => navigate('/')}>&nbsp;</NavBar>
+        <NavBar onBack={() => navigate('/projects')}>&nbsp;</NavBar>
         <EmptyState
           icon={<ExclamationCircleOutline />}
           title="ارتباط برقرار نشد"
@@ -48,7 +48,7 @@ export function ProjectBoardPage() {
   if (isLoading || !project) {
     return (
       <div className={styles.page}>
-        <NavBar onBack={() => navigate('/')}>&nbsp;</NavBar>
+        <NavBar onBack={() => navigate('/projects')}>&nbsp;</NavBar>
         <EmptyState icon={<DotLoading />} title="در حال بارگذاری…" />
       </div>
     );
@@ -56,7 +56,7 @@ export function ProjectBoardPage() {
 
   return (
     <div className={styles.page}>
-      <NavBar onBack={() => navigate('/')}>
+      <NavBar onBack={() => navigate('/projects')}>
         <div className={styles.titleBlock}>
           <span className={styles.titleName}>{project.name}</span>
           <span className={styles.titleMeta}>

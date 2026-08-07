@@ -1,0 +1,53 @@
+.page {
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+}
+
+.grid {
+  flex: 1;
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 8px;
+  padding: 20px 16px;
+  align-content: start;
+}
+
+.tile {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  padding: 16px 8px;
+  border: none;
+  background: none;
+  font-family: inherit;
+  cursor: pointer;
+  border-radius: 12px;
+}
+
+.tile:active {
+  background: var(--rasagram-theme-secondary-bg-color);
+}
+
+.tileIcon {
+  width: 48px;
+  height: 48px;
+  border-radius: 14px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 24px;
+  background: var(--rasagram-theme-secondary-bg-color);
+  color: var(--rasagram-theme-accent-text-color);
+}
+
+.tileLabel {
+  font-size: 12px;
+  text-align: center;
+  color: var(--rasagram-theme-text-color);
+}
+
+.disabled .tileLabel {
+  color: var(--rasagram-theme-hint-color);
+}

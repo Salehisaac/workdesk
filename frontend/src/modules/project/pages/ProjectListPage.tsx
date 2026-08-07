@@ -19,7 +19,7 @@ export function ProjectListPage() {
 
   return (
     <div className={styles.page}>
-      <NavBar backArrow={false}>پروژه‌ها</NavBar>
+      <NavBar onBack={() => navigate('/')}>پروژه‌ها</NavBar>
 
       <div className={styles.body}>
         {isLoading && (

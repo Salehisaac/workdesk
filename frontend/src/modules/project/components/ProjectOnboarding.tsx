@@ -9,7 +9,6 @@ import {
 } from 'antd-mobile-icons';
 import type { ReactNode } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { bridge } from '../../../bridge';
 import styles from './ProjectOnboarding.module.css';
 
 interface OnboardingItem {
@@ -63,7 +62,7 @@ export function ProjectOnboarding() {
 
   return (
     <div className={styles.wrap}>
-      <NavBar onBack={() => bridge.close()}>&nbsp;</NavBar>
+      <NavBar onBack={() => navigate('/')}>&nbsp;</NavBar>
 
       <div className={styles.body}>
         <div className={styles.illustration}>
