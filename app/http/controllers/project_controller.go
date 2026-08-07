@@ -1,6 +1,8 @@
 package controllers
 
 import (
+	"errors"
+	"strconv"
 	"strings"
 
 	"github.com/goravel/framework/contracts/http"
@@ -8,6 +10,7 @@ import (
 	"goravel/app/facades"
 	"goravel/app/http/resources"
 	"goravel/app/models"
+	"goravel/app/services/rasagramadmin"
 )
 
 type ProjectController struct{}
@@ -110,14 +113,27 @@ type storeProjectRequest struct {
 	AvatarUrl  *string                  `json:"avatarUrl"`
 	Visibility string                   `json:"visibility"`
 	JoinSlug   *string                  `json:"joinSlug"`
-	ChatId     string                   `json:"chatId"`
 	Members    []storePickedItemRequest `json:"members"`
 }
 
-// Store — POST /api/v1/projects. See API_CONTRACT.md: chatId is expected to
-// come from bridge.createGroup(), which doesn't exist in the real SDK yet
-// (plan "Open Risks" #1) — this endpoint works fine against a hand-supplied
-// chatId, it just can't be reached from the real create-wizard yet.
+// botUserId extracts the bot's numeric user id from the same
+// RASAGRAM_BOT_TOKEN used for initData verification — standard bot tokens
+// are "<id>:<secret>", so there's no need for a second config value just to
+// duplicate what's already in the token.
+func botUserId() (int64, error) {
+	token := facades.Config().GetString("services.rasagram.bot_token")
+	id, _, found := strings.Cut(token, ":")
+	if !found {
+		return 0, errors.New("RASAGRAM_BOT_TOKEN is not in \"<id>:<secret>\" format")
+	}
+	return strconv.ParseInt(id, 10, 64)
+}
+
+// Store — POST /api/v1/projects. Provisions the project's dedicated
+// topic-group itself now (plan section 8) — create chat, upgrade to
+// supergroup, enable topics — via the internal admin API
+// (app/services/rasagramadmin). The frontend no longer needs to create
+// anything client-side first; chatId is not part of the request anymore.
 func (r *ProjectController) Store(ctx http.Context) http.Response {
 	authUser, errResp := currentUser(ctx)
 	if errResp != nil {
@@ -135,11 +151,37 @@ func (r *ProjectController) Store(ctx http.Context) http.Response {
 	if request.Visibility != models.ProjectVisibilityPrivate && request.Visibility != models.ProjectVisibilityPublic {
 		return ctx.Response().Status(422).Json(http.Json{"error": "visibility must be \"private\" or \"public\""})
 	}
-	if strings.TrimSpace(request.ChatId) == "" {
-		return ctx.Response().Status(422).Json(http.Json{"error": "chatId is required"})
+
+	creatorId, err := strconv.ParseInt(authUser.ID, 10, 64)
+	if err != nil {
+		return ctx.Response().Status(500).Json(http.Json{"error": "could not parse authenticated user id"})
 	}
 
-	chatId := request.ChatId
+	botId, err := botUserId()
+	if err != nil {
+		return ctx.Response().Status(500).Json(http.Json{"error": "services.rasagram.bot_token is not configured correctly"})
+	}
+
+	userIdSet := map[int64]bool{botId: true, creatorId: true}
+	for _, member := range request.Members {
+		id, err := strconv.ParseInt(member.Id, 10, 64)
+		if err != nil {
+			return ctx.Response().Status(422).Json(http.Json{"error": "member id \"" + member.Id + "\" is not a valid user id"})
+		}
+		userIdSet[id] = true
+	}
+	userIds := make([]int64, 0, len(userIdSet))
+	for id := range userIdSet {
+		userIds = append(userIds, id)
+	}
+
+	channelId, err := rasagramadmin.New().CreateTopicGroup(request.Name, userIds)
+	if err != nil {
+		facades.Log().Error("workdesk: CreateTopicGroup failed: " + err.Error())
+		return ctx.Response().Status(502).Json(http.Json{"error": "could not create the project's group: " + err.Error()})
+	}
+	chatId := strconv.FormatInt(channelId, 10)
+
 	project := models.Project{
 		Name:       request.Name,
 		AvatarUrl:  request.AvatarUrl,
@@ -179,12 +221,6 @@ func (r *ProjectController) Store(ctx http.Context) http.Response {
 		return ctx.Response().Status(500).Json(http.Json{"error": err.Error()})
 	}
 	project.Members = members
-
-	// plan section 8: promoteChatMember(chatId, botUserId) so the bot can
-	// manage forum topics in this group. Not implemented — no Bot API
-	// client exists in this repo yet, only the picture of what it'll call
-	// (teamgram.io/bots' botway service). Logged, not silently skipped.
-	facades.Log().Warning("workdesk: skipping promoteChatMember — Bot API client not implemented yet (plan section 8)")
 
 	return ctx.Response().Status(201).Json(resources.Project(&project))
 }

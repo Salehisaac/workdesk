@@ -15,5 +15,15 @@ func init() {
 		"rasagram": map[string]any{
 			"bot_token": config.Env("RASAGRAM_BOT_TOKEN", ""),
 		},
+
+		// Internal admin API (app/services/rasagramadmin) — creates the
+		// dedicated topic-group a Project needs (plan section 8). Separate
+		// from the bot token above: server-to-server only, never reaches
+		// the frontend.
+		"rasagram_admin": map[string]any{
+			"base_url": config.Env("RASAGRAM_ADMIN_BASE_URL", ""),
+			"username": config.Env("RASAGRAM_ADMIN_USERNAME", ""),
+			"password": config.Env("RASAGRAM_ADMIN_PASSWORD", ""),
+		},
 	})
 }
