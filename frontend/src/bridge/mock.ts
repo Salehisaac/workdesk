@@ -11,35 +11,38 @@ const FIXTURE_ITEMS: PickedItem[] = [
   { id: '-301', source: 'channels', displayName: 'کانال اطلاعیه‌ها' },
 ];
 
+// Kept in sync with shared/styles/tokens.css's fallback palette by hand —
+// this is what "no real bridge theme" looks like in dev, same as prod's
+// fallback. If they drift, dev preview stops matching the real fallback.
 const LIGHT_THEME: ThemeParams = {
   bg_color: '#ffffff',
-  text_color: '#0f0f0f',
-  hint_color: '#8a8a8e',
-  link_color: '#2e7cf6',
-  button_color: '#2e7cf6',
+  text_color: '#0f1115',
+  hint_color: '#7c8894',
+  link_color: '#0891b2',
+  button_color: '#0891b2',
   button_text_color: '#ffffff',
-  secondary_bg_color: '#f4f4f5',
+  secondary_bg_color: '#f1f5f7',
   header_bg_color: '#ffffff',
-  accent_text_color: '#2e7cf6',
+  accent_text_color: '#0891b2',
   section_bg_color: '#ffffff',
-  section_header_text_color: '#8a8a8e',
-  subtitle_text_color: '#6d6d72',
+  section_header_text_color: '#7c8894',
+  subtitle_text_color: '#5c6773',
   destructive_text_color: '#e5484d',
 };
 
 const DARK_THEME: ThemeParams = {
-  bg_color: '#17181a',
-  text_color: '#f5f5f6',
-  hint_color: '#8d8d92',
-  link_color: '#5b9bff',
-  button_color: '#5b9bff',
+  bg_color: '#0b0f14',
+  text_color: '#eef2f5',
+  hint_color: '#8a97a3',
+  link_color: '#22d3ee',
+  button_color: '#06b6d4',
   button_text_color: '#ffffff',
-  secondary_bg_color: '#232427',
-  header_bg_color: '#1c1d20',
-  accent_text_color: '#5b9bff',
-  section_bg_color: '#1c1d20',
-  section_header_text_color: '#8d8d92',
-  subtitle_text_color: '#a0a0a5',
+  secondary_bg_color: '#141b23',
+  header_bg_color: '#0b0f14',
+  accent_text_color: '#22d3ee',
+  section_bg_color: '#141b23',
+  section_header_text_color: '#8a97a3',
+  subtitle_text_color: '#9aa6b2',
   destructive_text_color: '#ff6b6b',
 };
 
