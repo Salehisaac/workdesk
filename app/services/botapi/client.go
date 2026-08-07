@@ -19,6 +19,7 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"strconv"
 	"time"
 
 	"goravel/app/facades"
@@ -45,15 +46,40 @@ type response struct {
 	Description string          `json:"description,omitempty"`
 }
 
+// groupChatId converts a raw channel/chat id (as stored in Project.ChatId —
+// the positive id rasagramadmin's own API uses) into this Bot API's chat_id
+// convention. Confirmed by reading botway's MakePeer/ToChatIdType directly
+// (teamgram.io/bots' app/interface/botway/internal/core/codec_botapi_util.go
+// + botapi/core_botapi.go): unlike real Telegram's "-100<id>" scheme, a
+// positive number here means a private user chat, and any negative number
+// means group/channel — plain negation, no digit-prefix encoding. Passing
+// the raw positive id through unchanged gets it misread as a user id (this
+// is exactly what produced a real PEER_ID_INVALID against a live chat).
+func groupChatId(chatId string) (string, error) {
+	id, err := strconv.ParseInt(chatId, 10, 64)
+	if err != nil {
+		return "", fmt.Errorf("chat id %q is not numeric: %w", chatId, err)
+	}
+	if id > 0 {
+		id = -id
+	}
+	return strconv.FormatInt(id, 10), nil
+}
+
 // CreateForumTopic creates a topic in chatId's forum (chatId must already be
 // a forum-enabled supergroup — see rasagramadmin.CreateTopicGroup) and
 // returns the new topic's message_thread_id, stored as List.TopicId.
 func (c *Client) CreateForumTopic(chatId, name string) (string, error) {
+	groupId, err := groupChatId(chatId)
+	if err != nil {
+		return "", fmt.Errorf("botapi: createForumTopic: %w", err)
+	}
+
 	var result struct {
 		MessageThreadId int64 `json:"message_thread_id"`
 	}
 	if err := c.post("createForumTopic", map[string]any{
-		"chat_id": chatId,
+		"chat_id": groupId,
 		"name":    name,
 	}, &result); err != nil {
 		return "", fmt.Errorf("botapi: createForumTopic: %w", err)
@@ -64,8 +90,13 @@ func (c *Client) CreateForumTopic(chatId, name string) (string, error) {
 // DeleteForumTopic deletes a previously created topic. The bot must be an
 // admin in chatId with can_delete_messages rights.
 func (c *Client) DeleteForumTopic(chatId, topicId string) error {
+	groupId, err := groupChatId(chatId)
+	if err != nil {
+		return fmt.Errorf("botapi: deleteForumTopic: %w", err)
+	}
+
 	if err := c.post("deleteForumTopic", map[string]any{
-		"chat_id":           chatId,
+		"chat_id":           groupId,
 		"message_thread_id": topicId,
 	}, nil); err != nil {
 		return fmt.Errorf("botapi: deleteForumTopic: %w", err)
