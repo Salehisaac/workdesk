@@ -124,12 +124,13 @@ func (c *Client) enableTopics(channelID int64) error {
 	return nil
 }
 
-// login shape is assumed — the actual response body for
-// /x/internal/auth/login wasn't confirmed, only the endpoint/credentials.
-// If it doesn't return {"ok":true,"result":{"token":"..."}}, this is the one
-// place to fix.
+// Confirmed against a real response: this is a Casdoor-backed login, so
+// result is Casdoor's own OAuth token shape (access_token/id_token/
+// refresh_token/token_type/expires_in/scope) rather than a bespoke
+// {"token":"..."} — access_token is the bearer token the other endpoints
+// expect.
 type loginResult struct {
-	Token string `json:"token"`
+	AccessToken string `json:"access_token"`
 }
 
 func (c *Client) login() (string, error) {
@@ -165,10 +166,10 @@ func (c *Client) login() (string, error) {
 	if err := json.Unmarshal(respBody, &parsed); err != nil {
 		return "", fmt.Errorf("could not parse login response: %w (body: %s)", err, string(respBody))
 	}
-	if !parsed.Ok || parsed.Result.Token == "" {
-		return "", fmt.Errorf("login response missing token (body: %s)", string(respBody))
+	if !parsed.Ok || parsed.Result.AccessToken == "" {
+		return "", fmt.Errorf("login response missing access_token (body: %s)", string(respBody))
 	}
-	return parsed.Result.Token, nil
+	return parsed.Result.AccessToken, nil
 }
 
 // getToken returns a cached token, logging in only the first time it's
