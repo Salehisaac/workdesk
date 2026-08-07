@@ -8,6 +8,7 @@ import (
 	"goravel/app/facades"
 	"goravel/app/http/resources"
 	"goravel/app/models"
+	"goravel/app/services/botapi"
 )
 
 // ProjectListController handles Lists nested under a Project — plan section
@@ -42,14 +43,20 @@ func (r *ProjectListController) Store(ctx http.Context) http.Response {
 		return ctx.Response().Status(422).Json(http.Json{"error": "name is required"})
 	}
 
-	list := models.List{ProjectId: project.ID, Name: request.Name}
+	if project.ChatId == nil || strings.TrimSpace(*project.ChatId) == "" {
+		return ctx.Response().Status(500).Json(http.Json{"error": "project has no chat to attach a topic to"})
+	}
+
+	topicId, err := botapi.New().CreateForumTopic(*project.ChatId, request.Name)
+	if err != nil {
+		facades.Log().Error("workdesk: CreateForumTopic failed: " + err.Error())
+		return ctx.Response().Status(502).Json(http.Json{"error": "could not create the list's topic: " + err.Error()})
+	}
+
+	list := models.List{ProjectId: project.ID, Name: request.Name, TopicId: &topicId}
 	if err := facades.Orm().Query().Create(&list); err != nil {
 		return ctx.Response().Status(500).Json(http.Json{"error": err.Error()})
 	}
-
-	// plan section 8: createForumTopic(project.ChatId, list.Name) -> should
-	// set list.TopicId. Not implemented — no Bot API client exists yet.
-	facades.Log().Warning("workdesk: skipping createForumTopic — Bot API client not implemented yet (plan section 8)")
 
 	return ctx.Response().Status(201).Json(resources.List(&list))
 }
@@ -76,10 +83,11 @@ func (r *ProjectListController) Destroy(ctx http.Context) http.Response {
 		return ctx.Response().Status(404).Json(http.Json{"error": "list not found"})
 	}
 
-	// plan section 8: deleteForumTopic(project.ChatId, list.TopicId) should
-	// happen before the row goes away. Not implemented — no Bot API client
-	// exists yet.
-	facades.Log().Warning("workdesk: skipping deleteForumTopic — Bot API client not implemented yet (plan section 8)")
+	if project.ChatId != nil && list.TopicId != nil && strings.TrimSpace(*list.TopicId) != "" {
+		if err := botapi.New().DeleteForumTopic(*project.ChatId, *list.TopicId); err != nil {
+			facades.Log().Error("workdesk: DeleteForumTopic failed: " + err.Error())
+		}
+	}
 
 	if _, err := facades.Orm().Query().Delete(&list); err != nil {
 		return ctx.Response().Status(500).Json(http.Json{"error": err.Error()})

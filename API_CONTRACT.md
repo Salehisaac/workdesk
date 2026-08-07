@@ -163,12 +163,14 @@ authenticated user isn't a member of this project.
 { "name": "کارهای این هفته" }
 ```
 
-**Backend behavior:**
+**Backend behavior** (`ProjectListController.Store`, `app/services/botapi`):
 
-1. Create the `lists` row (`project_id`, `name`).
-2. Call the Bot API's `createForumTopic` (confirmed endpoint — `POST /bot<token>/createForumTopic`) against
-   the project's `chatId`, using `name` as the topic name.
-3. Store the returned topic id as `topicId`.
+1. Call the Bot API's `createForumTopic` (`POST /bot<token>/createForumTopic`, `{"chat_id": project.chatId,
+   "name": name}` — real Telegram Bot API shape, confirmed by reading `teamgram.io/bots`' botway service
+   source directly) against the project's `chatId`.
+2. If that fails, return 502 — no `lists` row is created for a topic that doesn't exist (same all-or-nothing
+   pattern as project creation).
+3. Create the `lists` row (`project_id`, `name`, `topic_id` = the returned `message_thread_id`).
 
 **Response 201:**
 
@@ -180,8 +182,10 @@ authenticated user isn't a member of this project.
 
 ## `DELETE /api/v1/projects/:id/lists/:listId`
 
-Calls the Bot API's `deleteForumTopic` (confirmed endpoint — `POST /bot<token>/deleteForumTopic`) for the
-list's `topicId` inside the project's `chatId`, then deletes the row.
+Calls the Bot API's `deleteForumTopic` (`POST /bot<token>/deleteForumTopic`, `{"chat_id": ..., "message_thread_id":
+...}`) for the list's `topicId` inside the project's `chatId`. Unlike creation, a failure here is logged but
+does **not** block deleting the row — an external cleanup call failing shouldn't trap the user with a list they
+can't remove.
 
 **Response 204** — no body.
 
@@ -205,10 +209,6 @@ create wizard calls this immediately on file selection).
 - Adding members to a project after creation — the admin API's `chat/create` takes an initial member list,
   but nothing confirmed yet for adding someone to an existing group after the fact. Worth checking whether
   `rasagram-new-admin` has an equivalent endpoint before assuming this needs a workaround.
-- Per-list forum topics (`createForumTopic`/`deleteForumTopic` on `POST/DELETE .../lists`) — still just
-  logged and skipped in `ProjectListController`. These were scoped against the public Bot API before the
-  internal admin API was known about; worth checking whether topic creation should go through
-  `rasagram-new-admin` too instead, once that's confirmed one way or the other.
 - Editing/deleting a project.
 - Anything about Jobs (tasks inside a List) — the frontend doesn't render or fetch these yet; `List` only
   carries `id`/`projectId`/`name`/`topicId` right now, per the plan's explicit scoping for this round.

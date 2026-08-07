@@ -14,6 +14,10 @@ func init() {
 		// sendMessage, etc. — plan section 8, not implemented yet).
 		"rasagram": map[string]any{
 			"bot_token": config.Env("RASAGRAM_BOT_TOKEN", ""),
+			// Host serving the Bot API (teamgram.io/bots' botway service —
+			// /bot<token>/<method>, standard Telegram Bot API shape). Used
+			// by app/services/botapi for the per-List forum topic lifecycle.
+			"bot_api_base_url": config.Env("RASAGRAM_BOT_API_BASE_URL", ""),
 		},
 
 		// Internal admin API (app/services/rasagramadmin) — creates the
