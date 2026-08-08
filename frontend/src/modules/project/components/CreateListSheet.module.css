@@ -11,65 +11,52 @@
   text-align: center;
 }
 
-.colorSection {
+.nameRow {
   display: flex;
-  flex-direction: column;
-  gap: 8px;
-}
-
-.colorLabel {
-  font-size: 12px;
-  color: var(--rasagram-theme-hint-color);
-}
-
-.colorRow {
-  display: flex;
+  align-items: center;
   gap: 12px;
 }
 
-.colorSwatch {
-  width: 32px;
-  height: 32px;
+.iconTriggerWrap {
+  position: relative;
+  flex-shrink: 0;
+}
+
+.iconTrigger {
+  width: 40px;
+  height: 40px;
   border-radius: 50%;
-  border: none;
-  background: var(--swatch-color);
+  border: 1px solid var(--rasagram-theme-hint-color);
+  background: none;
+  color: var(--rasagram-theme-hint-color);
+  font-size: 20px;
   display: flex;
   align-items: center;
   justify-content: center;
   cursor: pointer;
   padding: 0;
-  flex-shrink: 0;
 }
 
-.colorCheck {
-  color: #ffffff;
-  font-size: 16px;
-}
-
-.emojiPreview {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  width: fit-content;
-  padding: 6px 10px;
-  border-radius: 10px;
-  background: var(--rasagram-theme-bg-color);
-}
-
-.emojiPreviewGlyph {
-  font-size: 22px;
-  line-height: 1;
-}
-
-.emojiClear {
+.iconClear {
+  position: absolute;
+  top: -4px;
+  inset-inline-end: -4px;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
   border: none;
-  background: none;
+  background: var(--rasagram-theme-secondary-bg-color);
   color: var(--rasagram-theme-hint-color);
-  font-size: 14px;
-  padding: 0;
-  cursor: pointer;
+  font-size: 10px;
   display: flex;
   align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  padding: 0;
+}
+
+.input {
+  flex: 1;
 }
 
 .emojiGridWrap {

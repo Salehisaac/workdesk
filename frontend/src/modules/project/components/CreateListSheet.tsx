@@ -1,8 +1,7 @@
 import { Button, Input, Popup } from 'antd-mobile';
-import { CheckOutline, CloseOutline } from 'antd-mobile-icons';
-import type { CSSProperties } from 'react';
+import { CloseOutline, SmileOutline } from 'antd-mobile-icons';
 import { useState } from 'react';
-import { FORUM_TOPIC_COLORS, useTopicIcons } from '../api';
+import { useTopicIcons } from '../api';
 import type { CreateListInput } from '../types';
 import styles from './CreateListSheet.module.css';
 
@@ -15,7 +14,6 @@ interface CreateListSheetProps {
 
 export function CreateListSheet({ visible, submitting, onClose, onSubmit }: CreateListSheetProps) {
   const [name, setName] = useState('');
-  const [iconColor, setIconColor] = useState<number | undefined>(undefined);
   const [icon, setIcon] = useState<{ customEmojiId: string; emoji: string } | undefined>(undefined);
   const [pickerOpen, setPickerOpen] = useState(false);
   // Only fetched once the picker is actually opened — the backend route
@@ -25,9 +23,8 @@ export function CreateListSheet({ visible, submitting, onClose, onSubmit }: Crea
 
   function handleSubmit() {
     if (!name.trim()) return;
-    onSubmit({ name: name.trim(), iconColor, iconCustomEmojiId: icon?.customEmojiId, iconEmoji: icon?.emoji });
+    onSubmit({ name: name.trim(), iconCustomEmojiId: icon?.customEmojiId, iconEmoji: icon?.emoji });
     setName('');
-    setIconColor(undefined);
     setIcon(undefined);
     setPickerOpen(false);
   }
@@ -36,68 +33,60 @@ export function CreateListSheet({ visible, submitting, onClose, onSubmit }: Crea
     <Popup visible={visible} onMaskClick={onClose} onClose={onClose} bodyStyle={{ borderTopLeftRadius: 12, borderTopRightRadius: 12 }}>
       <div className={styles.sheet}>
         <div className={styles.title}>لیست جدید</div>
-        <Input placeholder="نام لیست را وارد کنید" value={name} onChange={setName} autoFocus />
 
-        <div className={styles.colorSection}>
-          <div className={styles.colorLabel}>رنگ آیکون</div>
-          <div className={styles.colorRow}>
-            {FORUM_TOPIC_COLORS.map((color) => (
+        <div className={styles.nameRow}>
+          <div className={styles.iconTriggerWrap}>
+            <button
+              type="button"
+              className={styles.iconTrigger}
+              aria-label={icon ? 'تغییر شکلک' : 'انتخاب شکلک'}
+              onClick={() => setPickerOpen((open) => !open)}
+            >
+              {icon ? icon.emoji : <SmileOutline />}
+            </button>
+            {icon && (
               <button
-                key={color.value}
                 type="button"
-                aria-label={color.label}
-                className={styles.colorSwatch}
-                style={{ '--swatch-color': `#${color.value.toString(16).padStart(6, '0')}` } as CSSProperties}
-                onClick={() => setIconColor(color.value === iconColor ? undefined : color.value)}
+                className={styles.iconClear}
+                aria-label="حذف شکلک"
+                onClick={() => {
+                  setIcon(undefined);
+                  setPickerOpen(false);
+                }}
               >
-                {iconColor === color.value && <CheckOutline className={styles.colorCheck} />}
-              </button>
-            ))}
-          </div>
-        </div>
-
-        <div className={styles.colorSection}>
-          <div className={styles.colorLabel}>شکلک موضوع</div>
-          {icon ? (
-            <div className={styles.emojiPreview}>
-              <span className={styles.emojiPreviewGlyph}>{icon.emoji}</span>
-              <button type="button" className={styles.emojiClear} onClick={() => setIcon(undefined)} aria-label="حذف شکلک">
                 <CloseOutline />
               </button>
-            </div>
-          ) : (
-            <Button size="small" fill="outline" onClick={() => setPickerOpen((open) => !open)}>
-              {pickerOpen ? 'بستن' : 'انتخاب شکلک'}
-            </Button>
-          )}
-
-          {pickerOpen && !icon && (
-            <div className={styles.emojiGridWrap}>
-              {topicIcons.isLoading && <div className={styles.emojiStatus}>در حال بارگذاری…</div>}
-              {topicIcons.isError && <div className={styles.emojiStatus}>بارگذاری شکلک‌ها با خطا مواجه شد</div>}
-              {topicIcons.data && topicIcons.data.length === 0 && (
-                <div className={styles.emojiStatus}>شکلکی موجود نیست</div>
-              )}
-              {topicIcons.data && topicIcons.data.length > 0 && (
-                <div className={styles.emojiGrid}>
-                  {topicIcons.data.map((option) => (
-                    <button
-                      key={option.customEmojiId}
-                      type="button"
-                      className={styles.emojiOption}
-                      onClick={() => {
-                        setIcon(option);
-                        setPickerOpen(false);
-                      }}
-                    >
-                      {option.emoji}
-                    </button>
-                  ))}
-                </div>
-              )}
-            </div>
-          )}
+            )}
+          </div>
+          <Input className={styles.input} placeholder="نام لیست را وارد کنید" value={name} onChange={setName} autoFocus />
         </div>
+
+        {pickerOpen && (
+          <div className={styles.emojiGridWrap}>
+            {topicIcons.isLoading && <div className={styles.emojiStatus}>در حال بارگذاری…</div>}
+            {topicIcons.isError && <div className={styles.emojiStatus}>بارگذاری شکلک‌ها با خطا مواجه شد</div>}
+            {topicIcons.data && topicIcons.data.length === 0 && (
+              <div className={styles.emojiStatus}>شکلکی موجود نیست</div>
+            )}
+            {topicIcons.data && topicIcons.data.length > 0 && (
+              <div className={styles.emojiGrid}>
+                {topicIcons.data.map((option) => (
+                  <button
+                    key={option.customEmojiId}
+                    type="button"
+                    className={styles.emojiOption}
+                    onClick={() => {
+                      setIcon(option);
+                      setPickerOpen(false);
+                    }}
+                  >
+                    {option.emoji}
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
+        )}
 
         <Button block color="primary" loading={submitting} disabled={!name.trim()} onClick={handleSubmit}>
           ساخت لیست
