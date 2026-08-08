@@ -6,4 +6,9 @@
 
 .list {
   --border-top: none;
+  --adm-color-border: rgba(128, 138, 148, 0.18);
+  background: var(--rasagram-theme-bg-color);
+  border-radius: 14px;
+  overflow: hidden;
+  margin-top: 4px;
 }

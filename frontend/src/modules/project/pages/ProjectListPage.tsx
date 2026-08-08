@@ -1,5 +1,5 @@
-import { Avatar, Button, DotLoading, List, NavBar } from 'antd-mobile';
-import { TeamOutline } from 'antd-mobile-icons';
+import { Avatar, Button, DotLoading, NavBar } from 'antd-mobile';
+import { LeftOutline, TeamOutline } from 'antd-mobile-icons';
 import { useNavigate } from 'react-router-dom';
 import { EmptyState } from '../../../shared/ui/EmptyState';
 import { useProjects } from '../api';
@@ -35,22 +35,29 @@ export function ProjectListPage() {
         )}
 
         {!isLoading && !isError && (projects?.length ?? 0) > 0 && (
-          <List>
+          <div className={styles.list}>
             {projects!.map((project) => (
-              <List.Item
+              <button
                 key={project.id}
-                prefix={<Avatar src={project.avatarUrl ?? ''} style={{ '--size': '40px', '--border-radius': '10px' }} />}
-                description={
+                type="button"
+                className={styles.projectCard}
+                onClick={() => navigate(`/projects/${project.id}`)}
+              >
+                {project.avatarUrl ? (
+                  <Avatar src={project.avatarUrl} style={{ '--size': '44px', '--border-radius': '14px' }} />
+                ) : (
+                  <span className={styles.projectInitial}>{project.name.trim().charAt(0) || '؟'}</span>
+                )}
+                <span className={styles.projectInfo}>
+                  <span className={styles.projectName}>{project.name}</span>
                   <span className={styles.projectMeta}>
                     {project.memberCount} عضو، {project.onlineCount} نفر آنلاین
                   </span>
-                }
-                onClick={() => navigate(`/projects/${project.id}`)}
-              >
-                {project.name}
-              </List.Item>
+                </span>
+                <LeftOutline className={styles.chevron} />
+              </button>
             ))}
-          </List>
+          </div>
         )}
       </div>
 

@@ -17,6 +17,6 @@
 
 .input {
   flex: 1;
-  border-bottom: 1px solid var(--rasagram-theme-secondary-bg-color);
+  border-bottom: 1px solid var(--rasagram-theme-bg-color);
   padding-bottom: 8px;
 }

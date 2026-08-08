@@ -101,15 +101,17 @@ export function ProjectCreatePage() {
       </NavBar>
 
       <div className={styles.body}>
-        {step === 0 && (
-          <StepNameAvatar name={state.name} avatarUrl={state.avatarUrl} onChange={patch} />
-        )}
-        {step === 1 && (
-          <StepVisibility visibility={state.visibility} joinSlug={state.joinSlug} onChange={patch} />
-        )}
-        {step === 2 && (
-          <StepMembers members={state.members} onChange={(members) => patch({ members })} />
-        )}
+        <div className={styles.card}>
+          {step === 0 && (
+            <StepNameAvatar name={state.name} avatarUrl={state.avatarUrl} onChange={patch} />
+          )}
+          {step === 1 && (
+            <StepVisibility visibility={state.visibility} joinSlug={state.joinSlug} onChange={patch} />
+          )}
+          {step === 2 && (
+            <StepMembers members={state.members} onChange={(members) => patch({ members })} />
+          )}
+        </div>
       </div>
     </div>
   );
