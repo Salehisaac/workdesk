@@ -124,6 +124,17 @@
   padding: 8px 16px 24px;
 }
 
+@keyframes tileReveal {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
 .tile {
   display: flex;
   flex-direction: column;
@@ -134,6 +145,14 @@
   font-family: inherit;
   cursor: pointer;
   padding: 0;
+  animation: tileReveal 0.35s ease-out both;
+  animation-delay: calc(var(--tile-index, 0) * 60ms);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .tile {
+    animation: none;
+  }
 }
 
 .tileCard {

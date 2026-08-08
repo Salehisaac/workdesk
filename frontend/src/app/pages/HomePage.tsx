@@ -10,7 +10,7 @@ import {
   UnorderedListOutline,
   UserOutline,
 } from 'antd-mobile-icons';
-import type { ReactNode } from 'react';
+import type { CSSProperties, ReactNode } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { apiClient } from '../../shared/api/client';
 import styles from './HomePage.module.css';
@@ -105,11 +105,12 @@ export function HomePage() {
 
       <div className={styles.sectionLabel}>همه ابزارها</div>
       <div className={styles.grid}>
-        {TILES.map((tile) => (
+        {TILES.map((tile, index) => (
           <button
             key={tile.label}
             type="button"
             className={`${styles.tile} ${tile.to ? '' : styles.tileLocked}`}
+            style={{ '--tile-index': index } as CSSProperties}
             onClick={() => (tile.to ? navigate(tile.to) : Toast.show({ content: 'به‌زودی اضافه می‌شود' }))}
           >
             <span className={styles.tileCard}>

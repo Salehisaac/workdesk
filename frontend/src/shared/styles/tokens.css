@@ -20,9 +20,9 @@
   --rasagram-theme-subtitle-text-color: #5c6773;
   --rasagram-theme-destructive-text-color: #e5484d;
 
-  /* Not bridge-sourced — WorkDesk's own, for brand-colored feature cards
-     (hero cards etc.) that stay recognizably "WorkDesk" regardless of
-     light/dark, the way a colored promo card would in the reference. */
+  /* Pre-boot fallback only — bridge/theme.ts overrides both of these
+     in JS on every theme apply (using the bridge's live accent color),
+     so this is just what shows for the instant before that first runs. */
   --rasagram-hero-gradient: linear-gradient(135deg, #0891b2 0%, #155e75 100%);
   --rasagram-card-shadow: 0 1px 3px rgba(15, 23, 31, 0.08);
 
