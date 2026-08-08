@@ -32,6 +32,7 @@
   background: var(--rasagram-theme-secondary-bg-color);
   box-shadow: var(--rasagram-card-shadow);
   font-family: inherit;
+  color: var(--rasagram-theme-text-color);
   cursor: pointer;
   text-align: start;
 }
