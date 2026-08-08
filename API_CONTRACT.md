@@ -145,7 +145,15 @@ correctly lists projects they created.
     { "id": "101", "source": "contacts", "displayName": "علی رضایی", "username": "ali", "phone": "989120000001", "online": true }
   ],
   "lists": [
-    { "id": "10", "projectId": "1", "name": "کارهای این هفته", "topicId": "42", "iconColor": 7322096 }
+    {
+      "id": "10",
+      "projectId": "1",
+      "name": "کارهای این هفته",
+      "topicId": "42",
+      "iconColor": 7322096,
+      "iconCustomEmojiId": null,
+      "iconEmoji": null
+    }
   ]
 }
 ```
@@ -160,7 +168,12 @@ authenticated user isn't a member of this project.
 **Request body:**
 
 ```json
-{ "name": "کارهای این هفته", "iconColor": 7322096 }
+{
+  "name": "کارهای این هفته",
+  "iconColor": 7322096,
+  "iconCustomEmojiId": "5368324170671202286",
+  "iconEmoji": "🔥"
+}
 ```
 
 - `iconColor` — optional. Must be one of Telegram's 6 standard forum-topic icon colors (`0x6FB9F0`/`0xFFD67E`/
@@ -168,21 +181,37 @@ authenticated user isn't a member of this project.
   `FORUM_TOPIC_COLORS` in `frontend/src/modules/project/api.ts`, kept in sync by hand). Omit for the
   platform's default icon. Any other value is rejected with 422 — these are the only 6 the Bot API's own
   clients ever present, not an arbitrary RGB value.
+- `iconCustomEmojiId` — optional, one of the `customEmojiId` values from `GET /topic-icons`. Sent to the Bot
+  API verbatim, not validated against anything server-side (unlike `iconColor` — there's nowhere to fetch a
+  known-good set to validate against at request time, see below).
+- `iconEmoji` — required alongside `iconCustomEmojiId` (same request only, not otherwise). The chosen icon's
+  display emoji, straight from the `GET /topic-icons` entry the user picked — stored verbatim, **not** sent to
+  the Bot API. Purely so the frontend can render the icon later without re-fetching/matching `GET /topic-icons`
+  every time (same denormalization pattern as `ProjectMember`'s display fields).
 
 **Backend behavior** (`ProjectListController.Store`, `app/services/botapi`):
 
 1. Call the Bot API's `createForumTopic` (`POST /bot<token>/createForumTopic`, `{"chat_id": project.chatId,
-   "name": name, "icon_color": iconColor}` — real Telegram Bot API shape, confirmed by reading
-   `teamgram.io/bots`' botway service source directly; `icon_color` omitted entirely when not provided)
-   against the project's `chatId`.
+   "name": name, "icon_color": iconColor, "icon_custom_emoji_id": iconCustomEmojiId}` — real Telegram Bot API
+   shape, confirmed by reading `teamgram.io/bots`' botway service source directly; both icon fields omitted
+   entirely when not provided) against the project's `chatId`.
 2. If that fails, return 502 — no `lists` row is created for a topic that doesn't exist (same all-or-nothing
    pattern as project creation).
-3. Create the `lists` row (`project_id`, `name`, `icon_color`, `topic_id` = the returned `message_thread_id`).
+3. Create the `lists` row (`project_id`, `name`, `icon_color`, `icon_custom_emoji_id`, `icon_emoji`, `topic_id`
+   = the returned `message_thread_id`).
 
 **Response 201:**
 
 ```json
-{ "id": "10", "projectId": "1", "name": "کارهای این هفته", "topicId": "42", "iconColor": 7322096 }
+{
+  "id": "10",
+  "projectId": "1",
+  "name": "کارهای این هفته",
+  "topicId": "42",
+  "iconColor": 7322096,
+  "iconCustomEmojiId": "5368324170671202286",
+  "iconEmoji": "🔥"
+}
 ```
 
 ---
@@ -195,6 +224,29 @@ does **not** block deleting the row — an external cleanup call failing shouldn
 can't remove.
 
 **Response 204** — no body.
+
+---
+
+## `GET /api/v1/topic-icons`
+
+Proxies the Bot API's `getForumTopicIconStickers` (`POST /bot<token>/getForumTopicIconStickers`, no params) —
+purely a passthrough, needed because the bot token can never reach the frontend directly. Backs the emoji
+picker in `CreateListSheet.tsx`.
+
+**⚠️ Not usable yet**: `teamgram.io/bots`' botway service has no route for `getForumTopicIconStickers` at all,
+and its `getStickerSet` route (which real Telegram's Bot API implements this method on top of) is a stub that
+returns "not impl". This endpoint will 502 until one of those is actually implemented on the messenger's
+platform — that's tracked as separate work outside this repo. The frontend only calls this lazily (when the
+emoji picker is opened, not on every sheet mount) and degrades gracefully (shows an inline error, the rest of
+list creation — name + color — still works) if it fails.
+
+**Response 200** — `TopicIcon[]`:
+
+```json
+[
+  { "customEmojiId": "5368324170671202286", "emoji": "🔥" }
+]
+```
 
 ---
 

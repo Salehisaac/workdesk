@@ -26,6 +26,9 @@ func Api() {
 		router.Post("/projects/{id}/lists", listController.Store)
 		router.Delete("/projects/{id}/lists/{listId}", listController.Destroy)
 
+		topicIconController := controllers.NewTopicIconController()
+		router.Get("/topic-icons", topicIconController.Index)
+
 		uploadController := controllers.NewUploadController()
 		router.Post("/uploads", uploadController.Store)
 	})

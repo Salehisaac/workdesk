@@ -76,11 +76,13 @@ func ProjectMembers(members []models.ProjectMember) []http.Json {
 // List matches the `ProjectListItem` shape in API_CONTRACT.md.
 func List(l *models.List) http.Json {
 	return http.Json{
-		"id":        formatId(l.ID),
-		"projectId": formatId(l.ProjectId),
-		"name":      l.Name,
-		"topicId":   l.TopicId,
-		"iconColor": l.IconColor,
+		"id":                formatId(l.ID),
+		"projectId":         formatId(l.ProjectId),
+		"name":              l.Name,
+		"topicId":           l.TopicId,
+		"iconColor":         l.IconColor,
+		"iconCustomEmojiId": l.IconCustomEmojiId,
+		"iconEmoji":         l.IconEmoji,
 	}
 }
 

@@ -20,8 +20,14 @@ func NewProjectListController() *ProjectListController {
 }
 
 type storeListRequest struct {
-	Name      string `json:"name"`
-	IconColor int64  `json:"iconColor"`
+	Name              string `json:"name"`
+	IconColor         int64  `json:"iconColor"`
+	IconCustomEmojiId string `json:"iconCustomEmojiId"`
+	// Denormalized display copy of the chosen icon's unicode emoji — not
+	// sent to the Bot API, just stored so the frontend never has to
+	// re-fetch/match GET /topic-icons to render it later. Trusted verbatim,
+	// same as ProjectMember's picked-item display fields.
+	IconEmoji string `json:"iconEmoji"`
 }
 
 func isValidIconColor(color int64) bool {
@@ -63,7 +69,7 @@ func (r *ProjectListController) Store(ctx http.Context) http.Response {
 		return ctx.Response().Status(500).Json(http.Json{"error": "project has no chat to attach a topic to"})
 	}
 
-	topicId, err := botapi.New().CreateForumTopic(*project.ChatId, request.Name, request.IconColor)
+	topicId, err := botapi.New().CreateForumTopic(*project.ChatId, request.Name, request.IconColor, request.IconCustomEmojiId)
 	if err != nil {
 		facades.Log().Error("workdesk: CreateForumTopic failed: " + err.Error())
 		return ctx.Response().Status(502).Json(http.Json{"error": "could not create the list's topic: " + err.Error()})
@@ -72,6 +78,12 @@ func (r *ProjectListController) Store(ctx http.Context) http.Response {
 	list := models.List{ProjectId: project.ID, Name: request.Name, TopicId: &topicId}
 	if request.IconColor != 0 {
 		list.IconColor = &request.IconColor
+	}
+	if request.IconCustomEmojiId != "" {
+		list.IconCustomEmojiId = &request.IconCustomEmojiId
+	}
+	if request.IconEmoji != "" {
+		list.IconEmoji = &request.IconEmoji
 	}
 	if err := facades.Orm().Query().Create(&list); err != nil {
 		return ctx.Response().Status(500).Json(http.Json{"error": err.Error()})

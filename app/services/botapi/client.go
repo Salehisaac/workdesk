@@ -80,11 +80,38 @@ var ForumTopicColors = []int64{
 	0xFB6F5F, // قرمز (red)
 }
 
+// TopicIconSticker is the subset of Telegram's Sticker object that matters
+// for a topic-icon picker: CustomEmojiId is what gets sent back to
+// createForumTopic, Emoji is the plain unicode character associated with it
+// — good enough to render the picker/list-item icon without fetching or
+// proxying the actual sticker image file.
+type TopicIconSticker struct {
+	CustomEmojiId string `json:"custom_emoji_id"`
+	Emoji         string `json:"emoji"`
+}
+
+// GetForumTopicIconStickers fetches the platform's allowed set of
+// custom-emoji topic icons — mirrors real Telegram's Bot API method of the
+// same name exactly (no params, returns Sticker[]). NOTE: as of this
+// writing, botway has no route for this method, and its getStickerSet route
+// (which real Telegram's Bot API implements getForumTopicIconStickers on
+// top of) is a stub that returns "not impl" — this call will fail until
+// that's implemented on the platform side.
+func (c *Client) GetForumTopicIconStickers() ([]TopicIconSticker, error) {
+	var result []TopicIconSticker
+	if err := c.post("getForumTopicIconStickers", map[string]any{}, &result); err != nil {
+		return nil, fmt.Errorf("botapi: getForumTopicIconStickers: %w", err)
+	}
+	return result, nil
+}
+
 // CreateForumTopic creates a topic in chatId's forum (chatId must already be
 // a forum-enabled supergroup — see rasagramadmin.CreateTopicGroup) and
 // returns the new topic's message_thread_id, stored as List.TopicId.
-// iconColor is optional — pass 0 for the platform's default icon.
-func (c *Client) CreateForumTopic(chatId, name string, iconColor int64) (string, error) {
+// iconColor is optional (0 = the platform's default). iconCustomEmojiId is
+// optional too — one of GetForumTopicIconStickers' returned ids, or "" for
+// none.
+func (c *Client) CreateForumTopic(chatId, name string, iconColor int64, iconCustomEmojiId string) (string, error) {
 	groupId, err := groupChatId(chatId)
 	if err != nil {
 		return "", fmt.Errorf("botapi: createForumTopic: %w", err)
@@ -96,6 +123,9 @@ func (c *Client) CreateForumTopic(chatId, name string, iconColor int64) (string,
 	}
 	if iconColor != 0 {
 		payload["icon_color"] = iconColor
+	}
+	if iconCustomEmojiId != "" {
+		payload["icon_custom_emoji_id"] = iconCustomEmojiId
 	}
 
 	var result struct {

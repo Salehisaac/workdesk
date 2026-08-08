@@ -15,6 +15,12 @@ type List struct {
 	// app/services/botapi's ForumTopicColors), or nil for the platform's
 	// default icon. Opaque — never interpreted server-side.
 	IconColor *int64 `gorm:"column:icon_color"`
+	// Sourced from GET /api/v1/topic-icons (botapi.GetForumTopicIconStickers)
+	// — IconCustomEmojiId is sent to the Bot API's createForumTopic verbatim,
+	// IconEmoji is a denormalized display copy (same pattern as
+	// ProjectMember's display fields), never re-resolved.
+	IconCustomEmojiId *string `gorm:"column:icon_custom_emoji_id"`
+	IconEmoji         *string `gorm:"column:icon_emoji"`
 }
 
 func (List) TableName() string {
