@@ -1,11 +1,17 @@
-import { Avatar, Button, DotLoading, List, NavBar, SwipeAction, Toast } from 'antd-mobile';
+import { Button, DotLoading, List, NavBar, SwipeAction, Toast } from 'antd-mobile';
 import { AddOutline, ClockCircleOutline, ExclamationCircleOutline } from 'antd-mobile-icons';
+import type { CSSProperties } from 'react';
 import { useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { EmptyState } from '../../../shared/ui/EmptyState';
 import { useCreateList, useDeleteList, useProject } from '../api';
 import { CreateListSheet } from '../components/CreateListSheet';
+import type { CreateListInput } from '../types';
 import styles from './ProjectBoardPage.module.css';
+
+// Default icon color when a list was created before this feature existed,
+// or without picking one — a neutral gray dot rather than nothing.
+const DEFAULT_ICON_COLOR = 0x8a97a3;
 
 export function ProjectBoardPage() {
   const { projectId } = useParams<{ projectId: string }>();
@@ -15,9 +21,9 @@ export function ProjectBoardPage() {
   const deleteList = useDeleteList(projectId ?? '');
   const [sheetOpen, setSheetOpen] = useState(false);
 
-  async function handleCreateList(name: string) {
+  async function handleCreateList(input: CreateListInput) {
     try {
-      await createList.mutateAsync(name);
+      await createList.mutateAsync(input);
       setSheetOpen(false);
     } catch (error) {
       Toast.show({ content: error instanceof Error ? error.message : 'ساخت لیست با خطا مواجه شد' });
@@ -85,7 +91,16 @@ export function ProjectBoardPage() {
                 rightActions={[{ key: 'delete', text: 'حذف', color: 'danger', onClick: () => handleDeleteList(list.id) }]}
               >
                 <List.Item
-                  prefix={<Avatar src="" style={{ '--size': '32px', '--border-radius': '8px' }} />}
+                  prefix={
+                    <span
+                      className={styles.listIcon}
+                      style={
+                        {
+                          '--icon-color': `#${(list.iconColor ?? DEFAULT_ICON_COLOR).toString(16).padStart(6, '0')}`,
+                        } as CSSProperties
+                      }
+                    />
+                  }
                   onClick={() => {
                     Toast.show({ content: 'جزئیات کارهای هر لیست بعدا اضافه می‌شود' });
                   }}
