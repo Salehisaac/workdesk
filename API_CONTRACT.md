@@ -145,7 +145,7 @@ correctly lists projects they created.
     { "id": "101", "source": "contacts", "displayName": "علی رضایی", "username": "ali", "phone": "989120000001", "online": true }
   ],
   "lists": [
-    { "id": "10", "projectId": "1", "name": "کارهای این هفته", "topicId": "42" }
+    { "id": "10", "projectId": "1", "name": "کارهای این هفته", "topicId": "42", "iconColor": 7322096 }
   ]
 }
 ```
@@ -160,22 +160,29 @@ authenticated user isn't a member of this project.
 **Request body:**
 
 ```json
-{ "name": "کارهای این هفته" }
+{ "name": "کارهای این هفته", "iconColor": 7322096 }
 ```
+
+- `iconColor` — optional. Must be one of Telegram's 6 standard forum-topic icon colors (`0x6FB9F0`/`0xFFD67E`/
+  `0xCB86DB`/`0x8EEE98`/`0xFF93B2`/`0xFB6F5F` — `app/services/botapi.ForumTopicColors` on the backend,
+  `FORUM_TOPIC_COLORS` in `frontend/src/modules/project/api.ts`, kept in sync by hand). Omit for the
+  platform's default icon. Any other value is rejected with 422 — these are the only 6 the Bot API's own
+  clients ever present, not an arbitrary RGB value.
 
 **Backend behavior** (`ProjectListController.Store`, `app/services/botapi`):
 
 1. Call the Bot API's `createForumTopic` (`POST /bot<token>/createForumTopic`, `{"chat_id": project.chatId,
-   "name": name}` — real Telegram Bot API shape, confirmed by reading `teamgram.io/bots`' botway service
-   source directly) against the project's `chatId`.
+   "name": name, "icon_color": iconColor}` — real Telegram Bot API shape, confirmed by reading
+   `teamgram.io/bots`' botway service source directly; `icon_color` omitted entirely when not provided)
+   against the project's `chatId`.
 2. If that fails, return 502 — no `lists` row is created for a topic that doesn't exist (same all-or-nothing
    pattern as project creation).
-3. Create the `lists` row (`project_id`, `name`, `topic_id` = the returned `message_thread_id`).
+3. Create the `lists` row (`project_id`, `name`, `icon_color`, `topic_id` = the returned `message_thread_id`).
 
 **Response 201:**
 
 ```json
-{ "id": "10", "projectId": "1", "name": "کارهای این هفته", "topicId": "42" }
+{ "id": "10", "projectId": "1", "name": "کارهای این هفته", "topicId": "42", "iconColor": 7322096 }
 ```
 
 ---

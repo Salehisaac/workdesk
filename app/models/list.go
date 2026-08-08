@@ -11,6 +11,10 @@ type List struct {
 	ProjectId uint `gorm:"column:project_id"`
 	Name      string
 	TopicId   *string `gorm:"column:topic_id"`
+	// One of Telegram's 6 standard forum-topic icon colors (see
+	// app/services/botapi's ForumTopicColors), or nil for the platform's
+	// default icon. Opaque — never interpreted server-side.
+	IconColor *int64 `gorm:"column:icon_color"`
 }
 
 func (List) TableName() string {

@@ -80,6 +80,7 @@ func List(l *models.List) http.Json {
 		"projectId": formatId(l.ProjectId),
 		"name":      l.Name,
 		"topicId":   l.TopicId,
+		"iconColor": l.IconColor,
 	}
 }
 

@@ -66,22 +66,42 @@ func groupChatId(chatId string) (string, error) {
 	return strconv.FormatInt(id, 10), nil
 }
 
+// ForumTopicColors are Telegram's 6 standard forum-topic icon colors (the
+// exact preset dots real Telegram clients offer when creating a topic —
+// the protocol itself accepts arbitrary RGB ints, but these are the only
+// values any client actually presents, so it's what WorkDesk's picker
+// offers too). 0/omitted means the platform's default icon.
+var ForumTopicColors = []int64{
+	0x6FB9F0, // آبی (blue)
+	0xFFD67E, // زرد (yellow)
+	0xCB86DB, // بنفش (purple)
+	0x8EEE98, // سبز (green)
+	0xFF93B2, // صورتی (pink)
+	0xFB6F5F, // قرمز (red)
+}
+
 // CreateForumTopic creates a topic in chatId's forum (chatId must already be
 // a forum-enabled supergroup — see rasagramadmin.CreateTopicGroup) and
 // returns the new topic's message_thread_id, stored as List.TopicId.
-func (c *Client) CreateForumTopic(chatId, name string) (string, error) {
+// iconColor is optional — pass 0 for the platform's default icon.
+func (c *Client) CreateForumTopic(chatId, name string, iconColor int64) (string, error) {
 	groupId, err := groupChatId(chatId)
 	if err != nil {
 		return "", fmt.Errorf("botapi: createForumTopic: %w", err)
 	}
 
+	payload := map[string]any{
+		"chat_id": groupId,
+		"name":    name,
+	}
+	if iconColor != 0 {
+		payload["icon_color"] = iconColor
+	}
+
 	var result struct {
 		MessageThreadId int64 `json:"message_thread_id"`
 	}
-	if err := c.post("createForumTopic", map[string]any{
-		"chat_id": groupId,
-		"name":    name,
-	}, &result); err != nil {
+	if err := c.post("createForumTopic", payload, &result); err != nil {
 		return "", fmt.Errorf("botapi: createForumTopic: %w", err)
 	}
 	return fmt.Sprintf("%d", result.MessageThreadId), nil

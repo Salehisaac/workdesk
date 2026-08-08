@@ -20,7 +20,20 @@ func NewProjectListController() *ProjectListController {
 }
 
 type storeListRequest struct {
-	Name string `json:"name"`
+	Name      string `json:"name"`
+	IconColor int64  `json:"iconColor"`
+}
+
+func isValidIconColor(color int64) bool {
+	if color == 0 {
+		return true
+	}
+	for _, allowed := range botapi.ForumTopicColors {
+		if allowed == color {
+			return true
+		}
+	}
+	return false
 }
 
 // Store — POST /api/v1/projects/{id}/lists.
@@ -42,18 +55,24 @@ func (r *ProjectListController) Store(ctx http.Context) http.Response {
 	if strings.TrimSpace(request.Name) == "" {
 		return ctx.Response().Status(422).Json(http.Json{"error": "name is required"})
 	}
+	if !isValidIconColor(request.IconColor) {
+		return ctx.Response().Status(422).Json(http.Json{"error": "iconColor must be one of the standard topic colors"})
+	}
 
 	if project.ChatId == nil || strings.TrimSpace(*project.ChatId) == "" {
 		return ctx.Response().Status(500).Json(http.Json{"error": "project has no chat to attach a topic to"})
 	}
 
-	topicId, err := botapi.New().CreateForumTopic(*project.ChatId, request.Name)
+	topicId, err := botapi.New().CreateForumTopic(*project.ChatId, request.Name, request.IconColor)
 	if err != nil {
 		facades.Log().Error("workdesk: CreateForumTopic failed: " + err.Error())
 		return ctx.Response().Status(502).Json(http.Json{"error": "could not create the list's topic: " + err.Error()})
 	}
 
 	list := models.List{ProjectId: project.ID, Name: request.Name, TopicId: &topicId}
+	if request.IconColor != 0 {
+		list.IconColor = &request.IconColor
+	}
 	if err := facades.Orm().Query().Create(&list); err != nil {
 		return ctx.Response().Status(500).Json(http.Json{"error": err.Error()})
 	}
