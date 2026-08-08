@@ -23,11 +23,12 @@ type storeListRequest struct {
 	Name              string `json:"name"`
 	IconColor         int64  `json:"iconColor"`
 	IconCustomEmojiId string `json:"iconCustomEmojiId"`
-	// Denormalized display copy of the chosen icon's unicode emoji — not
-	// sent to the Bot API, just stored so the frontend never has to
-	// re-fetch/match GET /topic-icons to render it later. Trusted verbatim,
-	// same as ProjectMember's picked-item display fields.
-	IconEmoji string `json:"iconEmoji"`
+	// Denormalized display copies of the chosen icon — not sent to the Bot
+	// API, just stored so the frontend never has to re-fetch/match
+	// GET /topic-icons to render it later. Trusted verbatim, same as
+	// ProjectMember's picked-item display fields.
+	IconEmoji  string `json:"iconEmoji"`
+	IconFileId string `json:"iconFileId"`
 }
 
 func isValidIconColor(color int64) bool {
@@ -84,6 +85,9 @@ func (r *ProjectListController) Store(ctx http.Context) http.Response {
 	}
 	if request.IconEmoji != "" {
 		list.IconEmoji = &request.IconEmoji
+	}
+	if request.IconFileId != "" {
+		list.IconFileId = &request.IconFileId
 	}
 	if err := facades.Orm().Query().Create(&list); err != nil {
 		return ctx.Response().Status(500).Json(http.Json{"error": err.Error()})

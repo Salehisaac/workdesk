@@ -83,6 +83,7 @@ func List(l *models.List) http.Json {
 		"iconColor":         l.IconColor,
 		"iconCustomEmojiId": l.IconCustomEmojiId,
 		"iconEmoji":         l.IconEmoji,
+		"iconFileId":        l.IconFileId,
 	}
 }
 

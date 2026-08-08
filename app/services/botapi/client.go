@@ -82,12 +82,13 @@ var ForumTopicColors = []int64{
 
 // TopicIconSticker is the subset of Telegram's Sticker object that matters
 // for a topic-icon picker: CustomEmojiId is what gets sent back to
-// createForumTopic, Emoji is the plain unicode character associated with it
-// — good enough to render the picker/list-item icon without fetching or
-// proxying the actual sticker image file.
+// createForumTopic, Emoji is the plain unicode fallback character, and
+// FileId is what GetFile/DownloadFile need to fetch the actual animated
+// (.tgs — gzipped Lottie JSON, confirmed against a real sticker) icon.
 type TopicIconSticker struct {
 	CustomEmojiId string `json:"custom_emoji_id"`
 	Emoji         string `json:"emoji"`
+	FileId        string `json:"file_id"`
 }
 
 // GetForumTopicIconStickers fetches the platform's allowed set of
@@ -103,6 +104,47 @@ func (c *Client) GetForumTopicIconStickers() ([]TopicIconSticker, error) {
 		return nil, fmt.Errorf("botapi: getForumTopicIconStickers: %w", err)
 	}
 	return result, nil
+}
+
+// GetFile resolves a file_id (e.g. TopicIconSticker.FileId) to the
+// file_path DownloadFile needs — mirrors real Telegram's Bot API exactly,
+// confirmed against a real sticker's file_id.
+func (c *Client) GetFile(fileId string) (string, error) {
+	var result struct {
+		FilePath string `json:"file_path"`
+	}
+	if err := c.post("getFile", map[string]any{"file_id": fileId}, &result); err != nil {
+		return "", fmt.Errorf("botapi: getFile: %w", err)
+	}
+	return result.FilePath, nil
+}
+
+// DownloadFile fetches a file's raw bytes from the Bot API's file-serving
+// route (GET /file/bot<token>/<file_path>, confirmed by reading botway's
+// download.go directly — same convention as real Telegram). For topic-icon
+// stickers this returns gzip-compressed Lottie JSON (.tgs); callers decide
+// how to decode it.
+func (c *Client) DownloadFile(filePath string) ([]byte, error) {
+	url := fmt.Sprintf("%s/file/bot%s/%s", c.baseURL, c.botToken, filePath)
+	req, err := http.NewRequest(http.MethodGet, url, nil)
+	if err != nil {
+		return nil, fmt.Errorf("botapi: downloadFile: %w", err)
+	}
+
+	res, err := c.httpClient.Do(req)
+	if err != nil {
+		return nil, fmt.Errorf("botapi: downloadFile: %w", err)
+	}
+	defer res.Body.Close()
+
+	body, err := io.ReadAll(res.Body)
+	if err != nil {
+		return nil, fmt.Errorf("botapi: downloadFile: %w", err)
+	}
+	if res.StatusCode != http.StatusOK {
+		return nil, fmt.Errorf("botapi: downloadFile: %d %s", res.StatusCode, string(body))
+	}
+	return body, nil
 }
 
 // CreateForumTopic creates a topic in chatId's forum (chatId must already be

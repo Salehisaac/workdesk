@@ -152,7 +152,8 @@ correctly lists projects they created.
       "topicId": "42",
       "iconColor": 7322096,
       "iconCustomEmojiId": null,
-      "iconEmoji": null
+      "iconEmoji": null,
+      "iconFileId": null
     }
   ]
 }
@@ -172,22 +173,24 @@ authenticated user isn't a member of this project.
   "name": "کارهای این هفته",
   "iconColor": 7322096,
   "iconCustomEmojiId": "5368324170671202286",
-  "iconEmoji": "🔥"
+  "iconEmoji": "🔥",
+  "iconFileId": "v000#documents#5368324170671202286#..."
 }
 ```
 
 - `iconColor` — optional. Must be one of Telegram's 6 standard forum-topic icon colors (`0x6FB9F0`/`0xFFD67E`/
-  `0xCB86DB`/`0x8EEE98`/`0xFF93B2`/`0xFB6F5F` — `app/services/botapi.ForumTopicColors` on the backend,
-  `FORUM_TOPIC_COLORS` in `frontend/src/modules/project/api.ts`, kept in sync by hand). Omit for the
-  platform's default icon. Any other value is rejected with 422 — these are the only 6 the Bot API's own
-  clients ever present, not an arbitrary RGB value.
+  `0xCB86DB`/`0x8EEE98`/`0xFF93B2`/`0xFB6F5F` — `app/services/botapi.ForumTopicColors` on the backend). Omit
+  for the platform's default icon. Any other value is rejected with 422. **Not currently sent by the
+  frontend** — `CreateListSheet.tsx` dropped the color picker in favor of the emoji-only picker below, but the
+  backend still accepts/validates it if ever wired back up.
 - `iconCustomEmojiId` — optional, one of the `customEmojiId` values from `GET /topic-icons`. Sent to the Bot
   API verbatim, not validated against anything server-side (unlike `iconColor` — there's nowhere to fetch a
-  known-good set to validate against at request time, see below).
-- `iconEmoji` — required alongside `iconCustomEmojiId` (same request only, not otherwise). The chosen icon's
-  display emoji, straight from the `GET /topic-icons` entry the user picked — stored verbatim, **not** sent to
-  the Bot API. Purely so the frontend can render the icon later without re-fetching/matching `GET /topic-icons`
-  every time (same denormalization pattern as `ProjectMember`'s display fields).
+  known-good set to validate against at request time).
+- `iconEmoji` / `iconFileId` — required alongside `iconCustomEmojiId` (same request only, not otherwise). The
+  chosen icon's display emoji and file id, straight from the `GET /topic-icons` entry the user picked — stored
+  verbatim, **not** sent to the Bot API. Purely so the frontend can render the icon (animated, via
+  `GET /topic-icons/animation`, falling back to the plain `iconEmoji` glyph) later without re-fetching/matching
+  `GET /topic-icons` every time (same denormalization pattern as `ProjectMember`'s display fields).
 
 **Backend behavior** (`ProjectListController.Store`, `app/services/botapi`):
 
@@ -197,8 +200,8 @@ authenticated user isn't a member of this project.
    entirely when not provided) against the project's `chatId`.
 2. If that fails, return 502 — no `lists` row is created for a topic that doesn't exist (same all-or-nothing
    pattern as project creation).
-3. Create the `lists` row (`project_id`, `name`, `icon_color`, `icon_custom_emoji_id`, `icon_emoji`, `topic_id`
-   = the returned `message_thread_id`).
+3. Create the `lists` row (`project_id`, `name`, `icon_color`, `icon_custom_emoji_id`, `icon_emoji`,
+   `icon_file_id`, `topic_id` = the returned `message_thread_id`).
 
 **Response 201:**
 
@@ -210,7 +213,8 @@ authenticated user isn't a member of this project.
   "topicId": "42",
   "iconColor": 7322096,
   "iconCustomEmojiId": "5368324170671202286",
-  "iconEmoji": "🔥"
+  "iconEmoji": "🔥",
+  "iconFileId": "v000#documents#5368324170671202286#..."
 }
 ```
 
@@ -231,22 +235,37 @@ can't remove.
 
 Proxies the Bot API's `getForumTopicIconStickers` (`POST /bot<token>/getForumTopicIconStickers`, no params) —
 purely a passthrough, needed because the bot token can never reach the frontend directly. Backs the emoji
-picker in `CreateListSheet.tsx`.
-
-**⚠️ Not usable yet**: `teamgram.io/bots`' botway service has no route for `getForumTopicIconStickers` at all,
-and its `getStickerSet` route (which real Telegram's Bot API implements this method on top of) is a stub that
-returns "not impl". This endpoint will 502 until one of those is actually implemented on the messenger's
-platform — that's tracked as separate work outside this repo. The frontend only calls this lazily (when the
-emoji picker is opened, not on every sheet mount) and degrades gracefully (shows an inline error, the rest of
-list creation — name + color — still works) if it fails.
+picker in `CreateListSheet.tsx`. Confirmed live and working (112 icons as of this writing) — this platform's
+`getForumTopicIconStickers`/`getStickerSet` gap (originally not implemented — see git history) has since been
+fixed server-side.
 
 **Response 200** — `TopicIcon[]`:
 
 ```json
 [
-  { "customEmojiId": "5368324170671202286", "emoji": "🔥" }
+  { "customEmojiId": "5312536423851630001", "emoji": "💡", "fileId": "v000#documents#5312536423851630001#..." }
 ]
 ```
+
+- `fileId` — feed this to `GET /topic-icons/animation` to render the icon animated (`AnimatedTopicIcon.tsx`).
+
+---
+
+## `GET /api/v1/topic-icons/animation?fileId=...`
+
+Resolves `fileId` via the Bot API's `getFile`, downloads the file from its file-serving route (`GET
+/file/bot<token>/<file_path>` — same convention as real Telegram), and decompresses it server-side (these are
+gzip-compressed Lottie JSON, `.tgs`, confirmed against a real sticker from this platform) before returning it,
+so the frontend can feed the response straight into a Lottie player (`lottie-web`) with no gunzip step of its
+own.
+
+Returned with `Cache-Control: public, max-age=604800, immutable` — a given `fileId`'s content never changes,
+safe to cache hard on both ends. `AnimatedTopicIcon.tsx` only calls this once its container is actually
+scrolled into view (the picker grid has 100+ icons; animating all of them at once on open would be a real
+performance hit on low/mid-end Android WebViews).
+
+**Response 200** — raw Lottie animation JSON (`Content-Type: application/json`), shape defined by the `.tgs`
+file itself, not by this contract.
 
 ---
 

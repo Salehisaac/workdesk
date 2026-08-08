@@ -21,6 +21,9 @@ type List struct {
 	// ProjectMember's display fields), never re-resolved.
 	IconCustomEmojiId *string `gorm:"column:icon_custom_emoji_id"`
 	IconEmoji         *string `gorm:"column:icon_emoji"`
+	// The chosen icon sticker's file_id — lets the frontend re-fetch its
+	// animation (GET /api/v1/topic-icons/animation) directly.
+	IconFileId *string `gorm:"column:icon_file_id"`
 }
 
 func (List) TableName() string {

@@ -28,6 +28,7 @@ func Api() {
 
 		topicIconController := controllers.NewTopicIconController()
 		router.Get("/topic-icons", topicIconController.Index)
+		router.Get("/topic-icons/animation", topicIconController.Animation)
 
 		uploadController := controllers.NewUploadController()
 		router.Post("/uploads", uploadController.Store)
