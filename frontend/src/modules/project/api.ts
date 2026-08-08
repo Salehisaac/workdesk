@@ -1,6 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { apiClient } from '../../shared/api/client';
-import type { CreateListInput, CreateProjectInput, Project, ProjectDetail, ProjectListItem } from './types';
+import type { CreateListInput, CreateProjectInput, Project, ProjectDetail, ProjectListItem, TopicIcon } from './types';
 
 // Telegram's 6 standard forum-topic icon colors — the exact preset dots real
 // Telegram clients offer when creating a topic (the protocol technically
@@ -63,5 +63,20 @@ export function useDeleteList(projectId: string) {
 export function useUploadAvatar() {
   return useMutation({
     mutationFn: (file: File) => apiClient.upload<{ url: string }>('/uploads', file),
+  });
+}
+
+// GET /topic-icons proxies the Bot API's getForumTopicIconStickers (the bot
+// token can't reach the client). Disabled by default and only fetched on
+// demand (see CreateListSheet) — as of this writing the backend route this
+// proxies doesn't exist on the messenger's platform yet, so this 502s until
+// that lands; no reason to fire it on every sheet mount.
+export function useTopicIcons(enabled: boolean) {
+  return useQuery({
+    queryKey: ['topic-icons'],
+    queryFn: () => apiClient.get<TopicIcon[]>('/topic-icons'),
+    enabled,
+    staleTime: Infinity,
+    retry: false,
   });
 }

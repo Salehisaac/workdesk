@@ -99,7 +99,9 @@ export function ProjectBoardPage() {
                           '--icon-color': `#${(list.iconColor ?? DEFAULT_ICON_COLOR).toString(16).padStart(6, '0')}`,
                         } as CSSProperties
                       }
-                    />
+                    >
+                      {list.iconEmoji}
+                    </span>
                   }
                   onClick={() => {
                     Toast.show({ content: 'جزئیات کارهای هر لیست بعدا اضافه می‌شود' });

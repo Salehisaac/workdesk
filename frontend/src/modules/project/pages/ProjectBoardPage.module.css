@@ -33,10 +33,19 @@
 }
 
 .listIcon {
-  display: block;
-  width: 14px;
-  height: 14px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
   border-radius: 50%;
   background: var(--icon-color);
   flex-shrink: 0;
+  font-size: 15px;
+  line-height: 1;
+}
+
+.listIcon:empty {
+  width: 14px;
+  height: 14px;
 }

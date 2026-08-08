@@ -1,8 +1,8 @@
 import { Button, Input, Popup } from 'antd-mobile';
-import { CheckOutline } from 'antd-mobile-icons';
+import { CheckOutline, CloseOutline } from 'antd-mobile-icons';
 import type { CSSProperties } from 'react';
 import { useState } from 'react';
-import { FORUM_TOPIC_COLORS } from '../api';
+import { FORUM_TOPIC_COLORS, useTopicIcons } from '../api';
 import type { CreateListInput } from '../types';
 import styles from './CreateListSheet.module.css';
 
@@ -16,12 +16,20 @@ interface CreateListSheetProps {
 export function CreateListSheet({ visible, submitting, onClose, onSubmit }: CreateListSheetProps) {
   const [name, setName] = useState('');
   const [iconColor, setIconColor] = useState<number | undefined>(undefined);
+  const [icon, setIcon] = useState<{ customEmojiId: string; emoji: string } | undefined>(undefined);
+  const [pickerOpen, setPickerOpen] = useState(false);
+  // Only fetched once the picker is actually opened — the backend route
+  // this proxies doesn't exist on the messenger's platform yet, so there's
+  // no reason to fire a doomed request on every sheet mount.
+  const topicIcons = useTopicIcons(pickerOpen);
 
   function handleSubmit() {
     if (!name.trim()) return;
-    onSubmit({ name: name.trim(), iconColor });
+    onSubmit({ name: name.trim(), iconColor, iconCustomEmojiId: icon?.customEmojiId, iconEmoji: icon?.emoji });
     setName('');
     setIconColor(undefined);
+    setIcon(undefined);
+    setPickerOpen(false);
   }
 
   return (
@@ -31,7 +39,7 @@ export function CreateListSheet({ visible, submitting, onClose, onSubmit }: Crea
         <Input placeholder="نام لیست را وارد کنید" value={name} onChange={setName} autoFocus />
 
         <div className={styles.colorSection}>
-          <div className={styles.colorLabel}>آیکون موضوع</div>
+          <div className={styles.colorLabel}>رنگ آیکون</div>
           <div className={styles.colorRow}>
             {FORUM_TOPIC_COLORS.map((color) => (
               <button
@@ -46,6 +54,49 @@ export function CreateListSheet({ visible, submitting, onClose, onSubmit }: Crea
               </button>
             ))}
           </div>
+        </div>
+
+        <div className={styles.colorSection}>
+          <div className={styles.colorLabel}>شکلک موضوع</div>
+          {icon ? (
+            <div className={styles.emojiPreview}>
+              <span className={styles.emojiPreviewGlyph}>{icon.emoji}</span>
+              <button type="button" className={styles.emojiClear} onClick={() => setIcon(undefined)} aria-label="حذف شکلک">
+                <CloseOutline />
+              </button>
+            </div>
+          ) : (
+            <Button size="small" fill="outline" onClick={() => setPickerOpen((open) => !open)}>
+              {pickerOpen ? 'بستن' : 'انتخاب شکلک'}
+            </Button>
+          )}
+
+          {pickerOpen && !icon && (
+            <div className={styles.emojiGridWrap}>
+              {topicIcons.isLoading && <div className={styles.emojiStatus}>در حال بارگذاری…</div>}
+              {topicIcons.isError && <div className={styles.emojiStatus}>بارگذاری شکلک‌ها با خطا مواجه شد</div>}
+              {topicIcons.data && topicIcons.data.length === 0 && (
+                <div className={styles.emojiStatus}>شکلکی موجود نیست</div>
+              )}
+              {topicIcons.data && topicIcons.data.length > 0 && (
+                <div className={styles.emojiGrid}>
+                  {topicIcons.data.map((option) => (
+                    <button
+                      key={option.customEmojiId}
+                      type="button"
+                      className={styles.emojiOption}
+                      onClick={() => {
+                        setIcon(option);
+                        setPickerOpen(false);
+                      }}
+                    >
+                      {option.emoji}
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
+          )}
         </div>
 
         <Button block color="primary" loading={submitting} disabled={!name.trim()} onClick={handleSubmit}>
