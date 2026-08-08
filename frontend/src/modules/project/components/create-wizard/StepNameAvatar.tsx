@@ -16,15 +16,17 @@ export function StepNameAvatar({ name, avatarUrl, onChange }: StepNameAvatarProp
     <div className={styles.wrap}>
       <div className={styles.hint}>نام پروژه را مشخص و یک نگاره برایش انتخاب کنید</div>
       <div className={styles.row}>
-        <ImageUploader
-          value={fileList}
-          maxCount={1}
-          upload={async (file: File) => {
-            const { url } = await uploadAvatar.mutateAsync(file);
-            return { url };
-          }}
-          onChange={(items) => onChange({ avatarUrl: items[0]?.url ?? null })}
-        />
+        <div className={styles.uploader}>
+          <ImageUploader
+            value={fileList}
+            maxCount={1}
+            upload={async (file: File) => {
+              const { url } = await uploadAvatar.mutateAsync(file);
+              return { url };
+            }}
+            onChange={(items) => onChange({ avatarUrl: items[0]?.url ?? null })}
+          />
+        </div>
         <Input
           className={styles.input}
           placeholder="نامی برای پروژه وارد کنید"
