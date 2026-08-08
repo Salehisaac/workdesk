@@ -4,6 +4,7 @@ import { useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { EmptyState } from '../../../shared/ui/EmptyState';
 import { useCreateList, useDeleteList, useProject } from '../api';
+import { AnimatedTopicIcon } from '../components/AnimatedTopicIcon';
 import { CreateListSheet } from '../components/CreateListSheet';
 import type { CreateListInput } from '../types';
 import styles from './ProjectBoardPage.module.css';
@@ -91,7 +92,12 @@ export function ProjectBoardPage() {
                   }}
                 >
                   <span className={styles.listTitle}>
-                    {list.iconEmoji && <span className={styles.listIcon}>{list.iconEmoji}</span>}
+                    {list.iconEmoji &&
+                      (list.iconFileId ? (
+                        <AnimatedTopicIcon fileId={list.iconFileId} fallbackEmoji={list.iconEmoji} size={20} />
+                      ) : (
+                        <span className={styles.listIcon}>{list.iconEmoji}</span>
+                      ))}
                     {list.name}
                   </span>
                 </List.Item>

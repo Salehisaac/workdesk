@@ -14,23 +14,28 @@ export interface ProjectListItem {
   iconColor: number | null;
   /** Sent to the Bot API's createForumTopic — opaque, sourced from GET /topic-icons. */
   iconCustomEmojiId: string | null;
-  /** Denormalized display copy of the chosen icon's unicode emoji — render this, not iconCustomEmojiId. */
+  /** Denormalized display copy of the chosen icon's unicode emoji — fallback while/if the animation isn't available. */
   iconEmoji: string | null;
+  /** The chosen icon's file_id — feed to AnimatedTopicIcon to render it animated (GET /topic-icons/animation). */
+  iconFileId: string | null;
 }
 
 export interface TopicIcon {
   customEmojiId: string;
   emoji: string;
+  fileId: string;
 }
 
 export interface CreateListInput {
   name: string;
   /** Omit for the platform's default icon — must be one of FORUM_TOPIC_COLORS otherwise. */
   iconColor?: number;
-  /** One of GET /topic-icons' customEmojiId values. Must be paired with iconEmoji. */
+  /** One of GET /topic-icons' customEmojiId values. Must be paired with iconEmoji/iconFileId. */
   iconCustomEmojiId?: string;
   /** The chosen icon's display emoji — stored verbatim, not sent to the Bot API. */
   iconEmoji?: string;
+  /** The chosen icon's file_id — stored verbatim, not sent to the Bot API. */
+  iconFileId?: string;
 }
 
 export interface Project {

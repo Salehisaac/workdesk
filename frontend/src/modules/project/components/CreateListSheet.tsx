@@ -2,7 +2,8 @@ import { Button, Input, Popup } from 'antd-mobile';
 import { CloseOutline, SmileOutline } from 'antd-mobile-icons';
 import { useState } from 'react';
 import { useTopicIcons } from '../api';
-import type { CreateListInput } from '../types';
+import type { CreateListInput, TopicIcon } from '../types';
+import { AnimatedTopicIcon } from './AnimatedTopicIcon';
 import styles from './CreateListSheet.module.css';
 
 interface CreateListSheetProps {
@@ -14,16 +15,15 @@ interface CreateListSheetProps {
 
 export function CreateListSheet({ visible, submitting, onClose, onSubmit }: CreateListSheetProps) {
   const [name, setName] = useState('');
-  const [icon, setIcon] = useState<{ customEmojiId: string; emoji: string } | undefined>(undefined);
+  const [icon, setIcon] = useState<TopicIcon | undefined>(undefined);
   const [pickerOpen, setPickerOpen] = useState(false);
-  // Only fetched once the picker is actually opened — the backend route
-  // this proxies doesn't exist on the messenger's platform yet, so there's
-  // no reason to fire a doomed request on every sheet mount.
+  // Only fetched once the picker is actually opened — no reason to fire it
+  // on every sheet mount.
   const topicIcons = useTopicIcons(pickerOpen);
 
   function handleSubmit() {
     if (!name.trim()) return;
-    onSubmit({ name: name.trim(), iconCustomEmojiId: icon?.customEmojiId, iconEmoji: icon?.emoji });
+    onSubmit({ name: name.trim(), iconCustomEmojiId: icon?.customEmojiId, iconEmoji: icon?.emoji, iconFileId: icon?.fileId });
     setName('');
     setIcon(undefined);
     setPickerOpen(false);
@@ -42,7 +42,7 @@ export function CreateListSheet({ visible, submitting, onClose, onSubmit }: Crea
               aria-label={icon ? 'تغییر شکلک' : 'انتخاب شکلک'}
               onClick={() => setPickerOpen((open) => !open)}
             >
-              {icon ? icon.emoji : <SmileOutline />}
+              {icon ? <AnimatedTopicIcon fileId={icon.fileId} fallbackEmoji={icon.emoji} size={24} /> : <SmileOutline />}
             </button>
             {icon && (
               <button
@@ -80,7 +80,7 @@ export function CreateListSheet({ visible, submitting, onClose, onSubmit }: Crea
                       setPickerOpen(false);
                     }}
                   >
-                    {option.emoji}
+                    <AnimatedTopicIcon fileId={option.fileId} fallbackEmoji={option.emoji} size={26} />
                   </button>
                 ))}
               </div>

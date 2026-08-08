@@ -68,14 +68,27 @@ export function useUploadAvatar() {
 
 // GET /topic-icons proxies the Bot API's getForumTopicIconStickers (the bot
 // token can't reach the client). Disabled by default and only fetched on
-// demand (see CreateListSheet) — as of this writing the backend route this
-// proxies doesn't exist on the messenger's platform yet, so this 502s until
-// that lands; no reason to fire it on every sheet mount.
+// demand (see CreateListSheet), not on every sheet mount.
 export function useTopicIcons(enabled: boolean) {
   return useQuery({
     queryKey: ['topic-icons'],
     queryFn: () => apiClient.get<TopicIcon[]>('/topic-icons'),
     enabled,
+    staleTime: Infinity,
+    retry: false,
+  });
+}
+
+// GET /topic-icons/animation proxies getFile + the Bot API's file-serving
+// route, decompressed server-side into raw Lottie JSON — see
+// AnimatedTopicIcon. `enabled` is gated on the icon actually being
+// scrolled into view (see there) — with 100+ icons in the picker, fetching
+// every animation up front would be wasteful and slow on low-end devices.
+export function useTopicIconAnimation(fileId: string, enabled: boolean) {
+  return useQuery({
+    queryKey: ['topic-icon-animation', fileId],
+    queryFn: () => apiClient.get<object>(`/topic-icons/animation?fileId=${encodeURIComponent(fileId)}`),
+    enabled: enabled && !!fileId,
     staleTime: Infinity,
     retry: false,
   });
