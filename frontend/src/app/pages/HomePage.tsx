@@ -11,6 +11,7 @@ import {
   UserOutline,
 } from 'antd-mobile-icons';
 import type { CSSProperties, ReactNode } from 'react';
+import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { apiClient } from '../../shared/api/client';
 import styles from './HomePage.module.css';
@@ -42,8 +43,21 @@ const TILES: Tile[] = [
   { icon: <FolderOutline />, label: 'مخزن‌جلسه' },
 ];
 
+// All 5 tiles are static, local data — there's nothing to actually fetch.
+// This delay exists purely so the grid visibly loads in as skeleton cards
+// before revealing the real ones, instead of everything just appearing at
+// once (the previous attempt — an animation-delay on the real tiles alone —
+// was too subtle to read as "loading" at all).
+const SKELETON_DURATION_MS = 500;
+
 export function HomePage() {
   const navigate = useNavigate();
+  const [tilesLoaded, setTilesLoaded] = useState(false);
+
+  useEffect(() => {
+    const timer = setTimeout(() => setTilesLoaded(true), SKELETON_DURATION_MS);
+    return () => clearTimeout(timer);
+  }, []);
 
   async function handleShowMe() {
     try {
@@ -105,25 +119,33 @@ export function HomePage() {
 
       <div className={styles.sectionLabel}>همه ابزارها</div>
       <div className={styles.grid}>
-        {TILES.map((tile, index) => (
-          <button
-            key={tile.label}
-            type="button"
-            className={`${styles.tile} ${tile.to ? '' : styles.tileLocked}`}
-            style={{ '--tile-index': index } as CSSProperties}
-            onClick={() => (tile.to ? navigate(tile.to) : Toast.show({ content: 'به‌زودی اضافه می‌شود' }))}
-          >
-            <span className={styles.tileCard}>
-              {tile.icon}
-              {!tile.to && (
-                <span className={styles.lockBadge}>
-                  <LockOutline />
-                </span>
-              )}
-            </span>
-            <span className={styles.tileLabel}>{tile.label}</span>
-          </button>
-        ))}
+        {!tilesLoaded &&
+          TILES.map((tile, index) => (
+            <div key={tile.label} className={styles.tileSkeleton} style={{ '--tile-index': index } as CSSProperties}>
+              <span className={styles.tileCardSkeleton} />
+              <span className={styles.tileLabelSkeleton} />
+            </div>
+          ))}
+        {tilesLoaded &&
+          TILES.map((tile, index) => (
+            <button
+              key={tile.label}
+              type="button"
+              className={`${styles.tile} ${tile.to ? '' : styles.tileLocked}`}
+              style={{ '--tile-index': index } as CSSProperties}
+              onClick={() => (tile.to ? navigate(tile.to) : Toast.show({ content: 'به‌زودی اضافه می‌شود' }))}
+            >
+              <span className={styles.tileCard}>
+                {tile.icon}
+                {!tile.to && (
+                  <span className={styles.lockBadge}>
+                    <LockOutline />
+                  </span>
+                )}
+              </span>
+              <span className={styles.tileLabel}>{tile.label}</span>
+            </button>
+          ))}
       </div>
     </div>
   );
