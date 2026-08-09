@@ -1,9 +1,38 @@
-version: '3'
-
 services:
-  goravel:
+  app:
     build:
       context: .
+      args:
+        VITE_JOIN_BASE_URL: ${VITE_JOIN_BASE_URL:-}
+    restart: always
     ports:
       - "3000:3000"
+    env_file:
+      - .env
+    environment:
+      DB_HOST: postgres
+      DB_PORT: "5432"
+    depends_on:
+      postgres:
+        condition: service_healthy
+    volumes:
+      - workdesk_storage:/www/storage
+
+  postgres:
+    image: postgres:16-alpine
     restart: always
+    environment:
+      POSTGRES_DB: ${DB_DATABASE:?set DB_DATABASE in .env}
+      POSTGRES_USER: ${DB_USERNAME:?set DB_USERNAME in .env}
+      POSTGRES_PASSWORD: ${DB_PASSWORD:?set DB_PASSWORD in .env}
+    volumes:
+      - workdesk_pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $$POSTGRES_USER -d $$POSTGRES_DB"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+volumes:
+  workdesk_storage:
+  workdesk_pgdata:
