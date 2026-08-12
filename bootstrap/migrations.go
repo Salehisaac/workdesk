@@ -15,5 +15,8 @@ func Migrations() []schema.Migration {
 		&migrations.M20260808000001AddIconColorToListsTable{},
 		&migrations.M20260808000002AddIconEmojiToListsTable{},
 		&migrations.M20260808000003AddIconFileIdToListsTable{},
+		&migrations.M20260812000001CreateProjectTagsTable{},
+		&migrations.M20260812000002CreateProjectJobsTable{},
+		&migrations.M20260812000003CreateJobRelationsTables{},
 	}
 }

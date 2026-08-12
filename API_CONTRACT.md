@@ -231,6 +231,82 @@ can't remove.
 
 ---
 
+## `GET /api/v1/projects/:id/tags` and `POST /api/v1/projects/:id/tags`
+
+Tags are scoped to the **project**, not to the job or list that first used one — define a tag while creating a
+job in one list and every job in every other list of that project can pick it up afterwards. That's why this
+lives at the project level and not inside the job payload.
+
+**Response 200 / 201** — `JobTag` / `JobTag[]`:
+
+```json
+{ "id": "7", "projectId": "3", "name": "فوری", "color": "#b45309" }
+```
+
+- `color` — nullable; when null the frontend derives a stable colour from the name, so a tag is never colourless.
+- `POST` body is `{ "name": string, "color"?: string }`. Names are unique per project, and re-posting an
+  existing name returns that tag with **200** instead of failing — from the tag sheet's point of view "create
+  this tag" and "give me this tag" are the same intent.
+
+---
+
+## `GET /api/v1/jobs`
+
+Every Job across every project the caller is a member of. Deliberately **flat**, not nested under a list: the
+home calendar draws a month of deadline indicators across all projects at once, which through the hierarchy
+would be a request per list.
+
+**Response 200** — `Job[]`:
+
+```json
+[
+  {
+    "id": "12", "number": 2, "title": "تحویل طرح نهایی", "description": null,
+    "listId": "4", "listName": "list1", "projectId": "3", "projectName": "بازطراحی اپلیکیشن",
+    "dueAt": "2026-10-03T03:00:00Z", "status": "inProgress",
+    "assignees": [ { "id": "101", "source": "users", "displayName": "…", "username": null, "phone": null, "online": true } ],
+    "tags": [ { "id": "7", "projectId": "3", "name": "فوری", "color": "#b45309" } ],
+    "checklist": [ { "id": "1", "text": "جمع‌آوری بازخوردها", "done": false } ],
+    "createdAt": "2026-08-12T09:00:00Z"
+  }
+]
+```
+
+- `dueAt` — nullable. A job without a deadline belongs to no calendar day and never appears on the calendar.
+  It's the **only** date in the Project → List → Job hierarchy: a project spans months and isn't an event.
+- `status` — one of `notStarted`, `inProgress`, `paused`, `canceled`, `done`, `rejected`.
+- `assignees` — resolved against `project_members` at read time, so a member renamed there doesn't leave stale
+  name copies on every job they're on. The rows themselves store only the opaque `ref_id`.
+
+---
+
+## `POST /api/v1/projects/:id/jobs`
+
+**Request:**
+
+```json
+{
+  "listId": "4", "title": "تحویل طرح نهایی", "description": "…",
+  "assigneeIds": ["101"], "tagIds": ["7"],
+  "dueAt": "2026-10-03T03:00:00.000Z",
+  "checklist": [{ "text": "جمع‌آوری بازخوردها" }],
+  "status": "inProgress"
+}
+```
+
+- `listId` must belong to this project, every `assigneeIds` entry must be a member of it, and every `tagIds`
+  entry must be one of its tags — otherwise **422**. Without those checks a member of project A could file a
+  job into project B's list by id.
+- `number` is assigned server-side as the project's next sequence value (shown as «#۲»).
+- `dueAt` is any ISO 8601 timestamp; the frontend builds it from a local Jalali day plus a chosen time, so the
+  instant round-trips back to the day the user tapped.
+
+**Response 201** — the created `Job`.
+
+> The table is `project_jobs`, not `jobs` — Goravel's queue already owns `jobs`.
+
+---
+
 ## `GET /api/v1/topic-icons`
 
 Proxies the Bot API's `getForumTopicIconStickers` (`POST /bot<token>/getForumTopicIconStickers`, no params) —
@@ -288,5 +364,6 @@ create wizard calls this immediately on file selection).
   but nothing confirmed yet for adding someone to an existing group after the fact. Worth checking whether
   `rasagram-new-admin` has an equivalent endpoint before assuming this needs a workaround.
 - Editing/deleting a project.
-- Anything about Jobs (tasks inside a List) — the frontend doesn't render or fetch these yet; `List` only
-  carries `id`/`projectId`/`name`/`topicId` right now, per the plan's explicit scoping for this round.
+- Editing/deleting a Job, or toggling a checklist item — Jobs can be created and listed (see above), but every
+  mutation after creation is still out of scope.
+- Job activity/history («فعالیت‌ها»).

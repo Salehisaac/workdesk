@@ -2,6 +2,9 @@ import { defineConfig } from 'vite';
 import react from '@vitejs/plugin-react';
 import postcssRtlcss from 'postcss-rtlcss';
 
+// Declared locally rather than pulling in @types/node just for two lookups.
+declare const process: { env: Record<string, string | undefined> };
+
 // Dev-only: proxies /api to the local Goravel server so the browser only ever
 // talks to one origin. Production serves both from the same Go binary (see plan section 7),
 // so no proxy/CORS config is needed there.
@@ -21,12 +24,21 @@ export default defineConfig({
   },
   server: {
     port: 5173,
+    // Listen on 0.0.0.0 so the port mapping works when this runs in a
+    // container (docker-compose.dev.yml); harmless on the host.
+    host: true,
     proxy: {
       '/api': {
-        target: 'http://127.0.0.1:3000',
+        // In Docker the backend is a sibling container, so 127.0.0.1 would be
+        // this container. Outside Docker the default keeps working unchanged.
+        target: process.env.VITE_PROXY_TARGET || 'http://127.0.0.1:3000',
         changeOrigin: true,
       },
     },
+    // Bind-mount filesystem events don't reliably reach the container on
+    // Docker Desktop (macOS/Windows). VITE_USE_POLLING=1 makes HMR fall back
+    // to polling; left off elsewhere since polling burns CPU.
+    watch: process.env.VITE_USE_POLLING ? { usePolling: true } : undefined,
     // Vite 5+ blocks requests whose Host header isn't localhost/an IP by
     // default (rebinding-attack protection) — needed for real-device
     // testing through a tunnel (ngrok, etc.) since the free tier's

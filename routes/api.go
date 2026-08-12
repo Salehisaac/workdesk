@@ -26,6 +26,18 @@ func Api() {
 		router.Post("/projects/{id}/lists", listController.Store)
 		router.Delete("/projects/{id}/lists/{listId}", listController.Destroy)
 
+		// Tags are project-scoped: every Job in every List of a project draws
+		// from the same pool.
+		tagController := controllers.NewProjectTagController()
+		router.Get("/projects/{id}/tags", tagController.Index)
+		router.Post("/projects/{id}/tags", tagController.Store)
+
+		// GET /jobs is flat on purpose — the home calendar needs every
+		// deadline the caller can see, across all their projects, in one go.
+		jobController := controllers.NewJobController()
+		router.Get("/jobs", jobController.Index)
+		router.Post("/projects/{id}/jobs", jobController.Store)
+
 		topicIconController := controllers.NewTopicIconController()
 		router.Get("/topic-icons", topicIconController.Index)
 		router.Get("/topic-icons/animation", topicIconController.Animation)
