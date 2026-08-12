@@ -4,7 +4,7 @@ import {
   ClockCircleOutline,
   EnvironmentOutline,
   FileOutline,
-  UnorderedListOutline,
+  FlagOutline,
 } from 'antd-mobile-icons';
 import type { ReactNode } from 'react';
 import { useNavigate } from 'react-router-dom';
@@ -16,7 +16,7 @@ import styles from './AgendaItemCard.module.css';
 const KIND_ICON: Record<AgendaKind, ReactNode> = {
   session: <ClockCircleOutline />,
   decision: <CheckCircleOutline />,
-  project: <UnorderedListOutline />,
+  job: <FlagOutline />,
   note: <FileOutline />,
 };
 
@@ -50,7 +50,9 @@ export function AgendaItemCard({ item }: AgendaItemCardProps) {
       <div className={styles.meta}>
         <span className={styles.metaItem}>
           <CalendarOutline />
-          {formatShortDate(item.date)}
+          {/* A job's date is a deadline, not "when it happens" — saying so is
+              the difference between a due date and a schedule entry. */}
+          {item.kind === 'job' ? `مهلت ${formatShortDate(item.date)}` : formatShortDate(item.date)}
         </span>
         {item.hasTime && (
           <span className={styles.metaItem}>

@@ -1,6 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { apiClient } from '../../shared/api/client';
-import type { CreateListInput, CreateProjectInput, Project, ProjectDetail, ProjectListItem, TopicIcon } from './types';
+import { apiClient, getCollection } from '../../shared/api/client';
+import type { CreateListInput, CreateProjectInput, Job, Project, ProjectDetail, ProjectListItem, TopicIcon } from './types';
 
 // Telegram's 6 standard forum-topic icon colors — the exact preset dots real
 // Telegram clients offer when creating a topic (the protocol technically
@@ -19,6 +19,7 @@ export const FORUM_TOPIC_COLORS: { value: number; label: string }[] = [
 const projectKeys = {
   all: ['projects'] as const,
   detail: (id: string) => ['projects', id] as const,
+  jobs: ['jobs'] as const,
 };
 
 export function useProjects() {
@@ -33,6 +34,23 @@ export function useProject(projectId: string | undefined) {
     queryKey: projectKeys.detail(projectId ?? ''),
     queryFn: () => apiClient.get<ProjectDetail>(`/projects/${projectId}`),
     enabled: !!projectId,
+  });
+}
+
+/**
+ * Every job the user can see, across all their projects and lists.
+ *
+ * Flat rather than nested under `/projects/:id/lists/:listId/jobs` (how a job is
+ * *written*) because the home calendar needs deadlines across every project at
+ * once to draw a month of indicator dots — walking the hierarchy would be a
+ * request per list. Not implemented on the backend yet, so this resolves to an
+ * empty list until it is; see getCollection.
+ */
+export function useJobs() {
+  return useQuery({
+    queryKey: projectKeys.jobs,
+    queryFn: () => getCollection<Job>('/jobs'),
+    retry: false,
   });
 }
 

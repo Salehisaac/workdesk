@@ -33,7 +33,7 @@
      backgrounds and don't collide with the destructive red. */
   --wd-kind-session: var(--rasagram-theme-button-color);
   --wd-kind-decision: #f59e0b;
-  --wd-kind-project: #8b5cf6;
+  --wd-kind-job: #8b5cf6;
   --wd-kind-note: #10b981;
 
   /* antd-mobile semantic tokens <- bridge theme. The one indirection layer
@@ -79,6 +79,6 @@
 
   /* Same hues, lifted for contrast against the dark background. */
   --wd-kind-decision: #fbbf24;
-  --wd-kind-project: #a78bfa;
+  --wd-kind-job: #a78bfa;
   --wd-kind-note: #34d399;
 }

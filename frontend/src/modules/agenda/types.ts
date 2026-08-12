@@ -6,7 +6,16 @@
  * ./api.ts and thrown away on the next render.
  */
 
-export type AgendaKind = 'session' | 'decision' | 'project' | 'note';
+/**
+ * What can land on a calendar day.
+ *
+ * Note that a *project* isn't one of these. A project runs for weeks or months
+ * and has no single date — what it has is Lists, and each list has Jobs, and a
+ * job carries the deadline. So the calendar's project dimension is `job`: the
+ * پروژه‌ها section on a given day is that day's job deadlines, not the projects
+ * that happened to be created then.
+ */
+export type AgendaKind = 'session' | 'decision' | 'job' | 'note';
 
 /** The three dashboard sections. Sessions and decisions share one, per design. */
 export type AgendaGroup = 'meetings' | 'projects' | 'notes';
@@ -14,14 +23,14 @@ export type AgendaGroup = 'meetings' | 'projects' | 'notes';
 export const AGENDA_GROUP_OF: Record<AgendaKind, AgendaGroup> = {
   session: 'meetings',
   decision: 'meetings',
-  project: 'projects',
+  job: 'projects',
   note: 'notes',
 };
 
 export const AGENDA_KIND_LABEL: Record<AgendaKind, string> = {
   session: 'جلسه',
   decision: 'مصوبه',
-  project: 'پروژه',
+  job: 'کار',
   note: 'یادداشت',
 };
 

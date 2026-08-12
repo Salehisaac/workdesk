@@ -1,12 +1,13 @@
 import { useMemo } from 'react';
-import { toDayKey, toPersianDigits } from '../../shared/date/jalali';
+import { toDayKey } from '../../shared/date/jalali';
 import { useSessions, useDecisions } from '../meeting/api';
 import { DECISION_STATUS_LABEL, SESSION_STATUS_LABEL } from '../meeting/types';
 import type { Decision, Session } from '../meeting/types';
 import { useNotes } from '../note/api';
 import type { Note } from '../note/types';
-import { useProjects } from '../project/api';
-import type { Project } from '../project/types';
+import { useJobs } from '../project/api';
+import { JOB_STATUS_LABEL } from '../project/types';
+import type { Job } from '../project/types';
 import type { AgendaItem, AgendaKind } from './types';
 
 export interface Agenda {
@@ -22,7 +23,7 @@ export interface Agenda {
 
 // Ordering inside a day: the timed things first (a session at 9:00 is the day's
 // anchor), then what came out of them, then the ambient stuff.
-const KIND_ORDER: Record<AgendaKind, number> = { session: 0, decision: 1, project: 2, note: 3 };
+const KIND_ORDER: Record<AgendaKind, number> = { session: 0, decision: 1, job: 2, note: 3 };
 
 function sessionToItem(session: Session): AgendaItem {
   return {
@@ -52,19 +53,22 @@ function decisionToItem(decision: Decision): AgendaItem {
   };
 }
 
-function projectToItem(project: Project): AgendaItem {
+/** Only ever called for a job that has a `dueAt` — see the filter in useAgenda. */
+function jobToItem(job: Job): AgendaItem {
+  // «کار در <project> › <list>», falling back as either name goes missing.
+  const context = [job.projectName, job.listName].filter(Boolean).join(' › ');
   return {
-    id: `project:${project.id}`,
-    kind: 'project',
-    title: project.name,
-    subtitle: `${toPersianDigits(project.memberCount)} عضو`,
-    // A project has no schedule — createdAt is its only date field, so the day
-    // it was started is the day it shows up on. Same rule the calendar dots use.
-    date: new Date(project.createdAt),
+    id: `job:${job.id}`,
+    kind: 'job',
+    title: job.title,
+    subtitle: context ? `کار در ${context}` : 'کار',
+    date: new Date(job.dueAt!),
+    // Deadlines are day-granular in the UI even though dueAt carries a time.
     hasTime: false,
-    location: null,
-    status: project.visibility === 'public' ? 'عمومی' : 'خصوصی',
-    to: `/projects/${project.id}`,
+    location: job.assigneeName,
+    status: JOB_STATUS_LABEL[job.status] ?? null,
+    // The board is where a job lives; there's no per-job screen yet.
+    to: `/projects/${job.projectId}`,
   };
 }
 
@@ -91,7 +95,7 @@ function noteToItem(note: Note): AgendaItem {
  * every date tap doesn't rebuild the maps.
  */
 export function useAgenda(): Agenda {
-  const projects = useProjects();
+  const jobs = useJobs();
   const sessions = useSessions();
   const decisions = useDecisions();
   const notes = useNotes();
@@ -100,10 +104,11 @@ export function useAgenda(): Agenda {
     () => [
       ...(sessions.data ?? []).map(sessionToItem),
       ...(decisions.data ?? []).map(decisionToItem),
-      ...(projects.data ?? []).map(projectToItem),
+      // A job with no deadline isn't on any day, so it isn't on the calendar.
+      ...(jobs.data ?? []).filter((job) => job.dueAt).map(jobToItem),
       ...(notes.data ?? []).map(noteToItem),
     ],
-    [sessions.data, decisions.data, projects.data, notes.data],
+    [sessions.data, decisions.data, jobs.data, notes.data],
   );
 
   return useMemo(() => {
@@ -126,13 +131,13 @@ export function useAgenda(): Agenda {
     return {
       byDay,
       kindsByDay,
-      isLoading: projects.isLoading || sessions.isLoading || decisions.isLoading || notes.isLoading,
-      isError: projects.isError || sessions.isError || decisions.isError || notes.isError,
+      isLoading: jobs.isLoading || sessions.isLoading || decisions.isLoading || notes.isLoading,
+      isError: jobs.isError || sessions.isError || decisions.isError || notes.isError,
     };
   }, [
     items,
-    projects.isLoading,
-    projects.isError,
+    jobs.isLoading,
+    jobs.isError,
     sessions.isLoading,
     sessions.isError,
     decisions.isLoading,

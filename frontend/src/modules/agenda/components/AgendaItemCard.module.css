@@ -19,8 +19,8 @@
   border-inline-start-color: var(--wd-kind-decision);
 }
 
-.card[data-kind='project'] {
-  border-inline-start-color: var(--wd-kind-project);
+.card[data-kind='job'] {
+  border-inline-start-color: var(--wd-kind-job);
 }
 
 .card[data-kind='note'] {

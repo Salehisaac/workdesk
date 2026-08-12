@@ -26,7 +26,7 @@ const SECTIONS: SectionConfig[] = [
     group: 'projects',
     title: 'پروژه‌ها',
     icon: <PieOutline />,
-    emptyText: 'پروژه‌ای در این روز آغاز نشده است.',
+    emptyText: 'کاری با مهلت این روز در پروژه‌های شما ثبت نشده است.',
   },
   {
     group: 'notes',

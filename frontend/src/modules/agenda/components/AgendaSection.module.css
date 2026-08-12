@@ -36,9 +36,9 @@
 }
 
 .section[data-group='projects'] .icon {
-  color: var(--wd-kind-project);
+  color: var(--wd-kind-job);
   background: var(--rasagram-theme-bg-color);
-  background: color-mix(in srgb, var(--wd-kind-project) 14%, transparent);
+  background: color-mix(in srgb, var(--wd-kind-job) 14%, transparent);
 }
 
 .section[data-group='notes'] .icon {
