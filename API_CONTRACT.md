@@ -66,18 +66,22 @@ List projects the authenticated user is a member of (as owner or invited member)
     "joinSlug": null,
     "chatId": "-1001234567890",
     "memberCount": 3,
-    "onlineCount": 1,
     "createdAt": "2026-08-07T10:00:00Z"
   }
 ]
 ```
+
+- There is deliberately **no online count**. There used to be one, derived from each member's `online` flag,
+  but that flag is a snapshot captured when the member was *picked* — it never tracked who was actually
+  online, it just aged. The UI shows the member count alone rather than a number that looks live and isn't.
+  (`members[].online` is still carried through as part of the picked item stored verbatim.)
 
 ---
 
 ## `POST /api/v1/projects`
 
 Creates a project. The authenticated user becomes the owner — **they are not included in the `members`
-array below**, that array is only the *additionally invited* people from the wizard's step 3. Add the
+array below**, that array is only the *additionally invited* people from the wizard's members step. Add the
 authenticated user as a project member yourself (e.g. with a distinguishing `role`) so `GET /projects`
 correctly lists projects they created.
 
@@ -96,6 +100,10 @@ correctly lists projects they created.
 ```
 
 - `avatarUrl` — omitted if no avatar was picked.
+- `visibility` / `joinSlug` — **the wizard no longer asks.** The private/public step was removed, so the app
+  now always sends `"visibility": "private"` and never a `joinSlug`; the example above shows the other
+  branch only because the endpoint still accepts it. Nothing server-side changed to drop the question — the
+  one caller simply stopped asking it, which leaves public projects available if the UI ever wants them back.
 - `joinSlug` — omitted when `visibility` is `"private"`. When present: English letters/digits/`-`/`_`,
   first character a letter (validated client-side already, worth re-validating server-side too).
 - No `chatId` in the request — the backend creates the group itself (see below).
@@ -145,7 +153,6 @@ correctly lists projects they created.
   "joinSlug": null,
   "chatId": "-1001234567890",
   "memberCount": 3,
-  "onlineCount": 1,
   "createdAt": "2026-08-07T10:00:00Z",
   "members": [
     { "id": "101", "source": "contacts", "displayName": "علی رضایی", "username": "ali", "phone": "989120000001", "online": true }

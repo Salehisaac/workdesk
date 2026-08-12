@@ -16,16 +16,16 @@ func formatId(id uint) string {
 }
 
 // Project matches the `Project` shape in API_CONTRACT.md. Members must
-// already be loaded (via .With("Members")) — memberCount/onlineCount are
-// derived from it rather than a separate count query.
+// already be loaded (via .With("Members")) — memberCount is derived from it
+// rather than a separate count query.
+//
+// There is deliberately no online count. It was only ever a snapshot of the
+// `online` flag captured when each member was PICKED, so it never actually
+// tracked who was online — it aged the moment a project was created. The UI
+// shows the member count alone rather than a number that looks live and isn't.
+// (ProjectMember.online is still carried through as part of the picked item
+// stored verbatim; nothing derives a project-level figure from it.)
 func Project(p *models.Project) http.Json {
-	onlineCount := 0
-	for _, member := range p.Members {
-		if member.Online {
-			onlineCount++
-		}
-	}
-
 	var createdAt string
 	if p.CreatedAt != nil {
 		createdAt = p.CreatedAt.ToRfc3339String()
@@ -39,7 +39,6 @@ func Project(p *models.Project) http.Json {
 		"joinSlug":    p.JoinSlug,
 		"chatId":      p.ChatId,
 		"memberCount": len(p.Members),
-		"onlineCount": onlineCount,
 		"createdAt":   createdAt,
 	}
 }

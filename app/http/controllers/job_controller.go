@@ -191,6 +191,13 @@ func (r *JobController) Index(ctx http.Context) http.Response {
 		return ctx.Response().Status(500).Json(http.Json{"error": err.Error()})
 	}
 
+	// `id` is not decoration: due_at alone is a PARTIAL order, and most jobs
+	// have no deadline at all, so every one of them ties. SQL guarantees
+	// nothing about the order of ties, which left the board free to reshuffle
+	// untouched cards whenever anything was written — editing a job appeared
+	// to send it to the bottom of its list. Ordering by the row's own id after
+	// due_at makes it total, so a card only ever moves when its deadline
+	// actually changes, and otherwise stays in creation order.
 	var jobs []models.Job
 	if err := facades.Orm().Query().
 		With("Assignees").
@@ -198,6 +205,7 @@ func (r *JobController) Index(ctx http.Context) http.Response {
 		With("Checklist").
 		WhereIn("project_id", projectIds).
 		OrderBy("due_at").
+		OrderBy("id").
 		Find(&jobs); err != nil {
 		return ctx.Response().Status(500).Json(http.Json{"error": err.Error()})
 	}

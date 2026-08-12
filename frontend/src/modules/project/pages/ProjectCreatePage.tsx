@@ -5,32 +5,23 @@ import { useNavigate } from 'react-router-dom';
 import type { PickedItem } from '../../../bridge/types';
 import { StepMembers } from '../components/create-wizard/StepMembers';
 import { StepNameAvatar } from '../components/create-wizard/StepNameAvatar';
-import { StepVisibility } from '../components/create-wizard/StepVisibility';
 import { useCreateProject } from '../api';
-import type { CreateProjectInput, ProjectVisibility } from '../types';
+import type { CreateProjectInput } from '../types';
 import styles from './ProjectCreatePage.module.css';
 
-const STEP_TITLES = ['یک پروژه ایجاد کنید', 'نوع پروژه', 'اضافه کردن اعضاء'];
-const STEP_VALIDATION_MESSAGE = [
-  'نامی برای پروژه وارد کنید',
-  'شناسه باید به زبان انگلیسی و با حرف شروع شود',
-  'حداقل یک عضو اضافه کنید',
-];
-const SLUG_PATTERN = /^[A-Za-z][A-Za-z0-9_-]*$/;
+const STEP_TITLES = ['یک پروژه ایجاد کنید', 'اضافه کردن اعضاء'];
+const STEP_VALIDATION_MESSAGE = ['نامی برای پروژه وارد کنید', 'حداقل یک عضو اضافه کنید'];
+const LAST_STEP = STEP_TITLES.length - 1;
 
 interface WizardState {
   name: string;
   avatarUrl: string | null;
-  visibility: ProjectVisibility;
-  joinSlug: string;
   members: PickedItem[];
 }
 
 const INITIAL_STATE: WizardState = {
   name: '',
   avatarUrl: null,
-  visibility: 'private',
-  joinSlug: '',
   members: [],
 };
 
@@ -47,7 +38,6 @@ export function ProjectCreatePage() {
 
   function isStepValid(): boolean {
     if (step === 0) return state.name.trim().length > 0;
-    if (step === 1) return state.visibility === 'private' || SLUG_PATTERN.test(state.joinSlug);
     return state.members.length > 0;
   }
 
@@ -57,7 +47,7 @@ export function ProjectCreatePage() {
       Toast.show({ content: STEP_VALIDATION_MESSAGE[step] });
       return;
     }
-    if (step < 2) {
+    if (step < LAST_STEP) {
       setStep((s) => s + 1);
       return;
     }
@@ -70,11 +60,13 @@ export function ProjectCreatePage() {
       // The backend provisions the project's dedicated topic-group itself
       // now, server-side, via the internal admin API (plan section 8) — no
       // client-side group creation needed before this call.
+      // Always private, and no joinSlug: the wizard no longer asks. The API
+      // still accepts "public" + a slug, so nothing server-side had to change
+      // to drop the question — this is the only caller, and it stopped asking.
       const input: CreateProjectInput = {
         name: state.name,
         avatarUrl: state.avatarUrl ?? undefined,
-        visibility: state.visibility,
-        joinSlug: state.visibility === 'public' ? state.joinSlug : undefined,
+        visibility: 'private',
         members: state.members,
       };
       const project = await createProject.mutateAsync(input);
@@ -106,9 +98,6 @@ export function ProjectCreatePage() {
             <StepNameAvatar name={state.name} avatarUrl={state.avatarUrl} onChange={patch} />
           )}
           {step === 1 && (
-            <StepVisibility visibility={state.visibility} joinSlug={state.joinSlug} onChange={patch} />
-          )}
-          {step === 2 && (
             <StepMembers members={state.members} onChange={(members) => patch({ members })} />
           )}
         </div>

@@ -50,9 +50,7 @@ export function ProjectListPage() {
                 )}
                 <span className={styles.projectInfo}>
                   <span className={styles.projectName}>{project.name}</span>
-                  <span className={styles.projectMeta}>
-                    {project.memberCount} عضو، {project.onlineCount} نفر آنلاین
-                  </span>
+                  <span className={styles.projectMeta}>{project.memberCount} عضو</span>
                 </span>
                 <LeftOutline className={styles.chevron} />
               </button>

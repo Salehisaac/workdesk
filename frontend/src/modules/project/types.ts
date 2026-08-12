@@ -47,7 +47,6 @@ export interface Project {
   /** The project's dedicated topic-group chat id — plan section 8. */
   chatId: string | null;
   memberCount: number;
-  onlineCount: number;
   createdAt: string;
 }
 

@@ -8,7 +8,6 @@ RUN npm ci
 
 COPY frontend/ .
 
-ARG VITE_JOIN_BASE_URL
 RUN npm run build
 
 FROM docker-mirror.rso-co.ir/golang:alpine AS backend

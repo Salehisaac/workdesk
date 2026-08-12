@@ -2,8 +2,6 @@ services:
   app:
     build:
       context: .
-      args:
-        VITE_JOIN_BASE_URL: ${VITE_JOIN_BASE_URL:-}
     restart: always
     ports:
       - "3000:3000"

@@ -166,9 +166,7 @@ export function ProjectBoardPage() {
       <NavBar onBack={() => navigate('/projects')}>
         <div className={styles.titleBlock}>
           <span className={styles.titleName}>{project.name}</span>
-          <span className={styles.titleMeta}>
-            {toPersianDigits(project.memberCount)} عضو، {toPersianDigits(project.onlineCount)} نفر آنلاین
-          </span>
+          <span className={styles.titleMeta}>{toPersianDigits(project.memberCount)} عضو</span>
         </div>
       </NavBar>
 
