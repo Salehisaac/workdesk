@@ -154,6 +154,14 @@ export const mockBridge: Bridge = {
   async openContactPicker(): Promise<DeviceContact | null> {
     return { contact_id: 'device-1', name: 'مخاطب دستگاه', phones: ['09120000000'], emails: [] };
   },
+  openTelegramLink(url: string): boolean {
+    // There is no client to hand this to in dev, and actually following it
+    // would navigate away from the app being worked on. Log the path the real
+    // client would receive (openTelegramLink forwards pathname + search only)
+    // so the link can be eyeballed without leaving the page.
+    console.info('[bridge:mock] openTelegramLink()', new URL(url).pathname);
+    return true;
+  },
   onEvent(event, handler) {
     const set = eventListeners.get(event) ?? new Set();
     set.add(handler);

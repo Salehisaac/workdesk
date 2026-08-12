@@ -7,6 +7,7 @@ import { EmptyState } from '../../../shared/ui/EmptyState';
 import { useCreateList, useDeleteList, useJobs, useProject } from '../api';
 import { ListColumn } from '../components/board/ListColumn';
 import { CreateListSheet } from '../components/CreateListSheet';
+import { openProjectTopic } from '../links';
 import type { CreateListInput, Job } from '../types';
 import styles from './ProjectBoardPage.module.css';
 
@@ -118,6 +119,22 @@ export function ProjectBoardPage() {
     }
   }
 
+  // «فعالیت‌ها» hands the user off to the chat this project already IS: the
+  // list currently on screen is a forum topic, so the tap lands them in that
+  // topic's conversation rather than in a feed this app would have to build
+  // and keep in sync. With no list on screen (or one whose topic the backend
+  // has not created yet) it falls back to the project's group.
+  function handleOpenActivity() {
+    const activeList = lists.find((list) => list.id === activeListId);
+    if (openProjectTopic(project?.chatId ?? null, activeList?.topicId)) return;
+
+    Toast.show({
+      content: project?.chatId
+        ? 'نسخه‌ی رساگرام شما از باز کردن گفتگو پشتیبانی نمی‌کند'
+        : 'گفتگوی این پروژه در دسترس نیست',
+    });
+  }
+
   if (isError) {
     return (
       <div className={styles.page}>
@@ -196,12 +213,7 @@ export function ProjectBoardPage() {
       )}
 
       <div className={styles.footer}>
-        <Button
-          fill="none"
-          onClick={() => {
-            Toast.show({ content: 'فعالیت‌ها بعدا اضافه می‌شود' });
-          }}
-        >
+        <Button fill="none" onClick={handleOpenActivity}>
           <ClockCircleOutline /> فعالیت‌ها
         </Button>
         <Button fill="none" onClick={() => setSheetOpen(true)}>

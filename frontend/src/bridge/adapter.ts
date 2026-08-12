@@ -40,6 +40,26 @@ function toInsets(raw: any): Insets {
   };
 }
 
+/**
+ * Whether openTelegramLink will actually POST the link to the client rather
+ * than fall back to navigating away.
+ *
+ * Mirrors the deployed SDK's own gate verbatim - `isIframe ||
+ * versionAtLeast('6.1')`, where its isIframe is `window.parent != null &&
+ * window != window.parent`. Worth mirroring rather than trusting, because the
+ * SDK's else-branch is `location.href = 'https://t.me' + path_full`: on an old
+ * client that would not open the topic, it would navigate the webview to the
+ * REAL t.me and strand the user outside Rasagram.
+ */
+function canPostTgLink(wa: any): boolean {
+  if (window.parent != null && window !== window.parent) return true;
+
+  const [major, minor] = String(wa.version ?? '0')
+    .split('.')
+    .map((part: string) => parseInt(part, 10) || 0);
+  return major > 6 || (major === 6 && minor >= 1);
+}
+
 export const adapterBridge: Bridge = {
   // -- assumed (plan "Open Risks") --
   getEnv() {
@@ -125,6 +145,20 @@ export const adapterBridge: Bridge = {
         resolve(ok ? contact : null);
       });
     });
+  },
+  openTelegramLink(url: string): boolean {
+    const wa = webApp();
+    if (typeof wa.openTelegramLink !== 'function' || !canPostTgLink(wa)) return false;
+    try {
+      wa.openTelegramLink(url);
+      return true;
+    } catch (err) {
+      // WebAppTgUrlInvalid - a caller built the link with the wrong host. A
+      // bug, but not one worth taking the page down over: report it as "did
+      // not open" and let the caller show its own message.
+      console.error('[bridge] openTelegramLink rejected', url, err);
+      return false;
+    }
   },
   onEvent(event, handler) {
     const wa = webApp();

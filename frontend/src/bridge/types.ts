@@ -118,5 +118,27 @@ export interface Bridge {
   };
   pick(options: PickOptions): Promise<PickedItem[]>;
   openContactPicker(): Promise<DeviceContact | null>;
+  /**
+   * Hands a link to the Rasagram client to open in its own UI — a chat, a
+   * forum topic, an invite — and closes/backgrounds the mini app. NOT for
+   * ordinary web links: those want openLink (external browser), which this
+   * app has no use for yet.
+   *
+   * `url` MUST be written with the `t.me` host. Read the deployed SDK
+   * (see this file's header) and the reason is plain: openTelegramLink
+   * throws WebAppTgUrlInvalid on any other hostname, then forwards only
+   * `pathname + search` over the `web_app_open_tg_link` event and discards
+   * the host entirely. So `t.me` is a literal the validator demands, not a
+   * destination anything actually resolves - the client receives just the
+   * path and resolves it against Rasagram (rsog.rso-co.ir). Building the
+   * link with the real host instead would throw before it ever got sent.
+   *
+   * Returns false when the client is too old to receive the event (below
+   * SDK 6.1, outside an iframe), in which case NOTHING is opened - the
+   * caller should say so rather than assume it worked. The SDK's own
+   * fallback for that case navigates to the real t.me, which would throw
+   * the user out of Rasagram; hence the check instead.
+   */
+  openTelegramLink(url: string): boolean;
   onEvent(event: string, handler: (payload: any) => void): () => void;
 }
