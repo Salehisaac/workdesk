@@ -1,5 +1,4 @@
-import { ActionSheet, Toast } from 'antd-mobile';
-import type { Action } from 'antd-mobile/es/components/action-sheet';
+import { Popup, Toast } from 'antd-mobile';
 import { AddOutline, LockOutline } from 'antd-mobile-icons';
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
@@ -11,35 +10,20 @@ import styles from './CreateFab.module.css';
  * the only one with a flow behind it (the three-step wizard at /projects/new);
  * the rest carry the same lock badge and "coming soon" toast the home page's
  * tool tiles already use, rather than opening a form that can't save anything.
+ *
+ * Built on Popup rather than ActionSheet: there's no cancel button, so the two
+ * ways out are tapping the app behind it and swiping the sheet down — and
+ * `closeOnSwipe` is a Popup prop that ActionSheet doesn't forward.
  */
 export function CreateFab() {
   const navigate = useNavigate();
   const [open, setOpen] = useState(false);
 
-  const actions: Action[] = WORKDESK_MODULES.map((module) => ({
-    key: module.key,
-    text: (
-      <span className={styles.option}>
-        <span className={styles.optionIcon}>{module.icon}</span>
-        <span className={styles.optionText}>
-          <span className={styles.optionLabel}>
-            {module.label} جدید
-            {!module.createTo && (
-              <span className={styles.optionLock}>
-                <LockOutline />
-              </span>
-            )}
-          </span>
-          <span className={styles.optionDescription}>{module.description}</span>
-        </span>
-      </span>
-    ),
-    onClick: () => {
-      setOpen(false);
-      if (module.createTo) navigate(module.createTo);
-      else Toast.show({ content: 'به‌زودی اضافه می‌شود' });
-    },
-  }));
+  function handleSelect(createTo: string | undefined) {
+    setOpen(false);
+    if (createTo) navigate(createTo);
+    else Toast.show({ content: 'به‌زودی اضافه می‌شود' });
+  }
 
   return (
     <>
@@ -47,13 +31,38 @@ export function CreateFab() {
         <AddOutline />
       </button>
 
-      <ActionSheet
+      <Popup
         visible={open}
-        actions={actions}
-        cancelText="انصراف"
+        position="bottom"
+        closeOnSwipe
+        closeOnMaskClick
         onClose={() => setOpen(false)}
         onMaskClick={() => setOpen(false)}
-      />
+        bodyStyle={{ borderTopLeftRadius: 12, borderTopRightRadius: 12 }}
+      >
+        <div className={styles.sheet} role="group" aria-label="ایجاد مورد جدید">
+          {/* The only visible affordance for "this closes by dragging down",
+              now that there's no cancel button to point at. */}
+          <span className={styles.sheetHandle} aria-hidden="true" />
+
+          {WORKDESK_MODULES.map((module) => (
+            <button key={module.key} type="button" className={styles.option} onClick={() => handleSelect(module.createTo)}>
+              <span className={styles.optionIcon}>{module.icon}</span>
+              <span className={styles.optionText}>
+                <span className={styles.optionLabel}>
+                  {module.label} جدید
+                  {!module.createTo && (
+                    <span className={styles.optionLock}>
+                      <LockOutline />
+                    </span>
+                  )}
+                </span>
+                <span className={styles.optionDescription}>{module.description}</span>
+              </span>
+            </button>
+          ))}
+        </div>
+      </Popup>
     </>
   );
 }
