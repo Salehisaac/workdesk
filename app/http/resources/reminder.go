@@ -12,8 +12,14 @@ func Reminder(r *models.Reminder) http.Json {
 	if r.RemindAt != nil {
 		remindAt = r.RemindAt.ToRfc3339String()
 	}
-	// Null means the bot didn't manage to deliver it — the UI says so rather
-	// than implying a message went out.
+	// Two different deliveries: confirmedAt is the "saved it" message sent at
+	// creation, notifiedAt is the reminder itself firing at remindAt. Both null
+	// when the bot couldn't reach the chat, so the UI can say so rather than
+	// implying a message went out.
+	var confirmedAt any
+	if r.ConfirmedAt != nil {
+		confirmedAt = r.ConfirmedAt.ToRfc3339String()
+	}
 	var notifiedAt any
 	if r.NotifiedAt != nil {
 		notifiedAt = r.NotifiedAt.ToRfc3339String()
@@ -24,12 +30,13 @@ func Reminder(r *models.Reminder) http.Json {
 	}
 
 	return http.Json{
-		"id":         formatId(r.ID),
-		"title":      r.Title,
-		"note":       r.Note,
-		"remindAt":   remindAt,
-		"notifiedAt": notifiedAt,
-		"createdAt":  createdAt,
+		"id":          formatId(r.ID),
+		"title":       r.Title,
+		"note":        r.Note,
+		"remindAt":    remindAt,
+		"confirmedAt": confirmedAt,
+		"notifiedAt":  notifiedAt,
+		"createdAt":   createdAt,
 	}
 }
 

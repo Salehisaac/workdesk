@@ -10,8 +10,14 @@ export interface Reminder {
   /** ISO 8601 — when it's meant to go off. */
   remindAt: string | null;
   /**
-   * When the bot actually delivered it. Null means the message didn't go out,
-   * so the UI can say the reminder was saved without implying it was sent.
+   * When the "saved it" confirmation reached the user's chat. Null means that
+   * message didn't go out — the reminder is still saved and will still fire.
+   */
+  confirmedAt: string | null;
+  /**
+   * When the reminder itself fired at remindAt. Null until then; it's also the
+   * dispatcher's "already sent" guard, which is why it's separate from
+   * confirmedAt rather than one shared flag.
    */
   notifiedAt: string | null;
   createdAt: string;

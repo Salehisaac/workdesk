@@ -1,5 +1,5 @@
 import { Button, DotLoading, NavBar } from 'antd-mobile';
-import { AddOutline, BellOutline, CheckCircleOutline, ExclamationCircleOutline } from 'antd-mobile-icons';
+import { AddOutline, BellOutline, CheckCircleOutline, ClockCircleOutline, ExclamationCircleOutline } from 'antd-mobile-icons';
 import { useNavigate } from 'react-router-dom';
 import { formatLongDate, formatTime } from '../../../shared/date/jalali';
 import { EmptyState } from '../../../shared/ui/EmptyState';
@@ -46,11 +46,15 @@ export function ReminderListPage() {
                 <article key={reminder.id} className={styles.card}>
                   <div className={styles.cardTop}>
                     <h3 className={styles.title}>{reminder.title}</h3>
-                    {/* Whether the bot actually reached the user's chat — the
-                        one thing about a reminder they can't otherwise tell. */}
-                    {reminder.notifiedAt && (
-                      <span className={styles.sent} title="به پیام‌های شما ارسال شد">
+                    {/* Whether it has already fired — the one thing about a
+                        reminder you can't tell from its own text. */}
+                    {reminder.notifiedAt ? (
+                      <span className={styles.sent} title="ارسال شد">
                         <CheckCircleOutline />
+                      </span>
+                    ) : (
+                      <span className={styles.pending} title="در انتظار زمان یادآوری">
+                        <ClockCircleOutline />
                       </span>
                     )}
                   </div>

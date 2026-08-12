@@ -15,7 +15,12 @@ type Reminder struct {
 	Title      string
 	Note       *string
 	RemindAt   *carbon.DateTime `gorm:"column:remind_at"`
-	// Set once the bot has delivered it; also what stops a second delivery.
+	// Set when the "saved it" message reached the user's chat at creation time.
+	ConfirmedAt *carbon.DateTime `gorm:"column:confirmed_at"`
+	// Set when the reminder itself fired at RemindAt. Kept apart from
+	// ConfirmedAt because it's also the dispatcher's "already handled" guard —
+	// sharing one column would make a delivered confirmation suppress the
+	// reminder it was confirming.
 	NotifiedAt *carbon.DateTime `gorm:"column:notified_at"`
 }
 

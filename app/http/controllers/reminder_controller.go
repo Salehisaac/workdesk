@@ -93,30 +93,36 @@ func (r *ReminderController) Store(ctx http.Context) http.Response {
 		return ctx.Response().Status(500).Json(http.Json{"error": err.Error()})
 	}
 
-	// Delivery failing doesn't invalidate the reminder — the row is saved and
-	// notifiedAt stays null, which is exactly the state a retry looks for. The
-	// response carries that null so the UI can say it saved but didn't send,
-	// rather than silently implying a message went out.
-	if err := botapi.New().SendMessage(authUser.ID, reminderMessage(&reminder, remindAt)); err != nil {
-		facades.Log().Error("workdesk: reminder DM failed: " + err.Error())
+	// Confirmation only — the reminder itself is sent later by the scheduler
+	// (app/services/reminders). This stamps confirmed_at, never notified_at:
+	// notified_at is the dispatcher's "already fired" guard, and setting it here
+	// would mean the reminder is never actually delivered.
+	//
+	// A failed confirmation doesn't invalidate the reminder; the row is saved
+	// either way and will still fire on time. The response carries the null so
+	// the UI can say it saved without implying a message went out.
+	if err := botapi.New().SendMessage(authUser.ID, confirmationMessage(&reminder, remindAt)); err != nil {
+		facades.Log().Error("workdesk: reminder confirmation DM failed: " + err.Error())
 	} else {
-		reminder.NotifiedAt = carbon.NewDateTime(carbon.Now())
+		reminder.ConfirmedAt = carbon.NewDateTime(carbon.Now())
 		if err := facades.Orm().Query().Save(&reminder); err != nil {
-			facades.Log().Error("workdesk: marking reminder notified failed: " + err.Error())
+			facades.Log().Error("workdesk: marking reminder confirmed failed: " + err.Error())
 		}
 	}
 
 	return ctx.Response().Status(201).Json(resources.Reminder(&reminder))
 }
 
-// reminderMessage is what actually lands in the user's chat.
+// confirmationMessage acknowledges the reminder at creation time. The reminder
+// itself is a different message, sent when it comes due — see
+// reminders.DueMessage.
 //
 // `remindAt` is the offset-preserving parse of what the client sent, not the
 // stored value: the frontend sends its own UTC offset (see toLocalIso) so the
 // text prints the user's wall clock. Formatting the normalized instant instead
 // would show an Iranian user's 14:05 as 10:35, and a late-evening reminder
 // would land on the previous Jalali day.
-func reminderMessage(reminder *models.Reminder, remindAt stdtime.Time) string {
+func confirmationMessage(reminder *models.Reminder, remindAt stdtime.Time) string {
 	var b strings.Builder
 	b.WriteString("⏰ یادآور ثبت شد\n\n")
 	b.WriteString(reminder.Title)

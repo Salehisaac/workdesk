@@ -55,6 +55,9 @@ func Providers() []foundation.ServiceProvider {
 		&translation.ServiceProvider{},
 		&mail.ServiceProvider{},
 		&schedule.ServiceProvider{},
+		// Must come after schedule.ServiceProvider — it registers the events the
+		// framework's schedule runner looks for.
+		&providers.ScheduleServiceProvider{},
 		&telemetry.ServiceProvider{},
 		&testing.ServiceProvider{},
 	}

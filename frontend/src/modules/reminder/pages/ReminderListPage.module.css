@@ -71,3 +71,10 @@
 .footer {
   padding: 12px 16px calc(12px + env(safe-area-inset-bottom, 0px));
 }
+
+.pending {
+  flex-shrink: 0;
+  font-size: 16px;
+  color: var(--rasagram-theme-hint-color);
+  display: flex;
+}

@@ -122,11 +122,13 @@ export function ProjectBoardPage() {
     return (
       <div className={styles.page}>
         <NavBar onBack={() => navigate('/projects')}>&nbsp;</NavBar>
-        <EmptyState
-          icon={<ExclamationCircleOutline />}
-          title="ارتباط برقرار نشد"
-          description="بارگذاری این پروژه با خطا مواجه شد. دوباره تلاش کنید."
-        />
+        <div className={styles.fill}>
+          <EmptyState
+            icon={<ExclamationCircleOutline />}
+            title="ارتباط برقرار نشد"
+            description="بارگذاری این پروژه با خطا مواجه شد. دوباره تلاش کنید."
+          />
+        </div>
       </div>
     );
   }
@@ -135,7 +137,9 @@ export function ProjectBoardPage() {
     return (
       <div className={styles.page}>
         <NavBar onBack={() => navigate('/projects')}>&nbsp;</NavBar>
-        <EmptyState icon={<DotLoading />} title="در حال بارگذاری…" />
+        <div className={styles.fill}>
+          <EmptyState icon={<DotLoading />} title="در حال بارگذاری…" />
+        </div>
       </div>
     );
   }
@@ -152,16 +156,18 @@ export function ProjectBoardPage() {
       </NavBar>
 
       {lists.length === 0 ? (
-        <EmptyState
-          icon={<AddOutline />}
-          title="هنوز لیستی نساخته‌اید"
-          description="با ساختن یک لیست، کارهای این پروژه را دسته‌بندی کنید."
-          action={
-            <Button color="primary" onClick={() => setSheetOpen(true)}>
-              ساخت اولین لیست
-            </Button>
-          }
-        />
+        <div className={styles.fill}>
+          <EmptyState
+            icon={<AddOutline />}
+            title="هنوز لیستی نساخته‌اید"
+            description="با ساختن یک لیست، کارهای این پروژه را دسته‌بندی کنید."
+            action={
+              <Button color="primary" onClick={() => setSheetOpen(true)}>
+                ساخت اولین لیست
+              </Button>
+            }
+          />
+        </div>
       ) : (
         <div className={styles.board} ref={scrollerRef} aria-label="لیست‌های پروژه">
           {lists.map((list) => (

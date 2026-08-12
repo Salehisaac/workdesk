@@ -29,6 +29,18 @@
   font-weight: 400;
 }
 
+/* Anything that isn't the pager — the empty, loading and error states — still
+   has to claim the leftover height, or the footer rides up under it and the
+   rest of the fixed-height shell sits blank. */
+.fill {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  overflow-y: auto;
+}
+
 /* The pager. CSS scroll-snap rather than a JS carousel: it gets RTL, touch
    momentum and keyboard scrolling from the browser, where antd-mobile's Swiper
    drives physical translateX and mirrors wrongly under dir="rtl". */

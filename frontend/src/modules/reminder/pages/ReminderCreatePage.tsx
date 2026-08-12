@@ -37,10 +37,13 @@ export function ReminderCreatePage() {
         // date into the chat message and needs the user's own wall clock.
         remindAt: toLocalIso(remindAt),
       });
-      // notifiedAt is null when the bot couldn't reach the user's chat — saying
-      // so beats a blanket success message the message never backed up.
+      // confirmedAt is null when the bot couldn't reach the user's chat. The
+      // reminder still fires either way, so the failure wording says that
+      // rather than suggesting nothing was saved.
       Toast.show({
-        content: created.notifiedAt ? 'یادآور ثبت و به پیام‌های شما ارسال شد' : 'یادآور ثبت شد، اما ارسال پیام انجام نشد',
+        content: created.confirmedAt
+          ? 'یادآور ثبت شد و در زمان مقرر به پیام‌های شما فرستاده می‌شود'
+          : 'یادآور ثبت شد، اما پیام تأیید ارسال نشد',
       });
       navigate('/reminders');
     } catch (error) {
