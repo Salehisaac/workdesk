@@ -19,5 +19,6 @@ func Migrations() []schema.Migration {
 		&migrations.M20260812000002CreateProjectJobsTable{},
 		&migrations.M20260812000003CreateJobRelationsTables{},
 		&migrations.M20260812000004CreateRemindersTable{},
+		&migrations.M20260812000005AddConfirmedAtToRemindersTable{},
 	}
 }
