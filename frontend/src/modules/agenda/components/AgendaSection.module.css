@@ -1,0 +1,116 @@
+.section {
+  border-radius: 16px;
+  background: var(--rasagram-theme-secondary-bg-color);
+  overflow: hidden;
+}
+
+.header {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  padding: 14px;
+  border: none;
+  background: none;
+  font-family: inherit;
+  text-align: start;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.icon {
+  width: 34px;
+  height: 34px;
+  flex-shrink: 0;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 17px;
+  /* Tinted with the group's own accent. The flat fallback lands first for
+     engines without color-mix (older Android WebViews), which then just get
+     the neutral chip instead of a broken declaration. */
+  color: var(--wd-kind-session);
+  background: var(--rasagram-theme-bg-color);
+  background: color-mix(in srgb, var(--wd-kind-session) 14%, transparent);
+}
+
+.section[data-group='projects'] .icon {
+  color: var(--wd-kind-project);
+  background: var(--rasagram-theme-bg-color);
+  background: color-mix(in srgb, var(--wd-kind-project) 14%, transparent);
+}
+
+.section[data-group='notes'] .icon {
+  color: var(--wd-kind-note);
+  background: var(--rasagram-theme-bg-color);
+  background: color-mix(in srgb, var(--wd-kind-note) 14%, transparent);
+}
+
+.title {
+  flex: 1;
+  min-width: 0;
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--rasagram-theme-text-color);
+}
+
+.count {
+  min-width: 22px;
+  padding: 2px 7px;
+  border-radius: 999px;
+  font-size: 11px;
+  font-weight: 700;
+  text-align: center;
+  color: var(--rasagram-theme-button-text-color);
+  background: var(--rasagram-theme-button-color);
+}
+
+.chevron {
+  display: flex;
+  align-items: center;
+  font-size: 14px;
+  color: var(--rasagram-theme-hint-color);
+  transition: transform 0.22s ease;
+}
+
+.chevronOpen {
+  transform: rotate(180deg);
+}
+
+.body {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 0 12px 14px;
+  animation: sectionReveal 0.22s ease-out both;
+}
+
+.empty {
+  margin: 0;
+  padding: 6px 4px 2px;
+  font-size: 12.5px;
+  line-height: 1.8;
+  color: var(--rasagram-theme-hint-color);
+}
+
+@keyframes sectionReveal {
+  from {
+    opacity: 0;
+    transform: translateY(-4px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .body {
+    animation: none;
+  }
+
+  .chevron {
+    transition: none;
+  }
+}

@@ -26,6 +26,16 @@
   --rasagram-hero-gradient: linear-gradient(135deg, #0891b2 0%, #155e75 100%);
   --rasagram-card-shadow: 0 1px 3px rgba(15, 23, 31, 0.08);
 
+  /* One accent per agenda kind — used by the calendar's indicator dots and the
+     dashboard's section badges, which have to agree or the dots stop meaning
+     anything. Session follows the bridge's accent (it's the primary kind);
+     the other three are fixed hues that stay distinguishable against both
+     backgrounds and don't collide with the destructive red. */
+  --wd-kind-session: var(--rasagram-theme-button-color);
+  --wd-kind-decision: #f59e0b;
+  --wd-kind-project: #8b5cf6;
+  --wd-kind-note: #10b981;
+
   /* antd-mobile semantic tokens <- bridge theme. The one indirection layer
      from plan section 3: swapping the UI kit, or renaming the bridge's real
      field names once confirmed, only touches this block.
@@ -66,4 +76,9 @@
 
   --rasagram-hero-gradient: linear-gradient(135deg, #0e7490 0%, #083344 100%);
   --rasagram-card-shadow: 0 1px 3px rgba(0, 0, 0, 0.4);
+
+  /* Same hues, lifted for contrast against the dark background. */
+  --wd-kind-decision: #fbbf24;
+  --wd-kind-project: #a78bfa;
+  --wd-kind-note: #34d399;
 }

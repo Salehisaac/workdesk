@@ -26,6 +26,12 @@ export default defineConfig({
                 changeOrigin: true,
             },
         },
+        // Vite 5+ blocks requests whose Host header isn't localhost/an IP by
+        // default (rebinding-attack protection) — needed for real-device
+        // testing through a tunnel (ngrok, etc.) since the free tier's
+        // subdomain changes on every restart, so a specific hostname can't be
+        // hardcoded here.
+        allowedHosts: ['.ngrok-free.app'],
     },
     // Default outDir (dist/). Deploy copies dist/* into ../public — see plan section 7.
 });

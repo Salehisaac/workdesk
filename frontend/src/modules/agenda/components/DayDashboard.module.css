@@ -1,0 +1,91 @@
+.dashboard {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 4px 16px 0;
+}
+
+.head {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.title {
+  font-size: 16px;
+  font-weight: 700;
+  color: var(--rasagram-theme-text-color);
+}
+
+.date {
+  margin-top: 3px;
+  font-size: 12.5px;
+  color: var(--rasagram-theme-hint-color);
+}
+
+.filters {
+  display: flex;
+  gap: 6px;
+  overflow-x: auto;
+  /* The strip scrolls on narrow phones; the scrollbar itself is noise here. */
+  scrollbar-width: none;
+  margin-inline: -4px;
+  padding-inline: 4px;
+}
+
+.filters::-webkit-scrollbar {
+  display: none;
+}
+
+.filter {
+  flex-shrink: 0;
+  padding: 7px 14px;
+  border: none;
+  border-radius: 999px;
+  background: none;
+  font-family: inherit;
+  font-size: 13px;
+  color: var(--rasagram-theme-hint-color);
+  cursor: pointer;
+  transition:
+    background-color 0.18s ease,
+    color 0.18s ease;
+}
+
+.filterActive {
+  background: var(--rasagram-theme-secondary-bg-color);
+  color: var(--rasagram-theme-text-color);
+  font-weight: 700;
+}
+
+.sections {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.loading {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 32px 0;
+  font-size: 13px;
+  color: var(--rasagram-theme-hint-color);
+}
+
+.notice {
+  padding: 10px 14px;
+  border-radius: 12px;
+  font-size: 12.5px;
+  line-height: 1.7;
+  color: var(--rasagram-theme-destructive-text-color);
+  background: var(--rasagram-theme-secondary-bg-color);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .filter {
+    transition: none;
+  }
+}

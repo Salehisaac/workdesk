@@ -1,0 +1,95 @@
+.card {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 6px;
+  width: 100%;
+  padding: 12px 14px;
+  border: 1px solid var(--rasagram-theme-secondary-bg-color);
+  border-radius: 14px;
+  background: var(--rasagram-theme-bg-color);
+  font-family: inherit;
+  text-align: start;
+  /* The left edge carries the kind's colour — same hue as the calendar dot that
+     put this day on the map, so the two read as one system. */
+  border-inline-start: 3px solid var(--wd-kind-session);
+}
+
+.card[data-kind='decision'] {
+  border-inline-start-color: var(--wd-kind-decision);
+}
+
+.card[data-kind='project'] {
+  border-inline-start-color: var(--wd-kind-project);
+}
+
+.card[data-kind='note'] {
+  border-inline-start-color: var(--wd-kind-note);
+}
+
+.cardInteractive {
+  cursor: pointer;
+}
+
+.cardInteractive:active {
+  background: var(--rasagram-theme-secondary-bg-color);
+}
+
+.top {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.title {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--rasagram-theme-text-color);
+  line-height: 1.6;
+  overflow-wrap: anywhere;
+}
+
+.kind {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  flex-shrink: 0;
+  padding: 3px 9px;
+  border-radius: 999px;
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--rasagram-theme-accent-text-color);
+  background: var(--rasagram-theme-secondary-bg-color);
+}
+
+.subtitle {
+  font-size: 12px;
+  color: var(--rasagram-theme-subtitle-text-color);
+  line-height: 1.7;
+  overflow-wrap: anywhere;
+}
+
+.meta {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px 14px;
+  font-size: 12px;
+  color: var(--rasagram-theme-hint-color);
+}
+
+.metaItem {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+}
+
+.status {
+  align-self: flex-start;
+  padding: 3px 10px;
+  border-radius: 999px;
+  font-size: 11px;
+  color: var(--rasagram-theme-subtitle-text-color);
+  background: var(--rasagram-theme-secondary-bg-color);
+}

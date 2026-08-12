@@ -1,0 +1,251 @@
+/* Geometry note: --cal-row-height is duplicated as ROW_HEIGHT_PX in
+   ExpandableJalaliCalendar.tsx — the expand/collapse animation computes the
+   viewport height and the grid offset in JS, so the two must stay equal. */
+.calendar {
+  --cal-row-height: 50px;
+  --cal-circle-size: 34px;
+
+  position: relative;
+  padding: 4px 8px 0;
+  background: var(--rasagram-theme-bg-color);
+  user-select: none;
+}
+
+.head {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 4px 4px 8px;
+}
+
+.navButton {
+  width: 34px;
+  height: 34px;
+  flex-shrink: 0;
+  border: none;
+  border-radius: 10px;
+  background: none;
+  color: var(--rasagram-theme-hint-color);
+  font-size: 16px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+}
+
+.navButton:active {
+  background: var(--rasagram-theme-secondary-bg-color);
+}
+
+.monthTitle {
+  flex: 1;
+  min-width: 0;
+  border: none;
+  background: none;
+  padding: 6px 4px;
+  border-radius: 10px;
+  font-family: inherit;
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--rasagram-theme-text-color);
+  text-align: center;
+  cursor: pointer;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.weekdays {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  padding-bottom: 4px;
+}
+
+.weekday {
+  text-align: center;
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--rasagram-theme-hint-color);
+}
+
+.weekdayWeekend {
+  color: var(--rasagram-theme-destructive-text-color);
+  opacity: 0.75;
+}
+
+/* The clip window. Its height is the only thing that changes between week and
+   month view — the grid inside is always the full month. */
+.viewport {
+  overflow: hidden;
+  /* Vertical drags here belong to the calendar, not the page scroller. */
+  touch-action: none;
+  transition: height 0.32s cubic-bezier(0.22, 0.61, 0.36, 1);
+}
+
+.grid {
+  display: flex;
+  flex-direction: column;
+  transition: transform 0.32s cubic-bezier(0.22, 0.61, 0.36, 1);
+  will-change: transform;
+}
+
+.row {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  height: var(--cal-row-height);
+  transition: opacity 0.24s ease;
+}
+
+.day {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-start;
+  gap: 3px;
+  padding: 0;
+  /* Full-cell hit area: 50px tall x ~1/7 of the width — comfortably past the
+     44px touch-target minimum even though the visible circle is 34px. */
+  height: 100%;
+  border: none;
+  background: none;
+  font-family: inherit;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.dayNumber {
+  width: var(--cal-circle-size);
+  height: var(--cal-circle-size);
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--rasagram-theme-text-color);
+  background: var(--rasagram-theme-secondary-bg-color);
+  border: 1.5px solid transparent;
+  transition:
+    background-color 0.18s ease,
+    color 0.18s ease,
+    border-color 0.18s ease;
+}
+
+.dayWeekend .dayNumber {
+  color: var(--rasagram-theme-destructive-text-color);
+}
+
+.dayOutside .dayNumber {
+  background: none;
+  opacity: 0.4;
+}
+
+/* Today, unselected: a ring. Distinct from the selected fill by shape as well
+   as colour, so the two aren't told apart by hue alone. */
+.dayToday .dayNumber {
+  border-color: var(--rasagram-theme-button-color);
+  color: var(--rasagram-theme-accent-text-color);
+  font-weight: 700;
+}
+
+.daySelected .dayNumber {
+  background: var(--rasagram-theme-button-color);
+  border-color: var(--rasagram-theme-button-color);
+  color: var(--rasagram-theme-button-text-color);
+  font-weight: 700;
+  opacity: 1;
+}
+
+.day:focus-visible .dayNumber {
+  outline: 2px solid var(--rasagram-theme-accent-text-color);
+  outline-offset: 2px;
+}
+
+.dayMarkers {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 3px;
+  height: 5px;
+}
+
+.dayMarker {
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+}
+
+.foot {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 30px;
+}
+
+/* The pull affordance from the reference — also the keyboard/AT toggle. */
+.grabber {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 88px;
+  height: 30px;
+  border: none;
+  background: none;
+  cursor: pointer;
+  touch-action: none;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.grabberBar {
+  width: 40px;
+  height: 4px;
+  border-radius: 999px;
+  background: var(--rasagram-theme-secondary-bg-color);
+  border: 1px solid var(--rasagram-theme-hint-color);
+  border-color: color-mix(in srgb, var(--rasagram-theme-hint-color) 35%, transparent);
+  transition: background-color 0.2s ease;
+}
+
+.grabber:active .grabberBar {
+  background: var(--rasagram-theme-hint-color);
+}
+
+.todayButton {
+  position: absolute;
+  inset-inline-end: 8px;
+  top: 50%;
+  transform: translateY(-50%);
+  border: none;
+  border-radius: 999px;
+  padding: 5px 12px;
+  background: var(--rasagram-theme-secondary-bg-color);
+  color: var(--rasagram-theme-accent-text-color);
+  font-family: inherit;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.srOnly {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  margin: -1px;
+  padding: 0;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  clip-path: inset(50%);
+  white-space: nowrap;
+  border: 0;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .viewport,
+  .grid,
+  .row,
+  .dayNumber {
+    transition: none;
+  }
+}

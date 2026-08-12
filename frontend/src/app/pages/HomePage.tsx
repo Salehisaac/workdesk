@@ -1,28 +1,25 @@
-import { Dialog, Toast } from 'antd-mobile';
+import { Toast } from 'antd-mobile';
 import {
-  AppOutline,
   BillOutline,
   ContentOutline,
   FolderOutline,
-  LeftOutline,
   LockOutline,
   TeamOutline,
   UnorderedListOutline,
-  UserOutline,
 } from 'antd-mobile-icons';
 import type { CSSProperties, ReactNode } from 'react';
-import { useEffect, useState } from 'react';
+import { useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { apiClient } from '../../shared/api/client';
+import { useAgenda } from '../../modules/agenda/api';
+import { CreateFab } from '../../modules/agenda/components/CreateFab';
+import { DayDashboard } from '../../modules/agenda/components/DayDashboard';
+import { AGENDA_KIND_LABEL } from '../../modules/agenda/types';
+import type { AgendaItem, AgendaKind } from '../../modules/agenda/types';
+import { toDayKey, today } from '../../shared/date/jalali';
+import { ExpandableJalaliCalendar } from '../../shared/ui/calendar/ExpandableJalaliCalendar';
+import type { CalendarMarker } from '../../shared/ui/calendar/types';
+import { HomeHeader } from './HomeHeader';
 import styles from './HomePage.module.css';
-
-interface MeResponse {
-  id: string;
-  firstName: string;
-  lastName: string;
-  username: string;
-  languageCode: string;
-}
 
 interface Tile {
   icon: ReactNode;
@@ -43,110 +40,79 @@ const TILES: Tile[] = [
   { icon: <FolderOutline />, label: 'مخزن‌جلسه' },
 ];
 
-// All 5 tiles are static, local data — there's nothing to actually fetch.
-// This delay exists purely so the grid visibly loads in as skeleton cards
-// before revealing the real ones, instead of everything just appearing at
-// once (the previous attempt — an animation-delay on the real tiles alone —
-// was too subtle to read as "loading" at all).
-const SKELETON_DURATION_MS = 500;
+// Kept in the same order as the dots are drawn, so a day always shows its
+// kinds in a stable sequence. Colours come from tokens.css — the calendar dot
+// and the dashboard's section badge for a kind are the same variable.
+const MARKER_COLOR: Record<AgendaKind, string> = {
+  session: 'var(--wd-kind-session)',
+  decision: 'var(--wd-kind-decision)',
+  project: 'var(--wd-kind-project)',
+  note: 'var(--wd-kind-note)',
+};
+
+const NO_ITEMS: AgendaItem[] = [];
 
 export function HomePage() {
   const navigate = useNavigate();
-  const [tilesLoaded, setTilesLoaded] = useState(false);
+  // A calendar day, normalized to local midnight — never a UTC instant, so the
+  // selection can't drift to the neighbouring day. See shared/date/jalali.ts.
+  const [selectedDate, setSelectedDate] = useState(() => today());
+  const agenda = useAgenda();
 
-  useEffect(() => {
-    const timer = setTimeout(() => setTilesLoaded(true), SKELETON_DURATION_MS);
-    return () => clearTimeout(timer);
-  }, []);
-
-  async function handleShowMe() {
-    try {
-      const me = await apiClient.get<MeResponse>('/me');
-      Dialog.alert({
-        title: 'اطلاعات کاربر (از /api/v1/me)',
-        content: (
-          <div className={styles.meDialog}>
-            <div>
-              <b>id:</b> {me.id}
-            </div>
-            <div>
-              <b>firstName:</b> {me.firstName || '—'}
-            </div>
-            <div>
-              <b>lastName:</b> {me.lastName || '—'}
-            </div>
-            <div>
-              <b>username:</b> {me.username || '—'}
-            </div>
-            <div>
-              <b>languageCode:</b> {me.languageCode || '—'}
-            </div>
-          </div>
-        ),
-      });
-    } catch (error) {
-      Toast.show({ content: error instanceof Error ? error.message : 'دریافت اطلاعات کاربر با خطا مواجه شد' });
+  const markers = useMemo(() => {
+    const map = new Map<string, CalendarMarker[]>();
+    for (const [dayKey, kinds] of agenda.kindsByDay) {
+      map.set(
+        dayKey,
+        kinds.map((kind) => ({ id: kind, color: MARKER_COLOR[kind], label: AGENDA_KIND_LABEL[kind] })),
+      );
     }
-  }
+    return map;
+  }, [agenda.kindsByDay]);
+
+  const dayItems = agenda.byDay.get(toDayKey(selectedDate)) ?? NO_ITEMS;
 
   return (
     <div className={styles.page}>
-      <div className={styles.header}>
-        <div className={styles.brand}>
-          <div className={styles.brandTitle}>ورک‌دسک</div>
-          <div className={styles.brandSubtitle}>ابزارهای کاری در دل مسنجر</div>
-        </div>
-        <div className={styles.headerActions}>
-          <button type="button" className={styles.iconButton} onClick={handleShowMe} aria-label="نمایش اطلاعات کاربر">
-            <UserOutline />
-          </button>
-          <div className={styles.logo}>
-            <AppOutline />
+      <div className={styles.content}>
+        <HomeHeader />
+
+        <ExpandableJalaliCalendar selectedDate={selectedDate} onSelectDate={setSelectedDate} markers={markers} />
+
+        <DayDashboard
+          selectedDate={selectedDate}
+          items={dayItems}
+          isLoading={agenda.isLoading}
+          isError={agenda.isError}
+        />
+
+        <div className={styles.tools}>
+          <div className={styles.sectionLabel}>همه ابزارها</div>
+          <div className={styles.grid}>
+            {TILES.map((tile, index) => (
+              <button
+                key={tile.label}
+                type="button"
+                className={`${styles.tile} ${tile.to ? '' : styles.tileLocked}`}
+                style={{ '--tile-index': index } as CSSProperties}
+                onClick={() => (tile.to ? navigate(tile.to) : Toast.show({ content: 'به‌زودی اضافه می‌شود' }))}
+              >
+                <span className={styles.tileCard}>
+                  {tile.icon}
+                  {!tile.to && (
+                    <span className={styles.lockBadge}>
+                      <LockOutline />
+                    </span>
+                  )}
+                </span>
+                <span className={styles.tileLabel}>{tile.label}</span>
+              </button>
+            ))}
           </div>
         </div>
       </div>
 
-      <div className={styles.hero}>
-        <div className={styles.heroTitle}>پروژه‌های خود را مدیریت کنید</div>
-        <div className={styles.heroSubtitle}>
-          یک پروژه بسازید، کارها را در لیست دسته‌بندی کنید و هرکدام را به یکی از اعضا بسپارید.
-        </div>
-        <button type="button" className={styles.heroButton} onClick={() => navigate('/projects')}>
-          <LeftOutline />
-          مشاهده پروژه‌ها
-        </button>
-      </div>
-
-      <div className={styles.sectionLabel}>همه ابزارها</div>
-      <div className={styles.grid}>
-        {!tilesLoaded &&
-          TILES.map((tile, index) => (
-            <div key={tile.label} className={styles.tileSkeleton} style={{ '--tile-index': index } as CSSProperties}>
-              <span className={styles.tileCardSkeleton} />
-              <span className={styles.tileLabelSkeleton} />
-            </div>
-          ))}
-        {tilesLoaded &&
-          TILES.map((tile, index) => (
-            <button
-              key={tile.label}
-              type="button"
-              className={`${styles.tile} ${tile.to ? '' : styles.tileLocked}`}
-              style={{ '--tile-index': index } as CSSProperties}
-              onClick={() => (tile.to ? navigate(tile.to) : Toast.show({ content: 'به‌زودی اضافه می‌شود' }))}
-            >
-              <span className={styles.tileCard}>
-                {tile.icon}
-                {!tile.to && (
-                  <span className={styles.lockBadge}>
-                    <LockOutline />
-                  </span>
-                )}
-              </span>
-              <span className={styles.tileLabel}>{tile.label}</span>
-            </button>
-          ))}
-      </div>
+      <CreateFab />
     </div>
   );
 }
