@@ -10,6 +10,13 @@ import { App } from './app/App';
 import { bridge } from './bridge';
 import { bootSafeArea } from './bridge/safeArea';
 import { bootTheme } from './bridge/theme';
+import { bootDebugConsole } from './shared/debug/console';
+
+// First, and deliberately not awaited. Eruda's Network panel only sees traffic
+// sent after it has patched fetch/XMLHttpRequest, so it starts as early as
+// possible; awaiting it would instead hold the whole app behind a chunk
+// download that is skipped entirely for normal users. See ./shared/debug.
+void bootDebugConsole();
 
 bootTheme();
 // Before ready(): in fullscreen the client's own header overlaps the page, and
