@@ -36,6 +36,16 @@
   --wd-kind-job: #8b5cf6;
   --wd-kind-note: #10b981;
 
+  /* One colour per job status, shared by the status sheet's chips and the
+     board card's status square — if these two disagree the square stops
+     meaning anything. */
+  --wd-status-notStarted: var(--rasagram-theme-hint-color);
+  --wd-status-inProgress: var(--rasagram-theme-button-color);
+  --wd-status-paused: #d97706;
+  --wd-status-canceled: var(--rasagram-theme-destructive-text-color);
+  --wd-status-done: #15803d;
+  --wd-status-rejected: #7c3aed;
+
   /* antd-mobile semantic tokens <- bridge theme. The one indirection layer
      from plan section 3: swapping the UI kit, or renaming the bridge's real
      field names once confirmed, only touches this block.
@@ -81,4 +91,8 @@
   --wd-kind-decision: #fbbf24;
   --wd-kind-job: #a78bfa;
   --wd-kind-note: #34d399;
+
+  --wd-status-paused: #fbbf24;
+  --wd-status-done: #34d399;
+  --wd-status-rejected: #a78bfa;
 }

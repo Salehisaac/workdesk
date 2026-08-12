@@ -1,7 +1,16 @@
+/* Pinned to the viewport rather than laid out in flow. The board scrolls
+   sideways and each list scrolls its own jobs, so this shell must never scroll
+   itself — and under dir="rtl" an in-flow shell isn't enough: the pager's
+   leftward overflow still grew the *document's* scroll area past the viewport
+   (measured 701px against a 414px viewport), leaving the whole app shifted.
+   position: fixed takes it out of the root's scroll area entirely. */
 .page {
+  position: fixed;
+  inset: 0;
   display: flex;
   flex-direction: column;
-  min-height: 100vh;
+  overflow: hidden;
+  background: var(--rasagram-theme-secondary-bg-color);
 }
 
 .titleBlock {
@@ -20,39 +29,70 @@
   font-weight: 400;
 }
 
-.body {
+/* The pager. CSS scroll-snap rather than a JS carousel: it gets RTL, touch
+   momentum and keyboard scrolling from the browser, where antd-mobile's Swiper
+   drives physical translateX and mirrors wrongly under dir="rtl". */
+.board {
   flex: 1;
-  overflow-y: auto;
+  min-height: 0;
+  display: flex;
+  gap: 12px;
+  overflow-x: auto;
+  overflow-y: hidden;
+  scroll-snap-type: x mandatory;
+  scroll-padding-inline: 16px;
+  padding-inline: 16px;
+  scrollbar-width: none;
+  overscroll-behavior-x: contain;
+}
+
+.board::-webkit-scrollbar {
+  display: none;
+}
+
+.fab {
+  position: fixed;
+  inset-inline-end: 16px;
+  bottom: calc(74px + env(safe-area-inset-bottom, 0px));
+  z-index: 900;
+
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 14px 22px;
+  border: none;
+  border-radius: 18px;
+  background: var(--rasagram-theme-button-color);
+  color: var(--rasagram-theme-button-text-color);
+  font-family: inherit;
+  font-size: 15px;
+  font-weight: 600;
+  cursor: pointer;
+  box-shadow: 0 6px 20px rgba(15, 23, 31, 0.22);
+  transition: transform 0.16s ease;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.fab:active {
+  transform: scale(0.96);
+}
+
+.fab:focus-visible {
+  outline: 2px solid var(--rasagram-theme-accent-text-color);
+  outline-offset: 3px;
 }
 
 .footer {
   display: flex;
   justify-content: space-between;
-  padding: 10px 16px calc(10px + env(safe-area-inset-bottom));
+  flex-shrink: 0;
+  padding: 6px 8px calc(6px + env(safe-area-inset-bottom, 0px));
   border-top: 1px solid var(--rasagram-theme-secondary-bg-color);
+  background: var(--rasagram-theme-bg-color);
 }
 
-.listTitle {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-}
-
-.listIcon {
-  font-size: 15px;
-  line-height: 1;
-}
-
-.addJob {
-  width: 32px;
-  height: 32px;
-  border: none;
-  border-radius: 50%;
-  background: var(--rasagram-theme-secondary-bg-color);
-  color: var(--rasagram-theme-accent-text-color);
-  font-size: 18px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  cursor: pointer;
+@media (prefers-reduced-motion: reduce) {
+  .fab {
+    transition: none;
+  }
 }

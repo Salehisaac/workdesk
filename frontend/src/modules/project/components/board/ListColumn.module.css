@@ -1,0 +1,105 @@
+.column {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  /* Just under a full width, so the next list peeks in at the edge and the
+     board reads as pageable without needing a separate tab bar. */
+  flex: 0 0 92%;
+  max-width: 460px;
+  scroll-snap-align: center;
+  scroll-snap-stop: always;
+}
+
+.header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 4px 8px;
+}
+
+.name {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex: 1;
+  min-width: 0;
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--rasagram-theme-hint-color);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  transition: color 0.2s ease;
+}
+
+.column[data-active='true'] .name {
+  color: var(--rasagram-theme-text-color);
+}
+
+.icon {
+  font-size: 16px;
+  line-height: 1;
+}
+
+.count {
+  flex-shrink: 0;
+  min-width: 20px;
+  padding: 1px 7px;
+  border-radius: 999px;
+  font-size: 11.5px;
+  font-weight: 700;
+  text-align: center;
+  color: var(--rasagram-theme-hint-color);
+  background: var(--rasagram-theme-secondary-bg-color);
+}
+
+.menu {
+  width: 28px;
+  height: 28px;
+  flex-shrink: 0;
+  border: none;
+  border-radius: 8px;
+  background: none;
+  color: var(--rasagram-theme-hint-color);
+  font-size: 18px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+}
+
+.rule {
+  height: 3px;
+  flex-shrink: 0;
+  border-radius: 999px;
+  background: var(--rasagram-theme-secondary-bg-color);
+  transition: background-color 0.2s ease;
+}
+
+.column[data-active='true'] .rule {
+  background: var(--rasagram-theme-button-color);
+}
+
+.jobs {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  /* Each list scrolls its own jobs; the board scrolls sideways between lists. */
+  overflow-y: auto;
+  padding: 12px 2px calc(96px + env(safe-area-inset-bottom, 0px));
+  scrollbar-width: none;
+}
+
+.jobs::-webkit-scrollbar {
+  display: none;
+}
+
+.empty {
+  margin: 0;
+  padding: 28px 8px;
+  text-align: center;
+  font-size: 12.5px;
+  color: var(--rasagram-theme-hint-color);
+}

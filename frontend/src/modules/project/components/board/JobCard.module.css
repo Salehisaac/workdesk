@@ -1,0 +1,156 @@
+.card {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 12px 14px;
+  border-radius: 14px;
+  background: var(--rasagram-theme-bg-color);
+  box-shadow: var(--rasagram-card-shadow);
+}
+
+.top {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.title {
+  margin: 0;
+  flex: 1;
+  min-width: 0;
+  font-size: 14px;
+  font-weight: 600;
+  line-height: 1.6;
+  color: var(--rasagram-theme-text-color);
+  overflow-wrap: anywhere;
+}
+
+.status {
+  width: 14px;
+  height: 14px;
+  flex-shrink: 0;
+  margin-top: 3px;
+  border-radius: 4px;
+  background: var(--wd-status-notStarted);
+}
+
+.status[data-status='inProgress'] {
+  background: var(--wd-status-inProgress);
+}
+
+.status[data-status='paused'] {
+  background: var(--wd-status-paused);
+}
+
+.status[data-status='canceled'] {
+  background: var(--wd-status-canceled);
+}
+
+.status[data-status='done'] {
+  background: var(--wd-status-done);
+}
+
+.status[data-status='rejected'] {
+  background: var(--wd-status-rejected);
+}
+
+.tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.tag {
+  padding: 3px 10px;
+  border-radius: 999px;
+  font-size: 11.5px;
+  font-weight: 600;
+  color: #ffffff;
+  overflow-wrap: anywhere;
+}
+
+.footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.meta {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px 12px;
+  font-size: 11.5px;
+  color: var(--rasagram-theme-hint-color);
+}
+
+.metaItem {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.metaIcon {
+  font-size: 13px;
+}
+
+/* The deadline is the one piece of the card that changes meaning over time. */
+.metaItem[data-tone='today'] {
+  color: var(--wd-status-paused);
+  font-weight: 600;
+}
+
+.metaItem[data-tone='overdue'] {
+  color: var(--rasagram-theme-destructive-text-color);
+  font-weight: 600;
+}
+
+.avatars {
+  display: flex;
+  align-items: center;
+  flex-shrink: 0;
+}
+
+.avatar,
+.avatarMore {
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 11px;
+  font-weight: 700;
+  /* Overlap, with a ring in the card's own colour so they read as a stack. */
+  box-shadow: 0 0 0 2px var(--rasagram-theme-bg-color);
+}
+
+.avatar + .avatar,
+.avatar + .avatarMore {
+  margin-inline-start: -8px;
+}
+
+.avatar {
+  color: var(--rasagram-theme-button-text-color);
+  background: var(--rasagram-theme-button-color);
+}
+
+.avatarMore {
+  color: var(--rasagram-theme-hint-color);
+  background: var(--rasagram-theme-secondary-bg-color);
+}
+
+.srOnly {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  margin: -1px;
+  padding: 0;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  clip-path: inset(50%);
+  white-space: nowrap;
+  border: 0;
+}

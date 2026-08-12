@@ -264,29 +264,29 @@
 }
 
 .statusChip[data-status='notStarted'] {
-  color: var(--rasagram-theme-hint-color);
+  color: var(--wd-status-notStarted);
   background: var(--rasagram-theme-secondary-bg-color);
   border-color: transparent;
 }
 
 .statusChip[data-status='inProgress'] {
-  color: var(--rasagram-theme-button-color);
+  color: var(--wd-status-inProgress);
 }
 
 .statusChip[data-status='paused'] {
-  color: #d97706;
+  color: var(--wd-status-paused);
 }
 
 .statusChip[data-status='canceled'] {
-  color: var(--rasagram-theme-destructive-text-color);
+  color: var(--wd-status-canceled);
 }
 
 .statusChip[data-status='done'] {
-  color: #15803d;
+  color: var(--wd-status-done);
 }
 
 .statusChip[data-status='rejected'] {
-  color: #7c3aed;
+  color: var(--wd-status-rejected);
 }
 
 .statusSquare {
@@ -295,16 +295,4 @@
   border-radius: 3px;
   background: currentColor;
   display: inline-block;
-}
-
-:root[data-color-scheme='dark'] .statusChip[data-status='paused'] {
-  color: #fbbf24;
-}
-
-:root[data-color-scheme='dark'] .statusChip[data-status='done'] {
-  color: #34d399;
-}
-
-:root[data-color-scheme='dark'] .statusChip[data-status='rejected'] {
-  color: #a78bfa;
 }
