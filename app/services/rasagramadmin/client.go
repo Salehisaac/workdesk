@@ -16,7 +16,9 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"mime/multipart"
 	"net/http"
+	"strconv"
 	"sync"
 	"time"
 
@@ -48,13 +50,24 @@ type envelope[T any] struct {
 	Result T    `json:"result"`
 }
 
+// Photo is a group avatar uploaded with the chat itself — raw image bytes
+// (jpeg, png or gif) plus the filename to send them under.
+type Photo struct {
+	Filename string
+	Content  []byte
+}
+
 // CreateTopicGroup provisions a dedicated forum-enabled supergroup for a new
 // Project: create a normal group chat, upgrade it to a supergroup, enable
 // topics on it. Returns the resulting channel id — stored as Project.ChatId.
 // All-or-nothing: if any step fails, the caller shouldn't persist a Project
 // pointing at a half-provisioned or nonexistent group.
-func (c *Client) CreateTopicGroup(title string, userIDs []int64) (int64, error) {
-	chatID, err := c.createChat(title, userIDs)
+//
+// photo is optional; when non-nil the group is created with that avatar
+// already set, which is why the caller no longer needs the bot to be an
+// administrator with can_change_info just to give a project a picture.
+func (c *Client) CreateTopicGroup(title string, userIDs []int64, photo *Photo) (int64, error) {
+	chatID, err := c.createChat(title, userIDs, photo)
 	if err != nil {
 		return 0, fmt.Errorf("rasagramadmin: create chat: %w", err)
 	}
@@ -75,12 +88,26 @@ type createChatResult struct {
 	ChatID int64 `json:"chat_id"`
 }
 
-func (c *Client) createChat(title string, userIDs []int64) (int64, error) {
+// createChat creates the group. Without a photo it's the plain JSON call;
+// with one, the same endpoint also accepts multipart/form-data — title, the
+// user_ids field repeated once per id, and the image under "file".
+func (c *Client) createChat(title string, userIDs []int64, photo *Photo) (int64, error) {
 	var result envelope[createChatResult]
-	err := c.post("/x/internal/chat/create", map[string]any{
-		"title":    title,
-		"user_ids": userIDs,
-	}, &result)
+	var err error
+	if photo == nil {
+		err = c.post("/x/internal/chat/create", map[string]any{
+			"title":    title,
+			"user_ids": userIDs,
+		}, &result)
+	} else {
+		var contentType string
+		var body []byte
+		contentType, body, err = createChatForm(title, userIDs, photo)
+		if err != nil {
+			return 0, err
+		}
+		err = c.postRaw("/x/internal/chat/create", contentType, body, &result)
+	}
 	if err != nil {
 		return 0, err
 	}
@@ -88,6 +115,32 @@ func (c *Client) createChat(title string, userIDs []int64) (int64, error) {
 		return 0, fmt.Errorf("response ok=false")
 	}
 	return result.Result.ChatID, nil
+}
+
+func createChatForm(title string, userIDs []int64, photo *Photo) (string, []byte, error) {
+	var body bytes.Buffer
+	form := multipart.NewWriter(&body)
+
+	if err := form.WriteField("title", title); err != nil {
+		return "", nil, err
+	}
+	for _, id := range userIDs {
+		if err := form.WriteField("user_ids", strconv.FormatInt(id, 10)); err != nil {
+			return "", nil, err
+		}
+	}
+	part, err := form.CreateFormFile("file", photo.Filename)
+	if err != nil {
+		return "", nil, err
+	}
+	if _, err := part.Write(photo.Content); err != nil {
+		return "", nil, err
+	}
+	if err := form.Close(); err != nil {
+		return "", nil, err
+	}
+
+	return form.FormDataContentType(), body.Bytes(), nil
 }
 
 type upgradeResult struct {
@@ -196,12 +249,24 @@ func (c *Client) invalidateToken() {
 }
 
 func (c *Client) post(path string, payload any, out any) error {
+	body, err := json.Marshal(payload)
+	if err != nil {
+		return err
+	}
+	return c.postRaw(path, "application/json", body, out)
+}
+
+// postRaw is the transport every call goes through — JSON callers via post(),
+// and the multipart one (createChat with a photo) directly. Both share the
+// same bearer token, the same re-login-once-on-401, and the same envelope
+// handling.
+func (c *Client) postRaw(path, contentType string, body []byte, out any) error {
 	token, err := c.getToken()
 	if err != nil {
 		return fmt.Errorf("auth: %w", err)
 	}
 
-	status, body, err := c.doPost(path, payload, token)
+	status, respBody, err := c.doPost(path, contentType, body, token)
 	if err != nil {
 		return err
 	}
@@ -212,35 +277,30 @@ func (c *Client) post(path string, payload any, out any) error {
 		if err != nil {
 			return fmt.Errorf("auth (retry): %w", err)
 		}
-		status, body, err = c.doPost(path, payload, token)
+		status, respBody, err = c.doPost(path, contentType, body, token)
 		if err != nil {
 			return err
 		}
 	}
 
 	if status != http.StatusOK {
-		return fmt.Errorf("%s: %d %s", path, status, string(body))
+		return fmt.Errorf("%s: %d %s", path, status, string(respBody))
 	}
 
 	if out != nil {
-		if err := json.Unmarshal(body, out); err != nil {
-			return fmt.Errorf("%s: could not parse response: %w (body: %s)", path, err, string(body))
+		if err := json.Unmarshal(respBody, out); err != nil {
+			return fmt.Errorf("%s: could not parse response: %w (body: %s)", path, err, string(respBody))
 		}
 	}
 	return nil
 }
 
-func (c *Client) doPost(path string, payload any, token string) (int, []byte, error) {
-	body, err := json.Marshal(payload)
-	if err != nil {
-		return 0, nil, err
-	}
-
+func (c *Client) doPost(path, contentType string, body []byte, token string) (int, []byte, error) {
 	req, err := http.NewRequest(http.MethodPost, c.baseURL+path, bytes.NewReader(body))
 	if err != nil {
 		return 0, nil, err
 	}
-	req.Header.Set("Content-Type", "application/json")
+	req.Header.Set("Content-Type", contentType)
 	req.Header.Set("Authorization", "Bearer "+token)
 
 	res, err := c.httpClient.Do(req)

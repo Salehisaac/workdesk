@@ -13,7 +13,6 @@ import (
 	"goravel/app/facades"
 	"goravel/app/http/resources"
 	"goravel/app/models"
-	"goravel/app/services/botapi"
 	"goravel/app/services/rasagramadmin"
 )
 
@@ -131,27 +130,27 @@ type storeProjectRequest struct {
 // is what makes that impossible instead of merely unlikely.
 var uploadedAvatarPattern = regexp.MustCompile(`^/storage/(uploads/[A-Za-z0-9][A-Za-z0-9._-]*)$`)
 
-// applyGroupPhoto reads a previously uploaded avatar off the public disk and
-// sets it as the project group's photo.
+// uploadedAvatar reads a previously uploaded avatar off the public disk so it
+// can be handed to the admin API as the new group's photo.
 //
-// Requires the bot to be an administrator with can_change_info in the chat it
-// was just added to; callers treat failure as non-fatal.
-func applyGroupPhoto(chatId, avatarUrl string) error {
+// Callers treat failure as non-fatal — a project whose group has no picture
+// still works.
+func uploadedAvatar(avatarUrl string) (*rasagramadmin.Photo, error) {
 	match := uploadedAvatarPattern.FindStringSubmatch(avatarUrl)
 	if match == nil {
 		// Not one of ours — an externally hosted avatar, or something crafted.
 		// Either way there's no local file to upload, and we don't fetch
 		// arbitrary URLs on the client's behalf (that's an SSRF).
-		return fmt.Errorf("avatarUrl %q is not an uploaded file", avatarUrl)
+		return nil, fmt.Errorf("avatarUrl %q is not an uploaded file", avatarUrl)
 	}
 	diskPath := match[1]
 
 	content, err := facades.Storage().Disk("public").Get(diskPath)
 	if err != nil {
-		return fmt.Errorf("reading %s: %w", diskPath, err)
+		return nil, fmt.Errorf("reading %s: %w", diskPath, err)
 	}
 
-	return botapi.New().SetChatPhoto(chatId, []byte(content), filepath.Base(diskPath))
+	return &rasagramadmin.Photo{Filename: filepath.Base(diskPath), Content: []byte(content)}, nil
 }
 
 // botUserId extracts the bot's numeric user id from the same
@@ -213,22 +212,24 @@ func (r *ProjectController) Store(ctx http.Context) http.Response {
 		userIds = append(userIds, id)
 	}
 
-	channelId, err := rasagramadmin.New().CreateTopicGroup(request.Name, userIds)
+	// The avatar the user picked rides along with the group's creation now, so
+	// a project that has one gets its group photo in the same call. Failing to
+	// read the file back is non-fatal: a project whose group has no picture is
+	// a cosmetic loss, not a reason to refuse to create the project.
+	var photo *rasagramadmin.Photo
+	if request.AvatarUrl != nil {
+		photo, err = uploadedAvatar(*request.AvatarUrl)
+		if err != nil {
+			facades.Log().Error("workdesk: reading the project group's photo failed: " + err.Error())
+		}
+	}
+
+	channelId, err := rasagramadmin.New().CreateTopicGroup(request.Name, userIds, photo)
 	if err != nil {
 		facades.Log().Error("workdesk: CreateTopicGroup failed: " + err.Error())
 		return ctx.Response().Status(502).Json(http.Json{"error": "could not create the project's group: " + err.Error()})
 	}
 	chatId := strconv.FormatInt(channelId, 10)
-
-	// Give the group the avatar the user picked. Non-fatal on purpose: the
-	// project and its chat already exist by this point, and a project without a
-	// group photo is a cosmetic loss — failing the whole request here would
-	// leave an orphaned group behind for a thumbnail.
-	if request.AvatarUrl != nil {
-		if err := applyGroupPhoto(chatId, *request.AvatarUrl); err != nil {
-			facades.Log().Error("workdesk: setting the project group's photo failed: " + err.Error())
-		}
-	}
 
 	project := models.Project{
 		Name:       request.Name,

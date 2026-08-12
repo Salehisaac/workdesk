@@ -1,7 +1,7 @@
 // Fixture-backed implementation for `vite dev` in a plain desktop browser,
 // where window.Rasagram doesn't exist. Selected automatically by ./index.ts.
 // Add ?theme=dark to the URL to preview the dark palette.
-import type { Bridge, ColorScheme, DeviceContact, PickedItem, ThemeParams } from './types';
+import type { Bridge, ColorScheme, DeviceContact, Insets, PickedItem, ThemeParams } from './types';
 
 const FIXTURE_ITEMS: PickedItem[] = [
   { id: '101', source: 'contacts', displayName: 'علی رضایی', username: 'ali', phone: '989120000001', online: true },
@@ -54,13 +54,39 @@ function currentTheme(): ThemeParams & { colorScheme: ColorScheme } {
   return { ...(scheme === 'dark' ? DARK_THEME : LIGHT_THEME), colorScheme: scheme };
 }
 
+function emit(event: string, payload?: any): void {
+  eventListeners.get(event)?.forEach((handler) => handler(payload));
+}
+
+const NO_INSETS: Insets = { top: 0, bottom: 0, left: 0, right: 0 };
+
+// Roughly what an iPhone-class device reports in fullscreen: the status bar on
+// top of the notch, the home indicator at the bottom, and — separately — the
+// ~46px band the client's own floating header occupies. Only fixtures, but
+// keeping the two apart is the point: the app has to clear *both*.
+const FULLSCREEN_SAFE_AREA: Insets = { top: 44, bottom: 34, left: 0, right: 0 };
+const FULLSCREEN_CONTENT_SAFE_AREA: Insets = { top: 46, bottom: 0, left: 0, right: 0 };
+
+// ?fullscreen=1 previews full mode from the first paint; the console helper
+// below toggles it live, the way the client's own menu does.
+let fullscreen = new URLSearchParams(window.location.search).get('fullscreen') === '1';
+
+function setFullscreen(next: boolean): void {
+  fullscreen = next;
+  emit('fullscreenChanged');
+  emit('safeAreaChanged');
+  emit('contentSafeAreaChanged');
+}
+
 // Exposed only for manual testing from the browser console:
 // __workdeskMockBridge.setScheme('dark')
+// __workdeskMockBridge.setFullscreen(true)
 (window as any).__workdeskMockBridge = {
   setScheme(next: ColorScheme) {
     scheme = next;
     themeListeners.forEach((cb) => cb(currentTheme()));
   },
+  setFullscreen,
 };
 
 // Real requests need a real signed initData (plan section 5) — the mock
@@ -112,6 +138,13 @@ export const mockBridge: Bridge = {
     show() {},
     hide() {},
     onClick: () => () => {},
+  },
+  viewport: {
+    isFullscreen: () => fullscreen,
+    safeArea: () => (fullscreen ? FULLSCREEN_SAFE_AREA : NO_INSETS),
+    contentSafeArea: () => (fullscreen ? FULLSCREEN_CONTENT_SAFE_AREA : NO_INSETS),
+    requestFullscreen: () => setFullscreen(true),
+    exitFullscreen: () => setFullscreen(false),
   },
   async pick(options) {
     const items = FIXTURE_ITEMS.filter((item) => options.sources.includes(item.source));

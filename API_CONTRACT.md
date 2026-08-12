@@ -111,10 +111,16 @@ correctly lists projects they created.
 1. Resolve the authenticated user from initData.
 2. Build the group's member list: the bot's own user id (parsed from `RASAGRAM_BOT_TOKEN`'s `<id>:<secret>`
    prefix) + the authenticated user's id + every `members[].id`, de-duplicated.
+   If `avatarUrl` points at a file from `POST /uploads`, read its bytes off the public disk to send as the
+   group's photo (step 3). A URL that isn't one of ours, or a file that can't be read, is logged and skipped —
+   the group is then created without a photo rather than the request failing.
 3. Call the internal admin API, in order:
    - `POST /x/internal/auth/login` (`{"username": ..., "password": ...}` — `RASAGRAM_ADMIN_USERNAME`/
      `RASAGRAM_ADMIN_PASSWORD`) → a token, cached and reused across requests, re-fetched once on a 401.
-   - `POST /x/internal/chat/create` (`{"title": name, "user_ids": [...]}`) → `chat_id`.
+   - `POST /x/internal/chat/create` → `chat_id`. JSON (`{"title": name, "user_ids": [...]}`) when the project
+     has no avatar; `multipart/form-data` when it does — `title`, `user_ids` repeated once per id, and the
+     image under `file` (jpeg/png/gif) — so the group is created with its photo already set, no
+     `setChatPhoto` follow-up and no bot admin rights needed.
    - `POST /x/internal/chat/upgradeToSupergroup` (`{"chat_id": ...}`) → `channel_id`.
    - `POST /x/internal/chat/enableTopics` (`{"channel_id": ..., "enabled": true, "tabs": false}`).
    - `channel_id` (as a string) becomes `Project.ChatId`. If any of these four calls fails, the whole

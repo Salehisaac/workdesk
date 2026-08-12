@@ -13,7 +13,7 @@
   margin-inline: auto;
   /* Bottom room for the fixed create button plus the device's safe area, so the
      last tool tile is never trapped underneath it. */
-  padding-bottom: calc(96px + env(safe-area-inset-bottom, 0px));
+  padding-bottom: calc(96px + var(--wd-safe-bottom));
 }
 
 .tools {

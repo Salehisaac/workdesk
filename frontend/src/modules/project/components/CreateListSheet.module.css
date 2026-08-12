@@ -1,5 +1,5 @@
 .sheet {
-  padding: 16px 16px calc(16px + env(safe-area-inset-bottom));
+  padding: 16px 16px calc(16px + var(--wd-safe-bottom));
   display: flex;
   flex-direction: column;
   gap: 16px;

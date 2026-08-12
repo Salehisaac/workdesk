@@ -6,7 +6,7 @@
   inset-inline-end: 16px;
   /* env() falls back to 0px on browsers without safe-area support, so this is
      just "16px above the bottom" there and clears the home indicator on iOS. */
-  bottom: calc(16px + env(safe-area-inset-bottom, 0px));
+  bottom: calc(16px + var(--wd-safe-bottom));
   z-index: 900;
 
   width: 56px;
@@ -40,7 +40,7 @@
   padding: 8px 0 0;
   /* No cancel row to sit on any more, so the sheet owes the home indicator its
      own clearance. */
-  padding-bottom: calc(8px + env(safe-area-inset-bottom, 0px));
+  padding-bottom: calc(8px + var(--wd-safe-bottom));
   background: var(--rasagram-theme-bg-color);
 }
 

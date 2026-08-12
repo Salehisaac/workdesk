@@ -20,6 +20,18 @@
   --rasagram-theme-subtitle-text-color: #5c6773;
   --rasagram-theme-destructive-text-color: #e5484d;
 
+  /* Screen edges the app must keep clear. Outside fullscreen that's purely the
+     device's own notch / home indicator, which is what these defaults are —
+     use them instead of env() directly, everywhere. In fullscreen the client
+     paints its status bar and floating header over the page as well, and
+     bridge/safeArea.ts overwrites these on <html> with the larger values (an
+     element-level style.setProperty always wins over this stylesheet), so
+     every layout that reads them moves out from under that chrome at once. */
+  --wd-safe-top: env(safe-area-inset-top, 0px);
+  --wd-safe-bottom: env(safe-area-inset-bottom, 0px);
+  --wd-safe-left: env(safe-area-inset-left, 0px);
+  --wd-safe-right: env(safe-area-inset-right, 0px);
+
   /* Pre-boot fallback only — bridge/theme.ts overrides both of these
      in JS on every theme apply (using the bridge's live accent color),
      so this is just what shows for the instant before that first runs. */

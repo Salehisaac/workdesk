@@ -65,7 +65,7 @@
 .fab {
   position: fixed;
   inset-inline-end: 16px;
-  bottom: calc(74px + env(safe-area-inset-bottom, 0px));
+  bottom: calc(74px + var(--wd-safe-bottom));
   z-index: 900;
 
   display: flex;
@@ -98,7 +98,7 @@
   display: flex;
   justify-content: space-between;
   flex-shrink: 0;
-  padding: 6px 8px calc(6px + env(safe-area-inset-bottom, 0px));
+  padding: 6px 8px calc(6px + var(--wd-safe-bottom));
   border-top: 1px solid var(--rasagram-theme-secondary-bg-color);
   background: var(--rasagram-theme-bg-color);
 }

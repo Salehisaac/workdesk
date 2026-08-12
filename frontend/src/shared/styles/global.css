@@ -49,6 +49,32 @@ button, input, textarea {
   --text-align: right;
 }
 
+/*
+ * Fullscreen ("full mode") top chrome — see bridge/safeArea.ts. --wd-safe-top
+ * is 0 outside fullscreen, so this rule is inert there; in fullscreen it's the
+ * status bar plus the client's floating Close / collapse / menu buttons, which
+ * are painted over the page rather than above it.
+ *
+ * antd-mobile's NavBar is the top-most element on every page that has one
+ * (projects, board, reminders, onboarding), so one rule here covers all of
+ * them — the two hand-rolled sticky headers and the home header handle it in
+ * their own modules.
+ *
+ * The bar's height has to grow along with the padding: antd-mobile sets
+ * `height: var(--height)` and box-sizing is border-box app-wide, so padding-top
+ * alone would eat into the bar's own 45px instead of adding to it, squashing
+ * the back arrow and title. --height's 45px is antd-mobile's own default,
+ * restated (verified in node_modules/antd-mobile/es/components/nav-bar).
+ *
+ * Scoped under [dir='rtl'] for the same reason as the input rule above: it
+ * out-specifies antd-mobile's own `.adm-nav-bar` regardless of which
+ * stylesheet the bundler emits last.
+ */
+[dir='rtl'] .adm-nav-bar {
+  --height: calc(45px + var(--wd-safe-top));
+  padding-top: var(--wd-safe-top);
+}
+
 a {
   color: var(--rasagram-theme-link-color);
 }

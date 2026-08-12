@@ -5,11 +5,14 @@
   background: var(--rasagram-theme-bg-color);
 }
 
+/* Sticky at top: 0, so in fullscreen it parks exactly under the client's
+   floating header — --wd-safe-top keeps its contents clear of it, pinned or
+   not. See bridge/safeArea.ts. */
 .header {
   display: flex;
   align-items: center;
   gap: 8px;
-  padding: 12px 12px 10px;
+  padding: calc(12px + var(--wd-safe-top)) 12px 10px;
   position: sticky;
   top: 0;
   z-index: 10;
@@ -279,7 +282,7 @@
   bottom: 0;
   display: flex;
   justify-content: flex-end;
-  padding: 10px 16px calc(10px + env(safe-area-inset-bottom, 0px));
+  padding: 10px 16px calc(10px + var(--wd-safe-bottom));
   background: var(--rasagram-theme-bg-color);
   border-top: 1px solid var(--rasagram-theme-secondary-bg-color);
 }

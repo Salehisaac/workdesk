@@ -8,9 +8,14 @@ import { StrictMode } from 'react';
 import { createRoot } from 'react-dom/client';
 import { App } from './app/App';
 import { bridge } from './bridge';
+import { bootSafeArea } from './bridge/safeArea';
 import { bootTheme } from './bridge/theme';
 
 bootTheme();
+// Before ready(): in fullscreen the client's own header overlaps the page, and
+// this is what reserves room for it. Running it first means the first painted
+// frame is already laid out correctly instead of jumping once the insets land.
+bootSafeArea();
 bridge.ready();
 bridge.expand();
 

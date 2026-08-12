@@ -64,6 +64,14 @@ export interface ThemeParams {
 
 export type ColorScheme = 'light' | 'dark';
 
+/** Pixels of screen edge the app must not draw into. */
+export interface Insets {
+  top: number;
+  bottom: number;
+  left: number;
+  right: number;
+}
+
 export interface BridgeEnv {
   userId: string;
   initData: string;
@@ -91,6 +99,22 @@ export interface Bridge {
     show(): void;
     hide(): void;
     onClick(cb: () => void): () => void;
+  };
+  /**
+   * Fullscreen ("full mode", SDK 8.0+). In fullscreen the client stops
+   * reserving a strip above the webview for its own chrome and paints the
+   * status bar and the floating Close / collapse / menu buttons *on top of*
+   * the page instead — so the app has to keep its own top chrome clear of
+   * them. See bridge/safeArea.ts, which is what actually consumes this.
+   */
+  viewport: {
+    isFullscreen(): boolean;
+    /** The device's own insets: status bar / notch / home indicator. */
+    safeArea(): Insets;
+    /** What the *client's* chrome claims on top of that (its floating header). */
+    contentSafeArea(): Insets;
+    requestFullscreen(): void;
+    exitFullscreen(): void;
   };
   pick(options: PickOptions): Promise<PickedItem[]>;
   openContactPicker(): Promise<DeviceContact | null>;

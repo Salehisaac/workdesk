@@ -1,9 +1,13 @@
+/* --wd-safe-top is 0 in normal mode and the status bar + the client's floating
+   header in fullscreen, where both are painted over the top of the page —
+   without it the brand and the /me button sit under the Close and menu
+   buttons. See bridge/safeArea.ts. */
 .header {
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: 12px;
-  padding: 14px 16px 6px;
+  padding: calc(14px + var(--wd-safe-top)) 16px 6px;
 }
 
 .brand {

@@ -221,8 +221,10 @@ func (c *Client) SendMessage(chatId, text string) error {
 // bytes are being uploaded rather than referenced by file_id.
 //
 // Requires the bot to be an administrator in the chat with can_change_info.
-// Callers should treat a failure as non-fatal — a project without a group photo
-// still works.
+//
+// Not used by project creation anymore — the admin API's chat/create takes the
+// photo directly (see rasagramadmin.CreateTopicGroup), which needs no bot
+// privileges at all. This stays for changing an existing group's photo.
 func (c *Client) SetChatPhoto(chatId string, photo []byte, filename string) error {
 	groupId, err := groupChatId(chatId)
 	if err != nil {
