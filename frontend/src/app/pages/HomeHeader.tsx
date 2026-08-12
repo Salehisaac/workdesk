@@ -55,7 +55,7 @@ export function HomeHeader() {
           <AppOutline />
         </span>
         <span className={styles.brandText}>
-          <span className={styles.brandTitle}>ورک‌دسک</span>
+          <span className={styles.brandTitle}>همکار</span>
           <span className={styles.brandSubtitle}>ابزارهای کاری در دل مسنجر</span>
         </span>
       </div>
