@@ -27,6 +27,28 @@ button, input, textarea {
   font-family: inherit;
 }
 
+/*
+ * antd-mobile's Input and TextArea hardcode `--text-align: left` on their root
+ * and then apply `text-align: var(--text-align)` to the field, so every input
+ * in the app (title, description, checklist, list name, tag name, project name,
+ * join slug) rendered left-aligned with its Persian placeholder stranded on the
+ * wrong side.
+ *
+ * postcss-rtlcss can't catch this one: it rewrites physical values inside
+ * declarations it understands, but `--text-align: left` is a custom property —
+ * an opaque token as far as the plugin is concerned, so the `left` survives
+ * into the RTL build.
+ *
+ * Scoped under [dir='rtl'] rather than marked !important: the extra selector
+ * out-specifies antd-mobile's own `.adm-input` no matter which stylesheet the
+ * bundler emits last, and a single field that genuinely wants LTR (a URL slug,
+ * say) can still opt out by setting --text-align on itself inline.
+ */
+[dir='rtl'] .adm-input,
+[dir='rtl'] .adm-text-area {
+  --text-align: right;
+}
+
 a {
   color: var(--rasagram-theme-link-color);
 }
