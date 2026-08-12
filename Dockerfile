@@ -1,5 +1,5 @@
 # ---- Frontend build ----
-FROM node:20-alpine AS frontend
+FROM docker-mirror.rso-co.ir/node:20-alpine AS frontend
 
 WORKDIR /build
 
@@ -11,7 +11,7 @@ COPY frontend/ .
 ARG VITE_JOIN_BASE_URL
 RUN npm run build
 
-FROM golang:alpine AS backend
+FROM docker-mirror.rso-co.ir/golang:alpine AS backend
 
 ENV GO111MODULE=on \
     CGO_ENABLED=0
@@ -23,7 +23,7 @@ RUN go mod tidy
 RUN go build --ldflags "-s -w -extldflags -static" -o main .
 
 
-FROM alpine:latest
+FROM docker-mirror.rso-co.ir/alpine:latest
 
 RUN apk add --no-cache ca-certificates tzdata
 

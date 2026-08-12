@@ -1,4 +1,4 @@
-import { BillOutline, ContentOutline, FileOutline, FolderOutline, TeamOutline, UnorderedListOutline } from 'antd-mobile-icons';
+import { BellOutline, BillOutline, ContentOutline, FileOutline, FolderOutline, UnorderedListOutline } from 'antd-mobile-icons';
 import type { ReactNode } from 'react';
 
 /**
@@ -39,12 +39,22 @@ export const WORKDESK_MODULES: WorkdeskModule[] = [
     createTo: '/projects/new',
     inToolGrid: true,
   },
-  { key: 'workgroup', label: 'کارگروه', description: 'ساخت کارگروه و اعضای آن', icon: <TeamOutline />, inToolGrid: true },
   {
     key: 'meeting-repo',
     label: 'مخزن‌جلسه',
     description: 'بایگانی جلسه‌ها و مصوبه‌ها',
     icon: <FolderOutline />,
+    inToolGrid: true,
+  },
+  // The one module that talks to a person instead of a project: creating a
+  // reminder sends it to the owner's direct chat with the bot.
+  {
+    key: 'reminder',
+    label: 'یادآور',
+    description: 'یادآوری که به پیام‌های شما فرستاده می‌شود',
+    icon: <BellOutline />,
+    to: '/reminders',
+    createTo: '/reminders/new',
     inToolGrid: true,
   },
   // Not a tile — the reference's tool row is the 5 above — but it is creatable,

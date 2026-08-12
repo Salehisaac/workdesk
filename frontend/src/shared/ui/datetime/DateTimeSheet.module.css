@@ -1,0 +1,94 @@
+/* Chrome for the shared date+time sheet. Mirrors the job sheets' chrome — they
+   were one component before the reminder module needed the same picker. */
+
+
+.sheet {
+  display: flex;
+  flex-direction: column;
+  padding-top: 8px;
+  padding-bottom: calc(8px + env(safe-area-inset-bottom, 0px));
+  background: var(--rasagram-theme-bg-color);
+  max-height: 82vh;
+}
+
+.handle {
+  align-self: center;
+  width: 40px;
+  height: 4px;
+  margin-bottom: 8px;
+  border-radius: 999px;
+  background: var(--rasagram-theme-secondary-bg-color);
+  border: 1px solid var(--rasagram-theme-hint-color);
+  border-color: color-mix(in srgb, var(--rasagram-theme-hint-color) 35%, transparent);
+}
+
+.sheetHead {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 4px 12px 10px;
+}
+
+.headTitle {
+  flex: 1;
+  min-width: 0;
+  text-align: center;
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--rasagram-theme-text-color);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.headClose,
+.headTool {
+  width: 34px;
+  height: 34px;
+  flex-shrink: 0;
+  border: none;
+  border-radius: 10px;
+  background: none;
+  color: var(--rasagram-theme-text-color);
+  font-size: 19px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+}
+
+.headTool {
+  color: var(--rasagram-theme-hint-color);
+}
+
+.headToolActive {
+  color: var(--rasagram-theme-accent-text-color);
+  background: var(--rasagram-theme-secondary-bg-color);
+}
+
+.headConfirm {
+  width: 34px;
+  height: 34px;
+  flex-shrink: 0;
+  border: none;
+  border-radius: 50%;
+  background: var(--rasagram-theme-button-color);
+  color: var(--rasagram-theme-button-text-color);
+  font-size: 17px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+}
+
+.yearScroll {
+  overflow-y: auto;
+}
+
+.dayNote {
+  margin: 0;
+  padding: 12px 16px 4px;
+  text-align: center;
+  font-size: 12.5px;
+  color: var(--rasagram-theme-hint-color);
+}

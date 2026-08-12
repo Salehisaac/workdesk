@@ -1,43 +1,46 @@
 import { Popup } from 'antd-mobile';
 import { AppstoreOutline, CalendarOutline, CheckOutline, CloseOutline } from 'antd-mobile-icons';
 import { useEffect, useMemo, useState } from 'react';
-import { useAgenda } from '../../../agenda/api';
-import { formatLongDate, startOfDay, toDayKey, today as todayDate, toPersianDigits } from '../../../../shared/date/jalali';
-import { ExpandableJalaliCalendar } from '../../../../shared/ui/calendar/ExpandableJalaliCalendar';
-import { JalaliYearView } from '../../../../shared/ui/calendar/JalaliYearView';
-import { ClockTimePicker } from '../../../../shared/ui/time/ClockTimePicker';
-import type { TimeValue } from '../../../../shared/ui/time/ClockTimePicker';
-import styles from './JobSheets.module.css';
+import { formatLongDate, startOfDay, toDayKey, today as todayDate, toPersianDigits } from '../../date/jalali';
+import { ExpandableJalaliCalendar } from '../calendar/ExpandableJalaliCalendar';
+import { JalaliYearView } from '../calendar/JalaliYearView';
+import type { CalendarMarker } from '../calendar/types';
+import { ClockTimePicker } from '../time/ClockTimePicker';
+import type { TimeValue } from '../time/ClockTimePicker';
+import styles from './DateTimeSheet.module.css';
 
-interface JobDueDateSheetProps {
+interface DateTimeSheetProps {
   visible: boolean;
-  /** The deadline being edited, or null when the job has none yet. */
+  /** The moment being edited, or null when there isn't one yet. */
   value: Date | null;
+  title: string;
+  /** dayKey → indicator dots. Supplied by the caller (see useAgendaCalendar). */
+  markers?: ReadonlyMap<string, readonly CalendarMarker[]>;
+  /** dayKey → how many items that day already holds, for the footnote. */
+  dayCounts?: ReadonlyMap<string, number>;
   onClose: () => void;
   onConfirm: (value: Date) => void;
 }
 
 /**
- * Deadline picking in two steps, the way the reference does it: choose the day
- * on a calendar, then the time. The calendar is the same
- * ExpandableJalaliCalendar the home dashboard uses — opened on the month, since
- * picking a date is the entire reason this sheet exists — and it shows the same
- * agenda dots, so a deadline can be placed against what's already on that day.
+ * Picking a moment in two steps: the day on a calendar, then the time on a
+ * clock. Shared by job deadlines and reminders — both want exactly this, and
+ * the calendar it wraps is the same one the home dashboard uses (opened on the
+ * month, since picking a date is the entire reason the sheet is on screen).
  */
-export function JobDueDateSheet({ visible, value, onClose, onConfirm }: JobDueDateSheetProps) {
+export function DateTimeSheet({
+  visible,
+  value,
+  title,
+  markers,
+  dayCounts,
+  onClose,
+  onConfirm,
+}: DateTimeSheetProps) {
   const today = useMemo(() => todayDate(), []);
   const [day, setDay] = useState<Date>(value ?? today);
   const [showYear, setShowYear] = useState(false);
   const [timeOpen, setTimeOpen] = useState(false);
-
-  const agenda = useAgenda();
-  const markers = useMemo(() => {
-    const map = new Map<string, { id: string; color: string; label: string }[]>();
-    for (const [dayKey, kinds] of agenda.kindsByDay) {
-      map.set(dayKey, kinds.map((kind) => ({ id: kind, color: `var(--wd-kind-${kind})`, label: kind })));
-    }
-    return map;
-  }, [agenda.kindsByDay]);
 
   useEffect(() => {
     if (!visible) return;
@@ -46,11 +49,11 @@ export function JobDueDateSheet({ visible, value, onClose, onConfirm }: JobDueDa
     setTimeOpen(false);
   }, [visible, value, today]);
 
-  const dayItemCount = agenda.byDay.get(toDayKey(day))?.length ?? 0;
+  const dayItemCount = dayCounts?.get(toDayKey(day)) ?? 0;
 
   function handleTimeConfirm(time: TimeValue) {
     // Built from the *local* calendar day plus the chosen time, never from a
-    // UTC instant — so the deadline stays on the Jalali day that was tapped.
+    // UTC instant — so the result stays on the Jalali day that was tapped.
     const result = startOfDay(day);
     result.setHours(time.hour, time.minute, 0, 0);
     setTimeOpen(false);
@@ -86,9 +89,9 @@ export function JobDueDateSheet({ visible, value, onClose, onConfirm }: JobDueDa
               <CalendarOutline />
             </button>
 
-            <span className={styles.headTitle}>{showYear ? 'انتخاب روز' : formatLongDate(day)}</span>
+            <span className={styles.headTitle}>{showYear ? title : formatLongDate(day)}</span>
 
-            {/* Whole-year view, for a deadline outside the month on screen. */}
+            {/* Whole-year view, for a date outside the month on screen. */}
             <button
               type="button"
               className={`${styles.headTool} ${showYear ? styles.headToolActive : ''}`}

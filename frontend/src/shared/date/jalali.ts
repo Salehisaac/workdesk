@@ -79,6 +79,28 @@ export function today(): Date {
   return startOfDay(new Date());
 }
 
+/**
+ * RFC 3339 carrying *this device's* UTC offset — `2026-08-12T14:05:00+03:30`
+ * rather than Date.toISOString()'s `…T10:35:00Z`.
+ *
+ * Both name the same instant, but only this one still knows what the user's
+ * clock said. The backend needs that to write a reminder's time back out in
+ * Persian: rendering the normalized instant in a UTC container would tell an
+ * Iranian user 10:35, and a late-evening time would print the previous Jalali
+ * day.
+ */
+export function toLocalIso(date: Date): string {
+  const offsetMinutes = -date.getTimezoneOffset();
+  const sign = offsetMinutes < 0 ? '-' : '+';
+  const abs = Math.abs(offsetMinutes);
+  const pad = (value: number) => String(value).padStart(2, '0');
+  return (
+    `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}` +
+    `T${pad(date.getHours())}:${pad(date.getMinutes())}:${pad(date.getSeconds())}` +
+    `${sign}${pad(Math.floor(abs / 60))}:${pad(abs % 60)}`
+  );
+}
+
 /** Column index (0 = شنبه … 6 = جمعه) of a date in the Persian week. */
 export function weekdayIndex(date: Date): number {
   // JS getDay(): 0 = Sunday … 6 = Saturday. Saturday must map to 0.

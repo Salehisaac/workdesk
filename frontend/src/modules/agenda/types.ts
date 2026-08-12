@@ -34,6 +34,17 @@ export const AGENDA_KIND_LABEL: Record<AgendaKind, string> = {
   note: 'یادداشت',
 };
 
+/**
+ * One accent per kind, from tokens.css. Kept beside the labels so a calendar
+ * dot and the dashboard section it belongs to can't drift apart.
+ */
+export const AGENDA_KIND_COLOR: Record<AgendaKind, string> = {
+  session: 'var(--wd-kind-session)',
+  decision: 'var(--wd-kind-decision)',
+  job: 'var(--wd-kind-job)',
+  note: 'var(--wd-kind-note)',
+};
+
 export interface AgendaItem {
   /** Unique across kinds — the source id is prefixed, ids only collide per-table. */
   id: string;

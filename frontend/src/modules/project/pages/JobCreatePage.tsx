@@ -12,11 +12,12 @@ import {
 } from 'antd-mobile-icons';
 import { useMemo, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
-import { formatShortDate, formatTime } from '../../../shared/date/jalali';
+import { formatShortDate, formatTime, toLocalIso } from '../../../shared/date/jalali';
+import { DateTimeSheet } from '../../../shared/ui/datetime/DateTimeSheet';
+import { useAgendaCalendar } from '../../agenda/api';
 import { EmptyState } from '../../../shared/ui/EmptyState';
 import { useCreateJob, useProject, useProjectTags } from '../api';
 import { JobAssigneeSheet } from '../components/job/JobAssigneeSheet';
-import { JobDueDateSheet } from '../components/job/JobDueDateSheet';
 import { JobStatusSheet } from '../components/job/JobStatusSheet';
 import { JobTagSheet } from '../components/job/JobTagSheet';
 import { tagColor } from '../components/job/tagColor';
@@ -31,6 +32,7 @@ export function JobCreatePage() {
   const navigate = useNavigate();
   const project = useProject(projectId);
   const createJob = useCreateJob(projectId ?? '');
+  const { markers, dayCounts } = useAgendaCalendar();
 
   const [selectedListId, setSelectedListId] = useState(listId ?? '');
   const [title, setTitle] = useState('');
@@ -82,9 +84,10 @@ export function JobCreatePage() {
         description: description.trim() || undefined,
         assigneeIds,
         tagIds,
-        // Sent as an instant, but built from a local calendar day + time, so it
-        // round-trips back to the same Jalali day the user tapped.
-        dueAt: dueAt ? dueAt.toISOString() : undefined,
+        // Built from a local calendar day + time and sent with this device's
+        // offset, so it round-trips back to the Jalali day the user tapped —
+        // see toLocalIso.
+        dueAt: dueAt ? toLocalIso(dueAt) : undefined,
         checklist: checklist.map((text) => ({ text })),
         status,
       });
@@ -317,9 +320,12 @@ export function JobCreatePage() {
         }}
       />
 
-      <JobDueDateSheet
+      <DateTimeSheet
         visible={sheet === 'due'}
         value={dueAt}
+        title="انتخاب روز"
+        markers={markers}
+        dayCounts={dayCounts}
         onClose={() => setSheet(null)}
         onConfirm={(value) => {
           setDueAt(value);

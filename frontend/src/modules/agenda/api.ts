@@ -1,5 +1,6 @@
 import { useMemo } from 'react';
 import { toDayKey, toPersianDigits } from '../../shared/date/jalali';
+import type { CalendarMarker } from '../../shared/ui/calendar/types';
 import { useSessions, useDecisions } from '../meeting/api';
 import { DECISION_STATUS_LABEL, SESSION_STATUS_LABEL } from '../meeting/types';
 import type { Decision, Session } from '../meeting/types';
@@ -8,6 +9,7 @@ import type { Note } from '../note/types';
 import { useJobs } from '../project/api';
 import { JOB_STATUS_LABEL } from '../project/types';
 import type { Job } from '../project/types';
+import { AGENDA_KIND_COLOR, AGENDA_KIND_LABEL } from './types';
 import type { AgendaItem, AgendaKind } from './types';
 
 export interface Agenda {
@@ -147,4 +149,35 @@ export function useAgenda(): Agenda {
     notes.isLoading,
     notes.isError,
   ]);
+}
+
+export interface AgendaCalendar {
+  /** dayKey → indicator dots, ready for ExpandableJalaliCalendar. */
+  markers: ReadonlyMap<string, readonly CalendarMarker[]>;
+  /** dayKey → how many items that day holds, for "۳ مورد در این روز…" footnotes. */
+  dayCounts: ReadonlyMap<string, number>;
+}
+
+/**
+ * The agenda reshaped for whatever is showing a calendar — the home dashboard
+ * and the date-picker sheet both need exactly this and nothing else, so the
+ * mapping lives here once instead of in each of them.
+ */
+export function useAgendaCalendar(): AgendaCalendar {
+  const agenda = useAgenda();
+
+  return useMemo(() => {
+    const markers = new Map<string, CalendarMarker[]>();
+    for (const [dayKey, kinds] of agenda.kindsByDay) {
+      markers.set(
+        dayKey,
+        kinds.map((kind) => ({ id: kind, color: AGENDA_KIND_COLOR[kind], label: AGENDA_KIND_LABEL[kind] })),
+      );
+    }
+
+    const dayCounts = new Map<string, number>();
+    for (const [dayKey, dayItems] of agenda.byDay) dayCounts.set(dayKey, dayItems.length);
+
+    return { markers, dayCounts };
+  }, [agenda.kindsByDay, agenda.byDay]);
 }

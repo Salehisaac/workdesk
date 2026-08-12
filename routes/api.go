@@ -38,6 +38,12 @@ func Api() {
 		router.Get("/jobs", jobController.Index)
 		router.Post("/projects/{id}/jobs", jobController.Store)
 
+		// Reminders belong to a person, not a project — creating one DMs it to
+		// the owner via the bot.
+		reminderController := controllers.NewReminderController()
+		router.Get("/reminders", reminderController.Index)
+		router.Post("/reminders", reminderController.Store)
+
 		topicIconController := controllers.NewTopicIconController()
 		router.Get("/topic-icons", topicIconController.Index)
 		router.Get("/topic-icons/animation", topicIconController.Animation)

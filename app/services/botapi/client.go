@@ -196,6 +196,23 @@ func (c *Client) DeleteForumTopic(chatId, topicId string) error {
 	return nil
 }
 
+// SendMessage sends a plain-text message to a chat.
+//
+// For a direct message pass the recipient's *user* id verbatim: per this
+// platform's chat_id convention (see groupChatId above), a positive number
+// already means a private user chat, so unlike group ids it needs no
+// transformation. The bot can only open a DM with someone who has started it —
+// which every mini-app user has, since the mini-app is launched from the bot.
+func (c *Client) SendMessage(chatId, text string) error {
+	if err := c.post("sendMessage", map[string]any{
+		"chat_id": chatId,
+		"text":    text,
+	}, nil); err != nil {
+		return fmt.Errorf("botapi: sendMessage: %w", err)
+	}
+	return nil
+}
+
 func (c *Client) post(method string, payload any, out any) error {
 	body, err := json.Marshal(payload)
 	if err != nil {

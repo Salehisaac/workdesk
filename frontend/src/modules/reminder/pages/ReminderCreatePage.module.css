@@ -1,0 +1,176 @@
+/* Same form chrome as the job create page — the two screens are the same
+   shape: a sticky header, stacked fields, and icon+label rows. */
+
+
+.page {
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+  background: var(--rasagram-theme-bg-color);
+}
+
+.back {
+  width: 36px;
+  height: 36px;
+  flex-shrink: 0;
+  border: none;
+  border-radius: 10px;
+  background: none;
+  color: var(--rasagram-theme-text-color);
+  font-size: 20px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+}
+
+.headerTitle {
+  flex: 1;
+  min-width: 0;
+  margin: 0;
+  text-align: center;
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--rasagram-theme-text-color);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.submit {
+  width: 36px;
+  height: 36px;
+  flex-shrink: 0;
+  border: none;
+  border-radius: 50%;
+  background: var(--rasagram-theme-button-color);
+  color: var(--rasagram-theme-button-text-color);
+  font-size: 18px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+}
+
+.form {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+}
+
+.field {
+  padding: 14px 16px;
+  border-bottom: 1px solid var(--rasagram-theme-secondary-bg-color);
+}
+
+.row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 12px 16px;
+  border-bottom: 1px solid var(--rasagram-theme-secondary-bg-color);
+  min-height: 56px;
+}
+
+.rowIcon {
+  width: 24px;
+  flex-shrink: 0;
+  font-size: 20px;
+  color: var(--rasagram-theme-text-color);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.rowLabel {
+  flex-shrink: 0;
+  font-size: 14px;
+  color: var(--rasagram-theme-text-color);
+}
+
+.rowValue {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 8px;
+}
+
+.rowAdd {
+  width: 32px;
+  height: 32px;
+  flex-shrink: 0;
+  border: none;
+  border-radius: 50%;
+  background: var(--rasagram-theme-secondary-bg-color);
+  color: var(--rasagram-theme-accent-text-color);
+  font-size: 18px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+}
+
+.chipRemove {
+  width: 20px;
+  height: 20px;
+  flex-shrink: 0;
+  border: none;
+  border-radius: 50%;
+  background: none;
+  color: inherit;
+  opacity: 0.7;
+  font-size: 13px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+}
+
+.header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 12px 12px 10px;
+  position: sticky;
+  top: 0;
+  z-index: 10;
+  background: var(--rasagram-theme-bg-color);
+}
+
+.titleInput {
+  --font-size: 17px;
+  --color: var(--rasagram-theme-text-color);
+  --placeholder-color: var(--rasagram-theme-hint-color);
+}
+
+.noteInput {
+  --font-size: 14px;
+  --color: var(--rasagram-theme-text-color);
+  --placeholder-color: var(--rasagram-theme-hint-color);
+}
+
+.whenChip {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  padding: 5px 12px;
+  border-radius: 999px;
+  border: 1px solid var(--rasagram-theme-secondary-bg-color);
+  font-size: 12.5px;
+  color: var(--rasagram-theme-text-color);
+}
+
+.whenTime {
+  color: var(--rasagram-theme-hint-color);
+}
+
+.hint {
+  margin: 0;
+  padding: 16px;
+  font-size: 12.5px;
+  line-height: 1.8;
+  color: var(--rasagram-theme-hint-color);
+}

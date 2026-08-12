@@ -1,0 +1,73 @@
+.page {
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+  background: var(--rasagram-theme-bg-color);
+}
+
+.body {
+  flex: 1;
+  overflow-y: auto;
+}
+
+.list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 12px 16px;
+}
+
+.card {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 12px 14px;
+  border-radius: 14px;
+  background: var(--rasagram-theme-secondary-bg-color);
+}
+
+.cardTop {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.title {
+  margin: 0;
+  flex: 1;
+  min-width: 0;
+  font-size: 14px;
+  font-weight: 600;
+  line-height: 1.6;
+  color: var(--rasagram-theme-text-color);
+  overflow-wrap: anywhere;
+}
+
+.sent {
+  flex-shrink: 0;
+  font-size: 16px;
+  color: #15803d;
+  display: flex;
+}
+
+:root[data-color-scheme='dark'] .sent {
+  color: #34d399;
+}
+
+.note {
+  margin: 0;
+  font-size: 12.5px;
+  line-height: 1.7;
+  color: var(--rasagram-theme-subtitle-text-color);
+  overflow-wrap: anywhere;
+}
+
+.when {
+  font-size: 12px;
+  color: var(--rasagram-theme-hint-color);
+}
+
+.footer {
+  padding: 12px 16px calc(12px + env(safe-area-inset-bottom, 0px));
+}

@@ -20,7 +20,7 @@ services:
       - workdesk_storage:/www/storage
 
   postgres:
-    image: postgres:16-alpine
+    image: docker-mirror.rso-co.ir/postgres:16-alpine
     restart: always
     environment:
       POSTGRES_DB: ${DB_DATABASE:?set DB_DATABASE in .env}
