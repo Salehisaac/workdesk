@@ -1,0 +1,167 @@
+.popup {
+  border-radius: 20px;
+  background: var(--rasagram-theme-bg-color);
+}
+
+.dialog {
+  display: flex;
+  flex-direction: column;
+  padding: 18px 18px 10px;
+  /* The dial is a fixed 260 + padding; below this the SVG scales down instead
+     of overflowing (valueAtPoint divides by the rendered scale). */
+  max-width: min(92vw, 320px);
+}
+
+.title {
+  margin: 0 0 14px;
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--rasagram-theme-hint-color);
+}
+
+.readout {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  margin-bottom: 16px;
+}
+
+.field {
+  min-width: 88px;
+  padding: 8px 4px;
+  border: none;
+  border-radius: 10px;
+  background: var(--rasagram-theme-secondary-bg-color);
+  color: var(--rasagram-theme-text-color);
+  font-family: inherit;
+  font-size: 40px;
+  font-weight: 400;
+  line-height: 1.2;
+  text-align: center;
+  cursor: pointer;
+  transition:
+    background-color 0.18s ease,
+    color 0.18s ease;
+}
+
+.fieldActive {
+  background: var(--rasagram-theme-button-color);
+  color: var(--rasagram-theme-button-text-color);
+}
+
+.fieldInput {
+  width: 100%;
+  border: none;
+  background: none;
+  color: inherit;
+  font-family: inherit;
+  font-size: inherit;
+  font-weight: inherit;
+  text-align: center;
+  padding: 0;
+  outline: none;
+}
+
+.colon {
+  font-size: 34px;
+  color: var(--rasagram-theme-hint-color);
+}
+
+.dial {
+  align-self: center;
+  max-width: 100%;
+  height: auto;
+  /* Dragging the hand must not scroll the sheet underneath. */
+  touch-action: none;
+  -webkit-tap-highlight-color: transparent;
+  cursor: pointer;
+}
+
+.dial:focus-visible {
+  outline: 2px solid var(--rasagram-theme-accent-text-color);
+  outline-offset: 2px;
+  border-radius: 50%;
+}
+
+.face {
+  fill: var(--rasagram-theme-secondary-bg-color);
+}
+
+.hand {
+  stroke: var(--rasagram-theme-button-color);
+  stroke-width: 2;
+}
+
+.hub,
+.selector {
+  fill: var(--rasagram-theme-button-color);
+}
+
+.selectorDot {
+  fill: var(--rasagram-theme-button-text-color);
+}
+
+.tick {
+  font-family: inherit;
+  font-size: 15px;
+  fill: var(--rasagram-theme-text-color);
+  user-select: none;
+}
+
+.tickSelected {
+  fill: var(--rasagram-theme-button-text-color);
+  font-weight: 700;
+}
+
+.actions {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  margin-top: 10px;
+}
+
+.spacer {
+  flex: 1;
+}
+
+.toggle {
+  width: 36px;
+  height: 36px;
+  border: none;
+  border-radius: 50%;
+  background: none;
+  color: var(--rasagram-theme-hint-color);
+  font-size: 19px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+}
+
+.toggle[aria-pressed='true'] {
+  color: var(--rasagram-theme-accent-text-color);
+  background: var(--rasagram-theme-secondary-bg-color);
+}
+
+.textButton {
+  padding: 8px 14px;
+  border: none;
+  border-radius: 8px;
+  background: none;
+  color: var(--rasagram-theme-accent-text-color);
+  font-family: inherit;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.textButton:active {
+  background: var(--rasagram-theme-secondary-bg-color);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .field {
+    transition: none;
+  }
+}

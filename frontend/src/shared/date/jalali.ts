@@ -52,6 +52,17 @@ export function toPersianDigits(value: string | number): string {
 }
 
 /**
+ * The inverse, for text the user typed. A Persian keyboard emits ۰-۹ and an
+ * Arabic one ٠-٩, but Number() only understands 0-9 — so anything read back out
+ * of an input has to come through here first.
+ */
+export function fromPersianDigits(value: string): string {
+  return value
+    .replace(/[۰-۹]/g, (digit) => String(digit.charCodeAt(0) - 0x06f0))
+    .replace(/[٠-٩]/g, (digit) => String(digit.charCodeAt(0) - 0x0660));
+}
+
+/**
  * Stable per-calendar-day key (`jYYYY-jMM-jDD`), for indexing items by day.
  * Built from the Jalali field getters rather than format() — this runs once per
  * item per render pass, and the getters are an order of magnitude cheaper than

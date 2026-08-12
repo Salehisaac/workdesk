@@ -1,18 +1,13 @@
-import { Picker, Popup } from 'antd-mobile';
-import type { PickerValue } from 'antd-mobile/es/components/picker-view';
+import { Popup } from 'antd-mobile';
 import { AppstoreOutline, CalendarOutline, CheckOutline, CloseOutline } from 'antd-mobile-icons';
 import { useEffect, useMemo, useState } from 'react';
 import { useAgenda } from '../../../agenda/api';
 import { formatLongDate, startOfDay, toDayKey, today as todayDate, toPersianDigits } from '../../../../shared/date/jalali';
 import { ExpandableJalaliCalendar } from '../../../../shared/ui/calendar/ExpandableJalaliCalendar';
 import { JalaliYearView } from '../../../../shared/ui/calendar/JalaliYearView';
+import { ClockTimePicker } from '../../../../shared/ui/time/ClockTimePicker';
+import type { TimeValue } from '../../../../shared/ui/time/ClockTimePicker';
 import styles from './JobSheets.module.css';
-
-const HOURS = Array.from({ length: 24 }, (_, hour) => ({ label: toPersianDigits(String(hour).padStart(2, '0')), value: String(hour) }));
-const MINUTES = Array.from({ length: 60 }, (_, minute) => ({
-  label: toPersianDigits(String(minute).padStart(2, '0')),
-  value: String(minute),
-}));
 
 interface JobDueDateSheetProps {
   visible: boolean;
@@ -53,12 +48,11 @@ export function JobDueDateSheet({ visible, value, onClose, onConfirm }: JobDueDa
 
   const dayItemCount = agenda.byDay.get(toDayKey(day))?.length ?? 0;
 
-  function handleTimeConfirm(selected: PickerValue[]) {
-    const [hour, minute] = selected;
+  function handleTimeConfirm(time: TimeValue) {
     // Built from the *local* calendar day plus the chosen time, never from a
     // UTC instant — so the deadline stays on the Jalali day that was tapped.
     const result = startOfDay(day);
-    result.setHours(Number(hour ?? 0), Number(minute ?? 0), 0, 0);
+    result.setHours(time.hour, time.minute, 0, 0);
     setTimeOpen(false);
     onConfirm(result);
   }
@@ -133,18 +127,13 @@ export function JobDueDateSheet({ visible, value, onClose, onConfirm }: JobDueDa
         </div>
       </Popup>
 
-      {/* Step two. antd-mobile's wheel picker rather than the reference's clock
-          face: it's the control the rest of this app already uses, and it's
-          reachable by keyboard and screen reader, which a clock dial is not. */}
-      <Picker
-        title="انتخاب زمان"
-        columns={[HOURS, MINUTES]}
+      {/* Step two: the clock dial. Its keyboard-entry mode is what keeps this
+          reachable without pointing at a circle. */}
+      <ClockTimePicker
         visible={timeOpen}
-        value={[String(day.getHours()), String(day.getMinutes())]}
-        onClose={() => setTimeOpen(false)}
+        value={{ hour: day.getHours(), minute: day.getMinutes() }}
+        onCancel={() => setTimeOpen(false)}
         onConfirm={handleTimeConfirm}
-        confirmText="تأیید"
-        cancelText="لغو"
       />
     </>
   );
