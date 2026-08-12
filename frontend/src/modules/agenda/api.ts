@@ -5,6 +5,8 @@ import { useSessions, useDecisions } from '../meeting/api';
 import { DECISION_STATUS_LABEL, SESSION_STATUS_LABEL } from '../meeting/types';
 import type { Decision, Session } from '../meeting/types';
 import { useNotes } from '../note/api';
+import { useReminders } from '../reminder/api';
+import type { Reminder } from '../reminder/types';
 import type { Note } from '../note/types';
 import { useJobs } from '../project/api';
 import { JOB_STATUS_LABEL } from '../project/types';
@@ -25,7 +27,7 @@ export interface Agenda {
 
 // Ordering inside a day: the timed things first (a session at 9:00 is the day's
 // anchor), then what came out of them, then the ambient stuff.
-const KIND_ORDER: Record<AgendaKind, number> = { session: 0, decision: 1, job: 2, note: 3 };
+const KIND_ORDER: Record<AgendaKind, number> = { session: 0, decision: 1, reminder: 2, job: 3, note: 4 };
 
 function sessionToItem(session: Session): AgendaItem {
   return {
@@ -76,6 +78,23 @@ function jobToItem(job: Job): AgendaItem {
   };
 }
 
+/** Only ever called for a reminder that has a `remindAt` — see useAgenda. */
+function reminderToItem(reminder: Reminder): AgendaItem {
+  return {
+    id: `reminder:${reminder.id}`,
+    kind: 'reminder',
+    title: reminder.title,
+    subtitle: reminder.note,
+    date: new Date(reminder.remindAt!),
+    hasTime: true,
+    location: null,
+    // Whether the bot has delivered it yet — the one thing about a reminder
+    // you can't tell from its own text.
+    status: reminder.notifiedAt ? 'ارسال شد' : 'در انتظار ارسال',
+    to: '/reminders',
+  };
+}
+
 function noteToItem(note: Note): AgendaItem {
   return {
     id: `note:${note.id}`,
@@ -103,6 +122,7 @@ export function useAgenda(): Agenda {
   const sessions = useSessions();
   const decisions = useDecisions();
   const notes = useNotes();
+  const reminders = useReminders();
 
   const items = useMemo<AgendaItem[]>(
     () => [
@@ -110,9 +130,12 @@ export function useAgenda(): Agenda {
       ...(decisions.data ?? []).map(decisionToItem),
       // A job with no deadline isn't on any day, so it isn't on the calendar.
       ...(jobs.data ?? []).filter((job) => job.dueAt).map(jobToItem),
+      // A reminder with no time isn't on any day (the API shouldn't produce
+      // one, but the field is nullable, so don't trust it).
+      ...(reminders.data ?? []).filter((reminder) => reminder.remindAt).map(reminderToItem),
       ...(notes.data ?? []).map(noteToItem),
     ],
-    [sessions.data, decisions.data, jobs.data, notes.data],
+    [sessions.data, decisions.data, jobs.data, reminders.data, notes.data],
   );
 
   return useMemo(() => {
@@ -135,8 +158,8 @@ export function useAgenda(): Agenda {
     return {
       byDay,
       kindsByDay,
-      isLoading: jobs.isLoading || sessions.isLoading || decisions.isLoading || notes.isLoading,
-      isError: jobs.isError || sessions.isError || decisions.isError || notes.isError,
+      isLoading: jobs.isLoading || sessions.isLoading || decisions.isLoading || notes.isLoading || reminders.isLoading,
+      isError: jobs.isError || sessions.isError || decisions.isError || notes.isError || reminders.isError,
     };
   }, [
     items,
@@ -148,6 +171,8 @@ export function useAgenda(): Agenda {
     decisions.isError,
     notes.isLoading,
     notes.isError,
+    reminders.isLoading,
+    reminders.isError,
   ]);
 }
 

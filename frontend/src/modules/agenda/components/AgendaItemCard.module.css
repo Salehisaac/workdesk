@@ -27,6 +27,10 @@
   border-inline-start-color: var(--wd-kind-note);
 }
 
+.card[data-kind='reminder'] {
+  border-inline-start-color: var(--wd-kind-reminder);
+}
+
 .cardInteractive {
   cursor: pointer;
 }

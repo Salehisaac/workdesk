@@ -1,4 +1,5 @@
 import {
+  BellOutline,
   CalendarOutline,
   CheckCircleOutline,
   ClockCircleOutline,
@@ -18,6 +19,7 @@ const KIND_ICON: Record<AgendaKind, ReactNode> = {
   decision: <CheckCircleOutline />,
   job: <FlagOutline />,
   note: <FileOutline />,
+  reminder: <BellOutline />,
 };
 
 interface AgendaItemCardProps {

@@ -18,6 +18,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"mime/multipart"
 	"net/http"
 	"strconv"
 	"time"
@@ -213,18 +214,61 @@ func (c *Client) SendMessage(chatId, text string) error {
 	return nil
 }
 
+// SetChatPhoto sets a group's photo from raw image bytes.
+//
+// Unlike every other call here this one is multipart, not JSON: the Bot API's
+// photo parameter is an InputFile, which has no JSON representation when the
+// bytes are being uploaded rather than referenced by file_id.
+//
+// Requires the bot to be an administrator in the chat with can_change_info.
+// Callers should treat a failure as non-fatal — a project without a group photo
+// still works.
+func (c *Client) SetChatPhoto(chatId string, photo []byte, filename string) error {
+	groupId, err := groupChatId(chatId)
+	if err != nil {
+		return fmt.Errorf("botapi: setChatPhoto: %w", err)
+	}
+
+	var body bytes.Buffer
+	form := multipart.NewWriter(&body)
+	if err := form.WriteField("chat_id", groupId); err != nil {
+		return fmt.Errorf("botapi: setChatPhoto: %w", err)
+	}
+	part, err := form.CreateFormFile("photo", filename)
+	if err != nil {
+		return fmt.Errorf("botapi: setChatPhoto: %w", err)
+	}
+	if _, err := part.Write(photo); err != nil {
+		return fmt.Errorf("botapi: setChatPhoto: %w", err)
+	}
+	if err := form.Close(); err != nil {
+		return fmt.Errorf("botapi: setChatPhoto: %w", err)
+	}
+
+	if err := c.postRaw("setChatPhoto", form.FormDataContentType(), body.Bytes(), nil); err != nil {
+		return fmt.Errorf("botapi: setChatPhoto: %w", err)
+	}
+	return nil
+}
+
 func (c *Client) post(method string, payload any, out any) error {
 	body, err := json.Marshal(payload)
 	if err != nil {
 		return err
 	}
+	return c.postRaw(method, "application/json", body, out)
+}
 
+// postRaw is the transport every method goes through — JSON callers via post(),
+// and the one multipart caller (SetChatPhoto) directly. Both share the same
+// URL shape and the same Telegram-envelope error handling.
+func (c *Client) postRaw(method, contentType string, body []byte, out any) error {
 	url := fmt.Sprintf("%s/bot%s/%s", c.baseURL, c.botToken, method)
 	req, err := http.NewRequest(http.MethodPost, url, bytes.NewReader(body))
 	if err != nil {
 		return err
 	}
-	req.Header.Set("Content-Type", "application/json")
+	req.Header.Set("Content-Type", contentType)
 
 	res, err := c.httpClient.Do(req)
 	if err != nil {

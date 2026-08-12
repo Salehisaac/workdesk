@@ -34,6 +34,14 @@ export default defineConfig({
         target: process.env.VITE_PROXY_TARGET || 'http://127.0.0.1:3000',
         changeOrigin: true,
       },
+      // Uploaded files. In production the Go binary serves the SPA and
+      // /storage from one origin (routes/web.go), so an uploaded avatar's
+      // root-relative URL just resolves; under `vite dev` the SPA is on :5173
+      // and nothing answers /storage without this, so every avatar 404s.
+      '/storage': {
+        target: process.env.VITE_PROXY_TARGET || 'http://127.0.0.1:3000',
+        changeOrigin: true,
+      },
     },
     // Bind-mount filesystem events don't reliably reach the container on
     // Docker Desktop (macOS/Windows). VITE_USE_POLLING=1 makes HMR fall back

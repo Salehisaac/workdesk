@@ -57,5 +57,24 @@ func (r *UploadController) Store(ctx http.Context) http.Response {
 		return ctx.Response().Status(500).Json(http.Json{"error": err.Error()})
 	}
 
-	return ctx.Response().Success().Json(http.Json{"url": disk.Url(path)})
+	// Root-relative, deliberately — NOT disk.Url(path).
+	//
+	// disk.Url() builds an absolute URL from APP_URL (config/filesystems.go),
+	// so it returns http://localhost/storage/... unless APP_URL happens to be
+	// set to whatever host the client is on. That URL then gets stored in
+	// projects.avatar_url, baking one environment's hostname into the data:
+	// the image 404s for every client that isn't on that host, and mixed-content
+	// rules block it outright once the app is served over https.
+	//
+	// The SPA, the API and this file are all served from the same origin
+	// (routes/web.go — Static("storage", ...)), so a root-relative path always
+	// resolves to the right place and carries no environment with it.
+	return ctx.Response().Success().Json(http.Json{"url": PublicUploadUrl(path)})
+}
+
+// PublicUploadUrl turns a "public" disk path into the URL the frontend uses.
+// Kept next to its inverse (uploadDiskPath, project_controller.go) so the two
+// can't drift apart.
+func PublicUploadUrl(path string) string {
+	return "/storage/" + path
 }

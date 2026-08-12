@@ -1,5 +1,5 @@
 import { DotLoading } from 'antd-mobile';
-import { CalendarOutline, FileOutline, PieOutline } from 'antd-mobile-icons';
+import { BellOutline, CalendarOutline, FileOutline, PieOutline } from 'antd-mobile-icons';
 import { useMemo, useState } from 'react';
 import type { ReactNode } from 'react';
 import { formatLongDate, isSameDay, today } from '../../../shared/date/jalali';
@@ -29,6 +29,12 @@ const SECTIONS: SectionConfig[] = [
     emptyText: 'کاری با مهلت این روز در پروژه‌های شما ثبت نشده است.',
   },
   {
+    group: 'reminders',
+    title: 'یادآورها',
+    icon: <BellOutline />,
+    emptyText: 'یادآوری برای این روز تنظیم نکرده‌اید.',
+  },
+  {
     group: 'notes',
     title: 'یادداشت‌ها',
     icon: <FileOutline />,
@@ -42,6 +48,7 @@ const FILTERS: { key: Filter; label: string }[] = [
   { key: 'all', label: 'همه' },
   { key: 'meetings', label: 'جلسات و مصوبات' },
   { key: 'projects', label: 'پروژه‌ها' },
+  { key: 'reminders', label: 'یادآورها' },
   { key: 'notes', label: 'یادداشت‌ها' },
 ];
 
@@ -57,7 +64,7 @@ export function DayDashboard({ selectedDate, items, isLoading, isError }: DayDas
   const [filter, setFilter] = useState<Filter>('all');
 
   const byGroup = useMemo(() => {
-    const groups: Record<AgendaGroup, AgendaItem[]> = { meetings: [], projects: [], notes: [] };
+    const groups: Record<AgendaGroup, AgendaItem[]> = { meetings: [], projects: [], reminders: [], notes: [] };
     for (const item of items) groups[AGENDA_GROUP_OF[item.kind]].push(item);
     return groups;
   }, [items]);

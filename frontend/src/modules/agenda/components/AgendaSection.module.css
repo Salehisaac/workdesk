@@ -41,6 +41,12 @@
   background: color-mix(in srgb, var(--wd-kind-job) 14%, transparent);
 }
 
+.section[data-group='reminders'] .icon {
+  color: var(--wd-kind-reminder);
+  background: var(--rasagram-theme-bg-color);
+  background: color-mix(in srgb, var(--wd-kind-reminder) 14%, transparent);
+}
+
 .section[data-group='notes'] .icon {
   color: var(--wd-kind-note);
   background: var(--rasagram-theme-bg-color);

@@ -10,8 +10,6 @@ import (
 	"goravel/app/facades"
 	"goravel/app/http/resources"
 	"goravel/app/models"
-	"goravel/app/services/botapi"
-	"goravel/app/support/jalali"
 )
 
 // ReminderController handles «یادآور» — the one WorkDesk module that talks to a
@@ -49,10 +47,10 @@ func (r *ReminderController) Index(ctx http.Context) http.Response {
 
 // Store — POST /api/v1/reminders.
 //
-// Creating a reminder delivers it straight to the owner's DM. That's the whole
-// point of the module living inside a messenger: the reminder arrives in a chat
-// the user already reads, instead of waiting behind a mini-app they'd have to
-// remember to open.
+// Saves it and stops there. Nothing is sent now: the only message a reminder
+// produces is the reminder itself, delivered at remind_at by
+// app/services/reminders. Confirming a save in the user's chat was noise —
+// the home dashboard already shows the reminder on its day.
 func (r *ReminderController) Store(ctx http.Context) http.Response {
 	authUser, errResp := currentUser(ctx)
 	if errResp != nil {
@@ -69,11 +67,9 @@ func (r *ReminderController) Store(ctx http.Context) http.Response {
 		return ctx.Response().Status(422).Json(http.Json{"error": "title is required"})
 	}
 
-	// Parsed with the standard library rather than carbon.Parse: carbon
-	// normalizes into its configured default zone, which keeps the instant but
-	// throws away the offset the client sent — and the offset is precisely what
-	// the message text needs to print the user's own wall clock. time.Parse
-	// keeps it on the returned Time's location.
+	// RFC3339 via the standard library, so an offset-carrying value from the
+	// client (see toLocalIso) parses to the right instant. Rendering is a
+	// separate concern — support/jalali converts into the display zone itself.
 	remindAt, err := stdtime.Parse(stdtime.RFC3339, strings.TrimSpace(request.RemindAt))
 	if err != nil {
 		return ctx.Response().Status(422).Json(http.Json{"error": "remindAt must be an RFC 3339 timestamp"})
@@ -93,44 +89,5 @@ func (r *ReminderController) Store(ctx http.Context) http.Response {
 		return ctx.Response().Status(500).Json(http.Json{"error": err.Error()})
 	}
 
-	// Confirmation only — the reminder itself is sent later by the scheduler
-	// (app/services/reminders). This stamps confirmed_at, never notified_at:
-	// notified_at is the dispatcher's "already fired" guard, and setting it here
-	// would mean the reminder is never actually delivered.
-	//
-	// A failed confirmation doesn't invalidate the reminder; the row is saved
-	// either way and will still fire on time. The response carries the null so
-	// the UI can say it saved without implying a message went out.
-	if err := botapi.New().SendMessage(authUser.ID, confirmationMessage(&reminder, remindAt)); err != nil {
-		facades.Log().Error("workdesk: reminder confirmation DM failed: " + err.Error())
-	} else {
-		reminder.ConfirmedAt = carbon.NewDateTime(carbon.Now())
-		if err := facades.Orm().Query().Save(&reminder); err != nil {
-			facades.Log().Error("workdesk: marking reminder confirmed failed: " + err.Error())
-		}
-	}
-
 	return ctx.Response().Status(201).Json(resources.Reminder(&reminder))
-}
-
-// confirmationMessage acknowledges the reminder at creation time. The reminder
-// itself is a different message, sent when it comes due — see
-// reminders.DueMessage.
-//
-// `remindAt` is the offset-preserving parse of what the client sent, not the
-// stored value: the frontend sends its own UTC offset (see toLocalIso) so the
-// text prints the user's wall clock. Formatting the normalized instant instead
-// would show an Iranian user's 14:05 as 10:35, and a late-evening reminder
-// would land on the previous Jalali day.
-func confirmationMessage(reminder *models.Reminder, remindAt stdtime.Time) string {
-	var b strings.Builder
-	b.WriteString("⏰ یادآور ثبت شد\n\n")
-	b.WriteString(reminder.Title)
-	if reminder.Note != nil {
-		b.WriteString("\n")
-		b.WriteString(*reminder.Note)
-	}
-	b.WriteString("\n\n🗓 ")
-	b.WriteString(jalali.FormatDateTime(remindAt))
-	return b.String()
 }

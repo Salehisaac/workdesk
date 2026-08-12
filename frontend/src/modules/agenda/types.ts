@@ -15,16 +15,17 @@
  * پروژه‌ها section on a given day is that day's job deadlines, not the projects
  * that happened to be created then.
  */
-export type AgendaKind = 'session' | 'decision' | 'job' | 'note';
+export type AgendaKind = 'session' | 'decision' | 'job' | 'note' | 'reminder';
 
 /** The three dashboard sections. Sessions and decisions share one, per design. */
-export type AgendaGroup = 'meetings' | 'projects' | 'notes';
+export type AgendaGroup = 'meetings' | 'projects' | 'notes' | 'reminders';
 
 export const AGENDA_GROUP_OF: Record<AgendaKind, AgendaGroup> = {
   session: 'meetings',
   decision: 'meetings',
   job: 'projects',
   note: 'notes',
+  reminder: 'reminders',
 };
 
 export const AGENDA_KIND_LABEL: Record<AgendaKind, string> = {
@@ -32,6 +33,7 @@ export const AGENDA_KIND_LABEL: Record<AgendaKind, string> = {
   decision: 'مصوبه',
   job: 'کار',
   note: 'یادداشت',
+  reminder: 'یادآور',
 };
 
 /**
@@ -43,6 +45,7 @@ export const AGENDA_KIND_COLOR: Record<AgendaKind, string> = {
   decision: 'var(--wd-kind-decision)',
   job: 'var(--wd-kind-job)',
   note: 'var(--wd-kind-note)',
+  reminder: 'var(--wd-kind-reminder)',
 };
 
 export interface AgendaItem {

@@ -35,6 +35,7 @@
   --wd-kind-decision: #f59e0b;
   --wd-kind-job: #8b5cf6;
   --wd-kind-note: #10b981;
+  --wd-kind-reminder: #e11d48;
 
   /* One colour per job status, shared by the status sheet's chips and the
      board card's status square — if these two disagree the square stops
@@ -91,6 +92,7 @@
   --wd-kind-decision: #fbbf24;
   --wd-kind-job: #a78bfa;
   --wd-kind-note: #34d399;
+  --wd-kind-reminder: #fb7185;
 
   --wd-status-paused: #fbbf24;
   --wd-status-done: #34d399;
