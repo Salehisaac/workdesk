@@ -11,6 +11,7 @@ import type {
   ProjectDetail,
   ProjectListItem,
   TopicIcon,
+  UpdateJobInput,
 } from './types';
 
 // Telegram's 6 standard forum-topic icon colors — the exact preset dots real
@@ -75,6 +76,23 @@ export function useCreateJob(projectId: string) {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: (input: CreateJobInput) => apiClient.post<Job>(`/projects/${projectId}/jobs`, input),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: projectKeys.jobs });
+      queryClient.invalidateQueries({ queryKey: projectKeys.detail(projectId) });
+    },
+  });
+}
+
+/**
+ * Editing a job invalidates the same two queries creating one does: the flat
+ * job list (which is both the board's source and the home calendar's deadline
+ * dots) and the project detail. A retitled or rescheduled job therefore
+ * updates everywhere it appears, not just on the board it was edited from.
+ */
+export function useUpdateJob(projectId: string, jobId: string) {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (input: UpdateJobInput) => apiClient.patch<Job>(`/projects/${projectId}/jobs/${jobId}`, input),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: projectKeys.jobs });
       queryClient.invalidateQueries({ queryKey: projectKeys.detail(projectId) });

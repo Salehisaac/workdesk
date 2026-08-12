@@ -196,6 +196,7 @@ export function ProjectBoardPage() {
               isActive={list.id === activeListId}
               loading={jobs.isLoading}
               onDelete={() => handleDeleteList(list.id)}
+              onOpenJob={(jobId) => navigate(`/projects/${projectId}/jobs/${jobId}/edit`)}
             />
           ))}
         </div>

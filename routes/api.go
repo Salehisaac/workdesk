@@ -34,9 +34,12 @@ func Api() {
 
 		// GET /jobs is flat on purpose — the home calendar needs every
 		// deadline the caller can see, across all their projects, in one go.
+		// Writes stay project-scoped, so the membership check has a project
+		// to check against (see loadProjectForMember).
 		jobController := controllers.NewJobController()
 		router.Get("/jobs", jobController.Index)
 		router.Post("/projects/{id}/jobs", jobController.Store)
+		router.Patch("/projects/{id}/jobs/{jobId}", jobController.Update)
 
 		// Reminders belong to a person, not a project — creating one DMs it to
 		// the owner via the bot.

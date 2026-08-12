@@ -253,13 +253,34 @@
   border-bottom: 1px solid var(--rasagram-theme-secondary-bg-color);
 }
 
+/* Both the tickable button on a saved item and the inert square on the
+   "add another" row, which is a plain <span> — hence no button-only
+   properties that a span would ignore anyway. */
 .checklistBox {
+  display: flex;
+  align-items: center;
+  justify-content: center;
   width: 20px;
   height: 20px;
   flex-shrink: 0;
+  padding: 0;
   border-radius: 5px;
   border: 1.5px solid var(--rasagram-theme-text-color);
+  background: transparent;
+  color: var(--rasagram-theme-button-text-color);
+  font-size: 12px;
   opacity: 0.75;
+}
+
+button.checklistBox {
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.checklistBox[data-done] {
+  border-color: var(--rasagram-theme-button-color);
+  background: var(--rasagram-theme-button-color);
+  opacity: 1;
 }
 
 .checklistText {
@@ -268,6 +289,11 @@
   font-size: 14px;
   color: var(--rasagram-theme-text-color);
   overflow-wrap: anywhere;
+}
+
+.checklistText[data-done] {
+  text-decoration: line-through;
+  opacity: 0.55;
 }
 
 .checklistInput {

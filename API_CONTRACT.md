@@ -313,6 +313,45 @@ would be a request per list.
 
 ---
 
+## `PATCH /api/v1/projects/:id/jobs/:jobId`
+
+Edits one job. Backs the edit screen you reach by tapping a card on the board
+(`/projects/:projectId/jobs/:jobId/edit`).
+
+Project-scoped rather than a flat `/jobs/:id` so the caller's membership is checked against the same project
+the job must belong to, in one step — the same shape every other write here has. A `jobId` from another
+project reads as **404**, not 403: it does not exist as far as this caller is concerned.
+
+**Request** — every field optional; only the ones **present** are changed:
+
+```json
+{
+  "listId": "4", "title": "تحویل طرح نهایی", "description": "…",
+  "assigneeIds": ["101"], "tagIds": ["7"],
+  "dueAt": "2026-10-03T03:00:00.000Z",
+  "checklist": [{ "text": "جمع‌آوری بازخوردها", "done": true }],
+  "status": "done"
+}
+```
+
+- **Present-but-empty clears; omitted leaves alone.** `"dueAt": ""` drops the deadline, `"assigneeIds": []`
+  removes every assignee, `"description": ""` clears the description. A JSON `null` reads the same as omitted
+  (it unmarshals a pointer back to nil), so use the empty value to clear — never null.
+- Partial on purpose even though the edit form sends everything: it lets a single field be flipped from
+  elsewhere later — a status from the board, a checklist item from a card — without resending, and risking
+  clobbering, the rest.
+- `checklist` items carry `done` here, unlike on create where nothing is ticked off yet. The collection is
+  **replaced wholesale**, so item ids change on every save; nothing refers to them across a request.
+- Same ownership rules as `POST` — `listId`, `assigneeIds` and `tagIds` must all belong to this project,
+  otherwise **422**. Everything is validated before anything is written, so a request that fails validation
+  leaves the job exactly as it was.
+- `number` and `createdBy` are **not** editable: the first is a per-project sequence the backend owns, the
+  second records who filed the job and editing should not rewrite it.
+
+**Response 200** — the updated `Job`.
+
+---
+
 ## `GET /api/v1/topic-icons`
 
 Proxies the Bot API's `getForumTopicIconStickers` (`POST /bot<token>/getForumTopicIconStickers`, no params) —
@@ -370,6 +409,9 @@ create wizard calls this immediately on file selection).
   but nothing confirmed yet for adding someone to an existing group after the fact. Worth checking whether
   `rasagram-new-admin` has an equivalent endpoint before assuming this needs a workaround.
 - Editing/deleting a project.
-- Editing/deleting a Job, or toggling a checklist item — Jobs can be created and listed (see above), but every
-  mutation after creation is still out of scope.
-- Job activity/history («فعالیت‌ها»).
+- ~~Editing a Job, or toggling a checklist item~~ — **shipped**, see `PATCH /projects/:id/jobs/:jobId` above.
+  *Deleting* a Job is still out of scope.
+- ~~Job activity/history («فعالیت‌ها»)~~ — **not built, and no longer needed.** The «فعالیت‌ها» button now
+  hands off to the project's group in the Rasagram client, opening the topic of whichever list is on screen
+  (`openTelegramLink` with `/c/<chatId>/<topicId>` — see `modules/project/links.ts`). The group already *is*
+  the activity feed, so there is nothing here to build or keep in sync.

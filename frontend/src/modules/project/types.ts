@@ -148,6 +148,31 @@ export interface CreateJobInput {
   status: JobStatus;
 }
 
+/**
+ * PATCH body — every field optional, and only the ones present are changed.
+ * The edit form happens to send all of them, but the endpoint is partial on
+ * purpose so a single field can be flipped from elsewhere later without
+ * resending (and risking clobbering) the rest.
+ *
+ * Present-but-empty is a real value and clears things: `dueAt: ''` drops the
+ * deadline, `assigneeIds: []` removes every assignee. `undefined` is what
+ * leaves a field alone — never send null.
+ *
+ * checklist items carry `done` here, unlike CreateJobInput: a job being edited
+ * has existing items whose checked state has to survive the round trip (and be
+ * togglable), whereas a brand new one has nothing checked yet.
+ */
+export interface UpdateJobInput {
+  listId?: string;
+  title?: string;
+  description?: string;
+  assigneeIds?: string[];
+  tagIds?: string[];
+  dueAt?: string;
+  checklist?: { text: string; done: boolean }[];
+  status?: JobStatus;
+}
+
 export interface CreateJobTagInput {
   name: string;
   color?: string;

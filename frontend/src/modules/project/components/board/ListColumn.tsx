@@ -13,6 +13,7 @@ interface ListColumnProps {
   isActive: boolean;
   loading: boolean;
   onDelete: () => void;
+  onOpenJob: (jobId: string) => void;
 }
 
 /**
@@ -21,7 +22,7 @@ interface ListColumnProps {
  * visible that the board pages sideways.
  */
 export const ListColumn = forwardRef<HTMLElement, ListColumnProps>(function ListColumn(
-  { list, jobs, isActive, loading, onDelete },
+  { list, jobs, isActive, loading, onDelete, onOpenJob },
   ref,
 ) {
   const [menuOpen, setMenuOpen] = useState(false);
@@ -83,7 +84,7 @@ export const ListColumn = forwardRef<HTMLElement, ListColumnProps>(function List
         {loading && jobs.length === 0 && <p className={styles.empty}>در حال بارگذاری…</p>}
         {!loading && jobs.length === 0 && <p className={styles.empty}>هنوز کاری در این لیست نیست.</p>}
         {jobs.map((job) => (
-          <JobCard key={job.id} job={job} />
+          <JobCard key={job.id} job={job} onOpen={() => onOpenJob(job.id)} />
         ))}
       </div>
     </section>

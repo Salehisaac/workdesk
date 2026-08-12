@@ -17,9 +17,10 @@ function dueTone(due: Date): 'overdue' | 'today' | 'upcoming' {
 
 interface JobCardProps {
   job: Job;
+  onOpen: () => void;
 }
 
-export function JobCard({ job }: JobCardProps) {
+export function JobCard({ job, onOpen }: JobCardProps) {
   const due = job.dueAt ? new Date(job.dueAt) : null;
   // The API always sends these as arrays, but a board is a list of many cards —
   // one record missing a collection shouldn't blank the whole project.
@@ -30,8 +31,12 @@ export function JobCard({ job }: JobCardProps) {
   const visibleAvatars = assignees.slice(0, MAX_VISIBLE_AVATARS);
   const hiddenAvatars = assignees.length - visibleAvatars.length;
 
+  // The whole card is the control that opens the job for editing. A <button>
+  // rather than a click handler on the <article> because that is what gets
+  // keyboard focus, Enter/Space and the right role for free — and the card has
+  // no interactive children to nest inside it.
   return (
-    <article className={styles.card}>
+    <button type="button" className={styles.card} onClick={onOpen} aria-label={`ویرایش ${job.title}`}>
       <div className={styles.top}>
         <h3 className={styles.title}>{job.title}</h3>
         {/* Shape + colour, and the status name is in the title attribute and
@@ -85,6 +90,6 @@ export function JobCard({ job }: JobCardProps) {
           )}
         </div>
       )}
-    </article>
+    </button>
   );
 }

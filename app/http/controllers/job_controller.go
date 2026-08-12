@@ -41,6 +41,75 @@ type storeJobRequest struct {
 	Status      string                      `json:"status"`
 }
 
+// resolveList finds the list an id names, insisting it belongs to THIS
+// project — otherwise a member of project A could file a job into project B's
+// list just by knowing its id.
+func resolveList(ctx http.Context, project *models.Project, listId string) (*models.List, http.Response) {
+	for i := range project.Lists {
+		if formatModelId(project.Lists[i].ID) == listId {
+			return &project.Lists[i], nil
+		}
+	}
+	return nil, ctx.Response().Status(422).Json(http.Json{"error": "listId does not belong to this project"})
+}
+
+// parseDueAt turns the wire's ISO 8601 string into a stored timestamp. An
+// empty/blank string means "no deadline" and yields nil, which is also how a
+// caller clears one.
+func parseDueAt(ctx http.Context, raw string) (*carbon.DateTime, http.Response) {
+	trimmed := strings.TrimSpace(raw)
+	if trimmed == "" {
+		return nil, nil
+	}
+
+	parsed := carbon.Parse(trimmed)
+	if parsed == nil || parsed.Error != nil {
+		return nil, ctx.Response().Status(422).Json(http.Json{"error": "dueAt must be an ISO 8601 timestamp"})
+	}
+	return carbon.NewDateTime(parsed), nil
+}
+
+// validateAssignees insists every assignee is a member of this project — same
+// reasoning as resolveList.
+func validateAssignees(ctx http.Context, project *models.Project, ids []string) http.Response {
+	memberIds := make(map[string]bool, len(project.Members))
+	for _, member := range project.Members {
+		memberIds[member.RefId] = true
+	}
+	for _, id := range ids {
+		if !memberIds[id] {
+			return ctx.Response().Status(422).Json(http.Json{"error": "assignee \"" + id + "\" is not a member of this project"})
+		}
+	}
+	return nil
+}
+
+// resolveTagIds maps the wire's tag ids to rows, insisting each one is this
+// project's own — a job can only carry tags from its project's pool.
+func resolveTagIds(ctx http.Context, project *models.Project, ids []string) ([]uint, http.Response) {
+	tagIds := make([]uint, 0, len(ids))
+	if len(ids) == 0 {
+		return tagIds, nil
+	}
+
+	var tags []models.ProjectTag
+	if err := facades.Orm().Query().Where("project_id", project.ID).Find(&tags); err != nil {
+		return nil, ctx.Response().Status(500).Json(http.Json{"error": err.Error()})
+	}
+	byId := make(map[string]uint, len(tags))
+	for i := range tags {
+		byId[formatModelId(tags[i].ID)] = tags[i].ID
+	}
+	for _, id := range ids {
+		resolved, ok := byId[id]
+		if !ok {
+			return nil, ctx.Response().Status(422).Json(http.Json{"error": "tag \"" + id + "\" does not belong to this project"})
+		}
+		tagIds = append(tagIds, resolved)
+	}
+	return tagIds, nil
+}
+
 // buildJobContext gathers everything Job JSON needs beyond the job rows
 // themselves — the project's name, its lists' names, its members (assignees are
 // stored as opaque RefIds) and its tags — in a fixed number of queries rather
@@ -167,17 +236,9 @@ func (r *JobController) Store(ctx http.Context) http.Response {
 		return ctx.Response().Status(422).Json(http.Json{"error": "title is required"})
 	}
 
-	// The list must belong to *this* project — otherwise a member of project A
-	// could file a job into project B's list by id.
-	var list *models.List
-	for i := range project.Lists {
-		if formatModelId(project.Lists[i].ID) == request.ListId {
-			list = &project.Lists[i]
-			break
-		}
-	}
-	if list == nil {
-		return ctx.Response().Status(422).Json(http.Json{"error": "listId does not belong to this project"})
+	list, errResp := resolveList(ctx, project, request.ListId)
+	if errResp != nil {
+		return errResp
 	}
 
 	status := request.Status
@@ -188,44 +249,18 @@ func (r *JobController) Store(ctx http.Context) http.Response {
 		return ctx.Response().Status(422).Json(http.Json{"error": "status is not one of the known job statuses"})
 	}
 
-	var dueAt *carbon.DateTime
-	if trimmed := strings.TrimSpace(request.DueAt); trimmed != "" {
-		parsed := carbon.Parse(trimmed)
-		if parsed == nil || parsed.Error != nil {
-			return ctx.Response().Status(422).Json(http.Json{"error": "dueAt must be an ISO 8601 timestamp"})
-		}
-		dueAt = carbon.NewDateTime(parsed)
+	dueAt, errResp := parseDueAt(ctx, request.DueAt)
+	if errResp != nil {
+		return errResp
 	}
 
-	// Assignees have to be members of this project, same reasoning as the list.
-	memberIds := make(map[string]bool, len(project.Members))
-	for _, member := range project.Members {
-		memberIds[member.RefId] = true
-	}
-	for _, id := range request.AssigneeIds {
-		if !memberIds[id] {
-			return ctx.Response().Status(422).Json(http.Json{"error": "assignee \"" + id + "\" is not a member of this project"})
-		}
+	if errResp := validateAssignees(ctx, project, request.AssigneeIds); errResp != nil {
+		return errResp
 	}
 
-	// Same for tags — a job can only carry its own project's tags.
-	tagIds := make([]uint, 0, len(request.TagIds))
-	if len(request.TagIds) > 0 {
-		var tags []models.ProjectTag
-		if err := facades.Orm().Query().Where("project_id", project.ID).Find(&tags); err != nil {
-			return ctx.Response().Status(500).Json(http.Json{"error": err.Error()})
-		}
-		byId := make(map[string]uint, len(tags))
-		for i := range tags {
-			byId[formatModelId(tags[i].ID)] = tags[i].ID
-		}
-		for _, id := range request.TagIds {
-			resolved, ok := byId[id]
-			if !ok {
-				return ctx.Response().Status(422).Json(http.Json{"error": "tag \"" + id + "\" does not belong to this project"})
-			}
-			tagIds = append(tagIds, resolved)
-		}
+	tagIds, errResp := resolveTagIds(ctx, project, request.TagIds)
+	if errResp != nil {
+		return errResp
 	}
 
 	var highest models.Job
@@ -294,4 +329,202 @@ func (r *JobController) Store(ctx http.Context) http.Response {
 	}
 
 	return ctx.Response().Status(201).Json(resources.Job(&job, contexts[project.ID]))
+}
+
+type updateChecklistItemRequest struct {
+	Text string `json:"text"`
+	Done bool   `json:"done"`
+}
+
+// updateJobRequest is PATCH-shaped: every field is a pointer, and only the
+// ones actually PRESENT in the body are touched. That is what lets the edit
+// form send the whole job while a future caller can flip one thing — a status
+// from the board, a checklist item from a card — without having to resend
+// (and risk clobbering) everything else.
+//
+// Present-but-empty is a real value, and the distinction matters:
+//   - "dueAt": ""      clears the deadline;  omitted leaves it alone
+//   - "assigneeIds": [] removes every assignee; omitted leaves them alone
+//
+// A JSON null reads the same as omitted, since it unmarshals a pointer back to
+// nil — so use the empty value to clear, never null.
+type updateJobRequest struct {
+	ListId      *string                       `json:"listId"`
+	Title       *string                       `json:"title"`
+	Description *string                       `json:"description"`
+	AssigneeIds *[]string                     `json:"assigneeIds"`
+	TagIds      *[]string                     `json:"tagIds"`
+	DueAt       *string                       `json:"dueAt"`
+	Checklist   *[]updateChecklistItemRequest `json:"checklist"`
+	Status      *string                       `json:"status"`
+}
+
+// Update — PATCH /api/v1/projects/{id}/jobs/{jobId}.
+//
+// Project-scoped rather than a flat /jobs/{id} so the caller's membership is
+// checked against the same project the job must belong to, in one step, the
+// way every other write in this file is (loadProjectForMember).
+//
+// `number` and `createdBy` are deliberately not editable: the first is a
+// per-project sequence the backend owns, the second is a record of who filed
+// the job, which editing it should not rewrite.
+func (r *JobController) Update(ctx http.Context) http.Response {
+	authUser, errResp := currentUser(ctx)
+	if errResp != nil {
+		return errResp
+	}
+
+	project, errResp := loadProjectForMember(ctx, authUser.ID)
+	if errResp != nil {
+		return errResp
+	}
+
+	// Scoped to the project, so a job id from another project reads as "not
+	// found" here rather than being edited across the boundary.
+	var job models.Job
+	if err := facades.Orm().Query().
+		With("Assignees").
+		With("Tags").
+		With("Checklist").
+		Where("project_id", project.ID).
+		Find(&job, ctx.Request().Route("jobId")); err != nil {
+		return ctx.Response().Status(500).Json(http.Json{"error": err.Error()})
+	}
+	if job.ID == 0 {
+		return ctx.Response().Status(404).Json(http.Json{"error": "job not found"})
+	}
+
+	var request updateJobRequest
+	if err := ctx.Request().Bind(&request); err != nil {
+		return ctx.Response().Status(400).Json(http.Json{"error": "invalid request body"})
+	}
+
+	if request.Title != nil {
+		title := strings.TrimSpace(*request.Title)
+		if title == "" {
+			return ctx.Response().Status(422).Json(http.Json{"error": "title is required"})
+		}
+		job.Title = title
+	}
+
+	if request.ListId != nil {
+		list, errResp := resolveList(ctx, project, *request.ListId)
+		if errResp != nil {
+			return errResp
+		}
+		job.ListId = list.ID
+	}
+
+	if request.Status != nil {
+		if !models.IsValidJobStatus(*request.Status) {
+			return ctx.Response().Status(422).Json(http.Json{"error": "status is not one of the known job statuses"})
+		}
+		job.Status = *request.Status
+	}
+
+	if request.Description != nil {
+		if description := strings.TrimSpace(*request.Description); description != "" {
+			job.Description = &description
+		} else {
+			job.Description = nil
+		}
+	}
+
+	if request.DueAt != nil {
+		dueAt, errResp := parseDueAt(ctx, *request.DueAt)
+		if errResp != nil {
+			return errResp
+		}
+		job.DueAt = dueAt
+	}
+
+	// Everything is validated before ANY of it is written, so a request that
+	// fails halfway through validation leaves the job exactly as it was.
+	var tagIds []uint
+	if request.TagIds != nil {
+		tagIds, errResp = resolveTagIds(ctx, project, *request.TagIds)
+		if errResp != nil {
+			return errResp
+		}
+	}
+	if request.AssigneeIds != nil {
+		if errResp := validateAssignees(ctx, project, *request.AssigneeIds); errResp != nil {
+			return errResp
+		}
+	}
+
+	if err := facades.Orm().Query().Save(&job); err != nil {
+		return ctx.Response().Status(500).Json(http.Json{"error": err.Error()})
+	}
+
+	// The child collections are replaced wholesale rather than diffed. They are
+	// small, unordered sets (assignees, tags) or an ordered list whose order is
+	// itself part of the edit (checklist), and a diff would buy nothing but
+	// stable row ids — which nothing here refers to across a request, since the
+	// response is rebuilt from what was just written.
+	if request.AssigneeIds != nil {
+		if _, err := facades.Orm().Query().Where("job_id", job.ID).Delete(&models.JobAssignee{}); err != nil {
+			return ctx.Response().Status(500).Json(http.Json{"error": err.Error()})
+		}
+		assignees := make([]models.JobAssignee, 0, len(*request.AssigneeIds))
+		for _, id := range *request.AssigneeIds {
+			assignees = append(assignees, models.JobAssignee{JobId: job.ID, RefId: id})
+		}
+		if len(assignees) > 0 {
+			if err := facades.Orm().Query().Create(&assignees); err != nil {
+				return ctx.Response().Status(500).Json(http.Json{"error": err.Error()})
+			}
+		}
+		job.Assignees = assignees
+	}
+
+	if request.TagIds != nil {
+		if _, err := facades.Orm().Query().Where("job_id", job.ID).Delete(&models.JobTag{}); err != nil {
+			return ctx.Response().Status(500).Json(http.Json{"error": err.Error()})
+		}
+		jobTags := make([]models.JobTag, 0, len(tagIds))
+		for _, id := range tagIds {
+			jobTags = append(jobTags, models.JobTag{JobId: job.ID, TagId: id})
+		}
+		if len(jobTags) > 0 {
+			if err := facades.Orm().Query().Create(&jobTags); err != nil {
+				return ctx.Response().Status(500).Json(http.Json{"error": err.Error()})
+			}
+		}
+		job.Tags = jobTags
+	}
+
+	if request.Checklist != nil {
+		if _, err := facades.Orm().Query().Where("job_id", job.ID).Delete(&models.JobChecklistItem{}); err != nil {
+			return ctx.Response().Status(500).Json(http.Json{"error": err.Error()})
+		}
+		items := make([]models.JobChecklistItem, 0, len(*request.Checklist))
+		for _, item := range *request.Checklist {
+			text := strings.TrimSpace(item.Text)
+			if text == "" {
+				continue
+			}
+			// Position comes from the surviving items' order, not the request
+			// index, so dropping a blank row doesn't leave a gap in it.
+			items = append(items, models.JobChecklistItem{
+				JobId:    job.ID,
+				Text:     text,
+				Done:     item.Done,
+				Position: uint(len(items)),
+			})
+		}
+		if len(items) > 0 {
+			if err := facades.Orm().Query().Create(&items); err != nil {
+				return ctx.Response().Status(500).Json(http.Json{"error": err.Error()})
+			}
+		}
+		job.Checklist = items
+	}
+
+	contexts, err := buildJobContext([]models.Project{*project})
+	if err != nil {
+		return ctx.Response().Status(500).Json(http.Json{"error": err.Error()})
+	}
+
+	return ctx.Response().Success().Json(resources.Job(&job, contexts[project.ID]))
 }
