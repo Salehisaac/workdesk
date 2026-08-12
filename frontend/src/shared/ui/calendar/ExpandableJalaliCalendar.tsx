@@ -54,6 +54,12 @@ interface ExpandableJalaliCalendarProps {
   onSelectDate: (date: Date) => void;
   /** dayKey (see toDayKey) → that day's indicator dots. */
   markers?: ReadonlyMap<string, readonly CalendarMarker[]>;
+  /**
+   * Which state to open in. The home dashboard starts on the week (the day's
+   * content is the subject there); a date picker starts on the month, because
+   * picking a date is the whole reason it's on screen.
+   */
+  defaultExpanded?: boolean;
 }
 
 /**
@@ -67,8 +73,13 @@ interface ExpandableJalaliCalendarProps {
  * value (0 = week, 1 = month) drives both, which is also what lets a drag
  * follow the finger 1:1 instead of only snapping at the end.
  */
-export function ExpandableJalaliCalendar({ selectedDate, onSelectDate, markers }: ExpandableJalaliCalendarProps) {
-  const [expanded, setExpanded] = useState(false);
+export function ExpandableJalaliCalendar({
+  selectedDate,
+  onSelectDate,
+  markers,
+  defaultExpanded = false,
+}: ExpandableJalaliCalendarProps) {
+  const [expanded, setExpanded] = useState(defaultExpanded);
   const [viewMonth, setViewMonth] = useState(() => startOfMonth(selectedDate));
   /** Non-null only mid-drag; overrides the settled 0/1 so the grid tracks the finger. */
   const [dragProgress, setDragProgress] = useState<number | null>(null);

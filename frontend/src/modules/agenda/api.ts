@@ -1,5 +1,5 @@
 import { useMemo } from 'react';
-import { toDayKey } from '../../shared/date/jalali';
+import { toDayKey, toPersianDigits } from '../../shared/date/jalali';
 import { useSessions, useDecisions } from '../meeting/api';
 import { DECISION_STATUS_LABEL, SESSION_STATUS_LABEL } from '../meeting/types';
 import type { Decision, Session } from '../meeting/types';
@@ -57,15 +57,17 @@ function decisionToItem(decision: Decision): AgendaItem {
 function jobToItem(job: Job): AgendaItem {
   // «کار در <project> › <list>», falling back as either name goes missing.
   const context = [job.projectName, job.listName].filter(Boolean).join(' › ');
+  const [first, ...rest] = job.assignees ?? [];
   return {
     id: `job:${job.id}`,
     kind: 'job',
     title: job.title,
     subtitle: context ? `کار در ${context}` : 'کار',
     date: new Date(job.dueAt!),
-    // Deadlines are day-granular in the UI even though dueAt carries a time.
-    hasTime: false,
-    location: job.assigneeName,
+    // A deadline carries a time, and it's the useful half of "due by" — the
+    // agenda shows it the same way a session's start time is shown.
+    hasTime: true,
+    location: first ? (rest.length ? `${first.displayName} و ${toPersianDigits(rest.length)} نفر دیگر` : first.displayName) : null,
     status: JOB_STATUS_LABEL[job.status] ?? null,
     // The board is where a job lives; there's no per-job screen yet.
     to: `/projects/${job.projectId}`,

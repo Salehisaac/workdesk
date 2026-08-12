@@ -64,13 +64,43 @@ export interface CreateProjectInput {
   members: PickedItem[];
 }
 
-export type JobStatus = 'todo' | 'doing' | 'done';
+/** The six states a job moves through — the set the status sheet offers. */
+export type JobStatus = 'notStarted' | 'inProgress' | 'paused' | 'canceled' | 'done' | 'rejected';
 
 export const JOB_STATUS_LABEL: Record<JobStatus, string> = {
-  todo: 'انجام نشده',
-  doing: 'در حال انجام',
-  done: 'انجام شد',
+  notStarted: 'آغاز نشده',
+  inProgress: 'در حال انجام',
+  paused: 'متوقف شده',
+  canceled: 'لغو شده',
+  done: 'انجام شده',
+  rejected: 'رد شده',
 };
+
+/** Every job starts here; the rest are reachable from the status sheet. */
+export const DEFAULT_JOB_STATUS: JobStatus = 'notStarted';
+
+/** Order the status sheet lists them in — the natural progression, then the exits. */
+export const JOB_STATUSES: JobStatus[] = ['notStarted', 'inProgress', 'paused', 'canceled', 'done', 'rejected'];
+
+/**
+ * A tag belongs to the *project*, not to the job that first used it — define one
+ * on any job and every list in that project can pick it up afterwards. That's
+ * why creating a tag is a project-level mutation (see useCreateProjectTag) and
+ * not something embedded in the job payload.
+ */
+export interface JobTag {
+  id: string;
+  projectId: string;
+  name: string;
+  /** Any CSS colour, or null to let the UI pick a stable one from the name. */
+  color: string | null;
+}
+
+export interface JobChecklistItem {
+  id: string;
+  text: string;
+  done: boolean;
+}
 
 /**
  * A «کار» — one task inside a List, which is itself inside a Project. This is
@@ -84,7 +114,10 @@ export const JOB_STATUS_LABEL: Record<JobStatus, string> = {
  */
 export interface Job {
   id: string;
+  /** Per-project sequence number, shown as «#۲». Null until the backend assigns one. */
+  number: number | null;
   title: string;
+  description: string | null;
   listId: string;
   /** Denormalized so the agenda can label a job without fetching its project. */
   listName: string | null;
@@ -92,6 +125,30 @@ export interface Job {
   projectName: string | null;
   /** ISO 8601. Null for a job with no deadline — those never reach the calendar. */
   dueAt: string | null;
-  assigneeName: string | null;
+  /** Project members the job is assigned to — same shape the member picker returns. */
+  assignees: ProjectMember[];
+  tags: JobTag[];
+  checklist: JobChecklistItem[];
   status: JobStatus;
+  createdAt: string;
+}
+
+export interface CreateJobInput {
+  /** Which list the job lands in — changeable from the form's list selector. */
+  listId: string;
+  title: string;
+  description?: string;
+  /** ProjectMember ids, not the whole objects; the backend already has the members. */
+  assigneeIds: string[];
+  tagIds: string[];
+  /** ISO 8601 with a meaningful time-of-day, or omitted for no deadline. */
+  dueAt?: string;
+  /** Ordered; ids are assigned server-side, so only the text goes up. */
+  checklist: { text: string }[];
+  status: JobStatus;
+}
+
+export interface CreateJobTagInput {
+  name: string;
+  color?: string;
 }

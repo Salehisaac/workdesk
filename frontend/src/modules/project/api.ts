@@ -1,6 +1,17 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { apiClient, getCollection } from '../../shared/api/client';
-import type { CreateListInput, CreateProjectInput, Job, Project, ProjectDetail, ProjectListItem, TopicIcon } from './types';
+import type {
+  CreateJobInput,
+  CreateJobTagInput,
+  CreateListInput,
+  CreateProjectInput,
+  Job,
+  JobTag,
+  Project,
+  ProjectDetail,
+  ProjectListItem,
+  TopicIcon,
+} from './types';
 
 // Telegram's 6 standard forum-topic icon colors — the exact preset dots real
 // Telegram clients offer when creating a topic (the protocol technically
@@ -20,6 +31,7 @@ const projectKeys = {
   all: ['projects'] as const,
   detail: (id: string) => ['projects', id] as const,
   jobs: ['jobs'] as const,
+  tags: (projectId: string) => ['projects', projectId, 'tags'] as const,
 };
 
 export function useProjects() {
@@ -51,6 +63,43 @@ export function useJobs() {
     queryKey: projectKeys.jobs,
     queryFn: () => getCollection<Job>('/jobs'),
     retry: false,
+  });
+}
+
+/**
+ * Creating a job invalidates the flat job list, which is what the home
+ * calendar's deadline dots are drawn from — so a job created here shows up on
+ * the calendar without a reload.
+ */
+export function useCreateJob(projectId: string) {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (input: CreateJobInput) => apiClient.post<Job>(`/projects/${projectId}/jobs`, input),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: projectKeys.jobs });
+      queryClient.invalidateQueries({ queryKey: projectKeys.detail(projectId) });
+    },
+  });
+}
+
+/**
+ * Tags are project-scoped, so this is the pool every list's jobs choose from —
+ * see JobTag. Fetched on demand (the tag sheet has to be opened first).
+ */
+export function useProjectTags(projectId: string, enabled: boolean) {
+  return useQuery({
+    queryKey: projectKeys.tags(projectId),
+    queryFn: () => getCollection<JobTag>(`/projects/${projectId}/tags`),
+    enabled: enabled && !!projectId,
+    retry: false,
+  });
+}
+
+export function useCreateProjectTag(projectId: string) {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (input: CreateJobTagInput) => apiClient.post<JobTag>(`/projects/${projectId}/tags`, input),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: projectKeys.tags(projectId) }),
   });
 }
 

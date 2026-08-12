@@ -1,0 +1,327 @@
+.page {
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+  background: var(--rasagram-theme-bg-color);
+}
+
+.header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 12px 12px 10px;
+  position: sticky;
+  top: 0;
+  z-index: 10;
+  background: var(--rasagram-theme-bg-color);
+}
+
+/* RTL: back points right, the way the page flows. */
+.back {
+  width: 36px;
+  height: 36px;
+  flex-shrink: 0;
+  border: none;
+  border-radius: 10px;
+  background: none;
+  color: var(--rasagram-theme-text-color);
+  font-size: 20px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+}
+
+.headerTitle {
+  flex: 1;
+  min-width: 0;
+  margin: 0;
+  text-align: center;
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--rasagram-theme-text-color);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.submit {
+  width: 36px;
+  height: 36px;
+  flex-shrink: 0;
+  border: none;
+  border-radius: 50%;
+  background: var(--rasagram-theme-button-color);
+  color: var(--rasagram-theme-button-text-color);
+  font-size: 18px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+}
+
+.submit:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
+
+.form {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+}
+
+.listRow {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  padding: 14px 16px;
+  border: none;
+  border-top: 1px solid var(--rasagram-theme-secondary-bg-color);
+  border-bottom: 1px solid var(--rasagram-theme-secondary-bg-color);
+  background: none;
+  font-family: inherit;
+  cursor: pointer;
+}
+
+.listName {
+  flex: 1;
+  min-width: 0;
+  text-align: start;
+  font-size: 14px;
+  color: var(--rasagram-theme-text-color);
+}
+
+.listChevron {
+  flex-shrink: 0;
+  font-size: 13px;
+  color: var(--rasagram-theme-hint-color);
+}
+
+.field {
+  padding: 14px 16px;
+  border-bottom: 1px solid var(--rasagram-theme-secondary-bg-color);
+}
+
+.titleInput {
+  --font-size: 17px;
+  --color: var(--rasagram-theme-text-color);
+  --placeholder-color: var(--rasagram-theme-hint-color);
+}
+
+.descriptionInput {
+  --font-size: 14px;
+  --color: var(--rasagram-theme-text-color);
+  --placeholder-color: var(--rasagram-theme-hint-color);
+}
+
+.row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 12px 16px;
+  border-bottom: 1px solid var(--rasagram-theme-secondary-bg-color);
+  min-height: 56px;
+}
+
+.rowIcon {
+  width: 24px;
+  flex-shrink: 0;
+  font-size: 20px;
+  color: var(--rasagram-theme-text-color);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.rowLabel {
+  flex-shrink: 0;
+  font-size: 14px;
+  color: var(--rasagram-theme-text-color);
+}
+
+.rowValue {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 8px;
+}
+
+.rowAdd {
+  width: 32px;
+  height: 32px;
+  flex-shrink: 0;
+  border: none;
+  border-radius: 50%;
+  background: var(--rasagram-theme-secondary-bg-color);
+  color: var(--rasagram-theme-accent-text-color);
+  font-size: 18px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+}
+
+.rowAdd:disabled {
+  opacity: 0.45;
+  cursor: default;
+}
+
+.memberChip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 10px 4px 4px;
+  border-radius: 999px;
+  background: var(--rasagram-theme-secondary-bg-color);
+  font-size: 12.5px;
+  color: var(--rasagram-theme-text-color);
+}
+
+.memberAvatar {
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--rasagram-theme-button-text-color);
+  background: var(--rasagram-theme-button-color);
+}
+
+.tagChip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 5px 12px;
+  border-radius: 999px;
+  font-size: 12.5px;
+  font-weight: 600;
+  color: #ffffff;
+}
+
+.dueChip {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  padding: 5px 12px;
+  border-radius: 999px;
+  border: 1px solid var(--rasagram-theme-secondary-bg-color);
+  font-size: 12.5px;
+  color: var(--rasagram-theme-text-color);
+}
+
+.dueTime {
+  color: var(--rasagram-theme-hint-color);
+}
+
+.chipRemove {
+  width: 20px;
+  height: 20px;
+  flex-shrink: 0;
+  border: none;
+  border-radius: 50%;
+  background: none;
+  color: inherit;
+  opacity: 0.7;
+  font-size: 13px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+}
+
+.checklist {
+  display: flex;
+  flex-direction: column;
+}
+
+.checklistItem {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 16px;
+  border-bottom: 1px solid var(--rasagram-theme-secondary-bg-color);
+}
+
+.checklistBox {
+  width: 20px;
+  height: 20px;
+  flex-shrink: 0;
+  border-radius: 5px;
+  border: 1.5px solid var(--rasagram-theme-text-color);
+  opacity: 0.75;
+}
+
+.checklistText {
+  flex: 1;
+  min-width: 0;
+  font-size: 14px;
+  color: var(--rasagram-theme-text-color);
+  overflow-wrap: anywhere;
+}
+
+.checklistInput {
+  flex: 1;
+  min-width: 0;
+  --font-size: 14px;
+  --placeholder-color: var(--rasagram-theme-hint-color);
+}
+
+.footer {
+  position: sticky;
+  bottom: 0;
+  display: flex;
+  justify-content: flex-end;
+  padding: 10px 16px calc(10px + env(safe-area-inset-bottom, 0px));
+  background: var(--rasagram-theme-bg-color);
+  border-top: 1px solid var(--rasagram-theme-secondary-bg-color);
+}
+
+.statusButton {
+  padding: 8px 16px;
+  border-radius: 999px;
+  border: 1px solid transparent;
+  background: var(--rasagram-theme-secondary-bg-color);
+  color: var(--rasagram-theme-hint-color);
+  font-family: inherit;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.statusButton[data-status='inProgress'] {
+  color: var(--rasagram-theme-button-color);
+  border-color: currentColor;
+  background: none;
+}
+
+.statusButton[data-status='paused'] {
+  color: #d97706;
+  border-color: currentColor;
+  background: none;
+}
+
+.statusButton[data-status='canceled'] {
+  color: var(--rasagram-theme-destructive-text-color);
+  border-color: currentColor;
+  background: none;
+}
+
+.statusButton[data-status='done'] {
+  color: #15803d;
+  border-color: currentColor;
+  background: none;
+}
+
+.statusButton[data-status='rejected'] {
+  color: #7c3aed;
+  border-color: currentColor;
+  background: none;
+}

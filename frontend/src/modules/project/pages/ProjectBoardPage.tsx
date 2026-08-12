@@ -87,6 +87,21 @@ export function ProjectBoardPage() {
                 rightActions={[{ key: 'delete', text: 'حذف', color: 'danger', onClick: () => handleDeleteList(list.id) }]}
               >
                 <List.Item
+                  extra={
+                    <button
+                      type="button"
+                      className={styles.addJob}
+                      aria-label={`کار جدید در ${list.name}`}
+                      onClick={(event) => {
+                        // The row itself is still the (not-yet-built) list
+                        // detail, so this button must not trigger it too.
+                        event.stopPropagation();
+                        navigate(`/projects/${projectId}/lists/${list.id}/jobs/new`);
+                      }}
+                    >
+                      <AddOutline />
+                    </button>
+                  }
                   onClick={() => {
                     Toast.show({ content: 'جزئیات کارهای هر لیست بعدا اضافه می‌شود' });
                   }}
