@@ -1,7 +1,9 @@
-import { ExclamationCircleOutline, LeftOutline, PieOutline } from 'antd-mobile-icons';
+import { ExclamationCircleOutline, InformationCircleOutline, LeftOutline, PieOutline } from 'antd-mobile-icons';
+import { useState } from 'react';
 import { toPersianDigits } from '../../../shared/date/jalali';
 import type { ReportStats } from '../report';
 import type { ProjectDetail } from '../types';
+import { ProjectInfoSheet } from './ProjectInfoSheet';
 import styles from './ProjectHeader.module.css';
 
 interface ProjectHeaderProps {
@@ -16,13 +18,19 @@ interface ProjectHeaderProps {
 /**
  * The board's own header, in place of the plain NavBar it used to have.
  *
- * Two jobs. It identifies the project — avatar, name, how many people and how
- * much work are in it — and it is where «گزارش» lives. The meter under the
- * title is the report's headline number brought up onto the board: the state of
- * the project is worth a glance every time you open it, and it's what makes the
- * button next to it something you'd think to press.
+ * Three jobs. It identifies the project — avatar, name, how many people and how
+ * much work are in it — and it is where «گزارش» and «درباره» live. The meter
+ * under the title is the report's headline number brought up onto the board:
+ * the state of the project is worth a glance every time you open it, and it's
+ * what makes the button next to it something you'd think to press.
+ *
+ * «درباره» is the icon and «گزارش» the labelled pill, not the other way round:
+ * a chart glyph alone doesn't read as "progress", whereas ⓘ is about the only
+ * icon that needs no label at all — and only one of the two can carry words
+ * before the project's name starts getting squeezed.
  */
 export function ProjectHeader({ project, stats, onBack, onOpenReport }: ProjectHeaderProps) {
+  const [infoOpen, setInfoOpen] = useState(false);
   const showProgress = !!stats && stats.total > 0;
 
   return (
@@ -47,6 +55,16 @@ export function ProjectHeader({ project, stats, onBack, onOpenReport }: ProjectH
             {stats && ` · ${toPersianDigits(stats.total)} کار`}
           </span>
         </span>
+
+        <button
+          type="button"
+          className={styles.info}
+          onClick={() => setInfoOpen(true)}
+          disabled={!project}
+          aria-label="درباره و راهنمای پروژه"
+        >
+          <InformationCircleOutline />
+        </button>
 
         <button
           type="button"
@@ -81,6 +99,18 @@ export function ProjectHeader({ project, stats, onBack, onOpenReport }: ProjectH
             </span>
           )}
         </div>
+      )}
+
+      {/* Mounted only once opened: the sheet carries the whole guide, and none
+          of that needs to be in the tree behind a board the user is working on. */}
+      {project && infoOpen && (
+        <ProjectInfoSheet
+          visible={infoOpen}
+          project={project}
+          stats={stats}
+          onClose={() => setInfoOpen(false)}
+          onOpenReport={onOpenReport}
+        />
       )}
     </header>
   );

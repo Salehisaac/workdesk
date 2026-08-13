@@ -71,6 +71,35 @@
   color: var(--rasagram-theme-hint-color);
 }
 
+/* Icon-only, and the one control on the bar that can be: ⓘ is about the only
+   glyph that carries its whole meaning without a word beside it. Quieter than
+   «گزارش» on purpose — it's the thing you press once, not every visit. */
+.info {
+  flex-shrink: 0;
+  width: 34px;
+  height: 34px;
+  border: none;
+  border-radius: 12px;
+  background: color-mix(in srgb, var(--rasagram-theme-hint-color) 12%, transparent);
+  color: var(--rasagram-theme-subtitle-text-color);
+  font-size: 18px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: transform 0.16s ease;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.info:active {
+  transform: scale(0.95);
+}
+
+.info:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
+
 /* A labelled pill, not a bare glyph. A chart icon on its own is guessable at
    best, and «گزارش» is the one thing on this bar the user has to be able to
    find on purpose. */
@@ -160,6 +189,7 @@
 }
 
 @media (prefers-reduced-motion: reduce) {
+  .info,
   .report,
   .meterFill {
     transition: none;

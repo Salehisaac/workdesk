@@ -1,0 +1,358 @@
+.sheet {
+  display: flex;
+  flex-direction: column;
+  padding-top: 8px;
+  padding-bottom: calc(8px + var(--wd-safe-bottom));
+  background: var(--rasagram-theme-bg-color);
+  max-height: 88vh;
+}
+
+.handle {
+  align-self: center;
+  width: 40px;
+  height: 4px;
+  margin-bottom: 8px;
+  border-radius: 999px;
+  background: var(--rasagram-theme-secondary-bg-color);
+  border: 1px solid color-mix(in srgb, var(--rasagram-theme-hint-color) 35%, transparent);
+}
+
+.head {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 4px 12px 10px;
+}
+
+.headTitle {
+  flex: 1;
+  min-width: 0;
+  text-align: center;
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--rasagram-theme-text-color);
+}
+
+.headClose {
+  width: 34px;
+  height: 34px;
+  flex-shrink: 0;
+  border: none;
+  border-radius: 10px;
+  background: none;
+  color: var(--rasagram-theme-text-color);
+  font-size: 19px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+}
+
+/* Balances the close button so the title stays optically centred. */
+.headSpacer {
+  width: 34px;
+  flex-shrink: 0;
+}
+
+.body {
+  overflow-y: auto;
+  padding: 0 16px 8px;
+}
+
+/* -- identity -- */
+
+.identity {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding-bottom: 14px;
+}
+
+.avatar {
+  flex-shrink: 0;
+  width: 54px;
+  height: 54px;
+  border-radius: 18px;
+  object-fit: cover;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 22px;
+  font-weight: 700;
+  color: #ffffff;
+  background: var(--rasagram-hero-gradient);
+}
+
+.identityText {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.name {
+  font-size: 16px;
+  font-weight: 700;
+  color: var(--rasagram-theme-text-color);
+  overflow-wrap: anywhere;
+}
+
+.badges {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 3px 9px;
+  border-radius: 8px;
+  font-size: 11px;
+  color: var(--rasagram-theme-subtitle-text-color);
+  background: color-mix(in srgb, var(--rasagram-theme-hint-color) 12%, transparent);
+}
+
+.badgeIcon {
+  font-size: 12px;
+  color: var(--rasagram-theme-hint-color);
+}
+
+/* -- facts -- */
+
+.facts {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(70px, 1fr));
+  gap: 8px;
+  padding-bottom: 6px;
+}
+
+.fact {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 10px 8px;
+  border-radius: 12px;
+  background: var(--rasagram-theme-secondary-bg-color);
+}
+
+.factValue {
+  font-size: 17px;
+  font-weight: 700;
+  color: var(--rasagram-theme-text-color);
+  font-feature-settings: 'tnum';
+}
+
+.factLabel {
+  font-size: 11px;
+  color: var(--rasagram-theme-hint-color);
+}
+
+/* -- sections -- */
+
+.section {
+  padding-top: 18px;
+}
+
+.sectionTitle {
+  margin: 0 0 8px;
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--rasagram-theme-section-header-text-color);
+}
+
+/* -- option rows -- */
+
+.option {
+  display: flex;
+  align-items: center;
+  gap: 11px;
+  width: 100%;
+  padding: 11px 12px;
+  border: none;
+  border-radius: 14px;
+  background: var(--rasagram-theme-secondary-bg-color);
+  font-family: inherit;
+  color: var(--rasagram-theme-text-color);
+  text-align: start;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.option + .option {
+  margin-top: 8px;
+}
+
+.option:active {
+  opacity: 0.7;
+}
+
+.optionIcon {
+  flex-shrink: 0;
+  width: 34px;
+  height: 34px;
+  border-radius: 11px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 17px;
+  color: var(--rasagram-theme-accent-text-color);
+  background: color-mix(in srgb, var(--rasagram-theme-accent-text-color) 13%, transparent);
+}
+
+.optionText {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.optionTitle {
+  font-size: 13.5px;
+  font-weight: 600;
+}
+
+.optionHint {
+  font-size: 11.5px;
+  line-height: 1.5;
+  color: var(--rasagram-theme-hint-color);
+}
+
+.optionChevron {
+  flex-shrink: 0;
+  font-size: 14px;
+  color: var(--rasagram-theme-hint-color);
+}
+
+/* -- members -- */
+
+.members {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.member {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 10px 4px 4px;
+  border-radius: 999px;
+  font-size: 12px;
+  color: var(--rasagram-theme-text-color);
+  background: var(--rasagram-theme-secondary-bg-color);
+}
+
+.memberAvatar {
+  width: 22px;
+  height: 22px;
+  flex-shrink: 0;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--rasagram-theme-button-text-color);
+  background: var(--rasagram-theme-button-color);
+}
+
+/* -- guide -- */
+
+.guide {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.guideItem {
+  display: flex;
+  gap: 11px;
+}
+
+.guideIcon {
+  flex-shrink: 0;
+  width: 30px;
+  height: 30px;
+  border-radius: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 15px;
+  color: var(--rasagram-theme-subtitle-text-color);
+  background: var(--rasagram-theme-secondary-bg-color);
+}
+
+.guideText {
+  flex: 1;
+  min-width: 0;
+}
+
+.guideTitle {
+  margin: 0 0 3px;
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--rasagram-theme-text-color);
+}
+
+.guideBody {
+  margin: 0;
+  font-size: 12px;
+  line-height: 1.75;
+  color: var(--rasagram-theme-subtitle-text-color);
+}
+
+/* The status guide entry shows the six chips themselves — the legend is the
+   explanation, and repeating the names in prose would say less. */
+.statusChips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 8px;
+}
+
+.statusChip {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 3px 9px;
+  border-radius: 999px;
+  font-size: 11px;
+  font-weight: 600;
+  border: 1px solid currentColor;
+  background: var(--rasagram-theme-bg-color);
+}
+
+.statusChipIcon {
+  display: inline-flex;
+  font-size: 12px;
+}
+
+.statusChip[data-status='notStarted'] {
+  color: var(--wd-status-notStarted);
+  background: var(--rasagram-theme-secondary-bg-color);
+  border-color: transparent;
+}
+
+.statusChip[data-status='inProgress'] {
+  color: var(--wd-status-inProgress);
+}
+
+.statusChip[data-status='paused'] {
+  color: var(--wd-status-paused);
+}
+
+.statusChip[data-status='canceled'] {
+  color: var(--wd-status-canceled);
+}
+
+.statusChip[data-status='done'] {
+  color: var(--wd-status-done);
+}
+
+.statusChip[data-status='rejected'] {
+  color: var(--wd-status-rejected);
+}
