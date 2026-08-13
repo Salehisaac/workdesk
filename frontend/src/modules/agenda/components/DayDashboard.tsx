@@ -1,8 +1,8 @@
 import { DotLoading } from 'antd-mobile';
-import { BellOutline, CalendarOutline, FileOutline, PieOutline } from 'antd-mobile-icons';
+import { BellOutline, CalendarOutline, ExclamationCircleOutline, FileOutline, PieOutline } from 'antd-mobile-icons';
 import { useMemo, useState } from 'react';
 import type { ReactNode } from 'react';
-import { formatLongDate, isSameDay, today } from '../../../shared/date/jalali';
+import { formatLongDate, isSameDay, today, toPersianDigits } from '../../../shared/date/jalali';
 import { AGENDA_GROUP_OF } from '../types';
 import type { AgendaGroup, AgendaItem } from '../types';
 import { AgendaSection } from './AgendaSection';
@@ -42,10 +42,11 @@ const SECTIONS: SectionConfig[] = [
   },
 ];
 
-type Filter = AgendaGroup | 'all';
+type Filter = AgendaGroup | 'all' | 'overdue';
 
 const FILTERS: { key: Filter; label: string }[] = [
   { key: 'all', label: 'همه' },
+  { key: 'overdue', label: 'معوقه‌ها' },
   { key: 'meetings', label: 'جلسات و مصوبات' },
   { key: 'projects', label: 'پروژه‌ها' },
   { key: 'reminders', label: 'یادآورها' },
@@ -56,21 +57,46 @@ interface DayDashboardProps {
   selectedDate: Date;
   /** Already narrowed to the selected day by the caller. */
   items: AgendaItem[];
+  /**
+   * Everything still owed past its deadline, from every day — see Agenda.overdue.
+   * Not narrowed to the selected day on purpose: arrears are a standing list, not
+   * part of what a particular date holds.
+   */
+  overdue: AgendaItem[];
   isLoading: boolean;
   isError: boolean;
 }
 
-export function DayDashboard({ selectedDate, items, isLoading, isError }: DayDashboardProps) {
+export function DayDashboard({ selectedDate, items, overdue, isLoading, isError }: DayDashboardProps) {
   const [filter, setFilter] = useState<Filter>('all');
 
   const byGroup = useMemo(() => {
     const groups: Record<AgendaGroup, AgendaItem[]> = { meetings: [], projects: [], reminders: [], notes: [] };
-    for (const item of items) groups[AGENDA_GROUP_OF[item.kind]].push(item);
+    // An overdue card belongs to the معوقه‌ها box and to nothing else. Leaving it
+    // in its own section too would print the same card twice on the day its
+    // deadline was — and quietly demote the alert to "just another row".
+    for (const item of items) if (!item.overdue) groups[AGENDA_GROUP_OF[item.kind]].push(item);
     return groups;
   }, [items]);
 
+  // A group filter narrows the arrears to that group rather than hiding them, so
+  // «پروژه‌ها» still answers "everything I owe on projects" in one screen.
+  const visibleOverdue = useMemo(
+    () =>
+      filter === 'all' || filter === 'overdue'
+        ? overdue
+        : overdue.filter((item) => AGENDA_GROUP_OF[item.kind] === filter),
+    [overdue, filter],
+  );
+
   const isToday = isSameDay(selectedDate, today());
-  const visibleSections = SECTIONS.filter((section) => filter === 'all' || section.group === filter);
+  // The معوقه‌ها tab is the one view that is *only* arrears — the day's own
+  // sections would be noise under a list of things that are already late.
+  const visibleSections =
+    filter === 'overdue' ? [] : SECTIONS.filter((section) => filter === 'all' || section.group === filter);
+  // Everywhere else the box appears only when it has something in it: an empty
+  // one every day would train the eye to skip the colour that means "act now".
+  const showOverdue = filter === 'overdue' || visibleOverdue.length > 0;
 
   return (
     <div className={styles.dashboard}>
@@ -102,13 +128,24 @@ export function DayDashboard({ selectedDate, items, isLoading, isError }: DayDas
         </div>
       )}
 
-      {isLoading && items.length === 0 ? (
+      {isLoading && items.length === 0 && overdue.length === 0 ? (
         <div className={styles.loading}>
           <DotLoading />
           <span>در حال بارگذاری…</span>
         </div>
       ) : (
         <div className={styles.sections}>
+          {showOverdue && (
+            <AgendaSection
+              group="overdue"
+              title="معوقه‌ها"
+              icon={<ExclamationCircleOutline />}
+              headline={`${toPersianDigits(visibleOverdue.length)} مورد معوقه دارید!`}
+              emptyText="هیچ کار یا مصوبه‌ای از مهلتش نگذشته است."
+              items={visibleOverdue}
+            />
+          )}
+
           {visibleSections.map((section) => (
             <AgendaSection
               key={section.group}

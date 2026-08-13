@@ -36,6 +36,7 @@ export function HomePage() {
         <DayDashboard
           selectedDate={selectedDate}
           items={dayItems}
+          overdue={agenda.overdue}
           isLoading={agenda.isLoading}
           isError={agenda.isError}
         />

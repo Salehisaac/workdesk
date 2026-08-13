@@ -31,6 +31,15 @@
   border-inline-start-color: var(--wd-kind-reminder);
 }
 
+/* Last of the kind rules on purpose — being late outranks what kind of thing it
+   is, so its edge wins over the four above. The border keeps the card readable
+   as an alert if it is ever shown outside the tinted معوقه‌ها box. */
+.card[data-overdue] {
+  border-color: var(--rasagram-theme-bg-color);
+  border-color: color-mix(in srgb, var(--rasagram-theme-destructive-text-color) 30%, transparent);
+  border-inline-start-color: var(--rasagram-theme-destructive-text-color);
+}
+
 .cardInteractive {
   cursor: pointer;
 }
@@ -87,6 +96,13 @@
   display: inline-flex;
   align-items: center;
   gap: 5px;
+}
+
+/* Never the only marker of lateness — it sits beside the icon and the words
+   «روز تأخیر», inside a section that already says معوقه‌ها. */
+.late {
+  font-weight: 600;
+  color: var(--rasagram-theme-destructive-text-color);
 }
 
 .status {

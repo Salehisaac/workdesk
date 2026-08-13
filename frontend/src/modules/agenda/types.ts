@@ -20,6 +20,17 @@ export type AgendaKind = 'session' | 'decision' | 'job' | 'note' | 'reminder';
 /** The three dashboard sections. Sessions and decisions share one, per design. */
 export type AgendaGroup = 'meetings' | 'projects' | 'notes' | 'reminders';
 
+/**
+ * What the dashboard can render as a collapsible box: the four groups above,
+ * plus «معوقه‌ها».
+ *
+ * Overdue is deliberately *not* an AgendaGroup. A group is a kind of thing and
+ * every item has exactly one; معوقه‌ها is a state a job or a مصوبه falls into and
+ * then leaves again once it's closed — so it cuts across the groups instead of
+ * sitting beside them, and it isn't scoped to the selected day the way they are.
+ */
+export type AgendaSectionKey = AgendaGroup | 'overdue';
+
 export const AGENDA_GROUP_OF: Record<AgendaKind, AgendaGroup> = {
   session: 'meetings',
   decision: 'meetings',
@@ -63,6 +74,17 @@ export interface AgendaItem {
   location: string | null;
   /** Human-readable status chip, when the entity has a status. */
   status: string | null;
+  /**
+   * The deadline day has passed and somebody still owes this — «معوق».
+   *
+   * Only a job and a مصوبه can be: they're the two kinds whose date is a
+   * deadline someone is answerable for. A session's date is when it starts, a
+   * reminder's is when it fires and a note's is when it was written — none of
+   * those is a debt, so none of them ever goes overdue. Decided from the source
+   * entity's own status in ./api.ts, since `status` above is a display label by
+   * the time it reaches here.
+   */
+  overdue: boolean;
   /** Existing in-app route this item opens, when one exists yet. */
   to: string | null;
 }

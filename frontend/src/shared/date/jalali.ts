@@ -16,6 +16,7 @@ import {
   addDays,
   addMonths,
   addYears,
+  differenceInCalendarDays,
   endOfMonth,
   endOfWeek,
   endOfYear,
@@ -36,6 +37,11 @@ export {
   addDays,
   addMonths,
   addYears,
+  // Whole calendar days between two dates, time-of-day ignored — negative once
+  // the first argument is in the past. "How late is this deadline" is a count of
+  // days on the calendar, not of 24-hour spans, so subtracting timestamps and
+  // dividing would be off by one either side of a DST change.
+  differenceInCalendarDays,
   endOfMonth,
   endOfYear,
   isSameDay,

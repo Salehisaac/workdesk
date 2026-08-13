@@ -4,12 +4,13 @@ import {
   CheckCircleOutline,
   ClockCircleOutline,
   EnvironmentOutline,
+  ExclamationCircleOutline,
   FileOutline,
   FlagOutline,
 } from 'antd-mobile-icons';
 import type { ReactNode } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { formatShortDate, formatTime } from '../../../shared/date/jalali';
+import { differenceInCalendarDays, formatShortDate, formatTime, today, toPersianDigits } from '../../../shared/date/jalali';
 import { AGENDA_KIND_LABEL } from '../types';
 import type { AgendaItem, AgendaKind } from '../types';
 import styles from './AgendaItemCard.module.css';
@@ -26,6 +27,17 @@ interface AgendaItemCardProps {
   item: AgendaItem;
 }
 
+/**
+ * «۳ روز تأخیر» — how far past its deadline an overdue item is.
+ *
+ * Always at least one day: `overdue` is decided at day granularity (see
+ * agenda/api.ts), so a deadline that has "passed" is on an earlier calendar day
+ * than today by definition.
+ */
+function lateBy(deadline: Date): string {
+  return `${toPersianDigits(differenceInCalendarDays(today(), deadline))} روز تأخیر`;
+}
+
 export function AgendaItemCard({ item }: AgendaItemCardProps) {
   const navigate = useNavigate();
   // Only some kinds have a screen to open yet (projects do; sessions, decisions
@@ -38,6 +50,7 @@ export function AgendaItemCard({ item }: AgendaItemCardProps) {
       {...(item.to ? { type: 'button' as const, onClick: () => navigate(item.to!) } : {})}
       className={`${styles.card} ${item.to ? styles.cardInteractive : ''}`}
       data-kind={item.kind}
+      data-overdue={item.overdue || undefined}
     >
       <div className={styles.top}>
         <span className={styles.title}>{item.title}</span>
@@ -66,6 +79,14 @@ export function AgendaItemCard({ item }: AgendaItemCardProps) {
           <span className={styles.metaItem}>
             <EnvironmentOutline />
             {item.location}
+          </span>
+        )}
+        {/* The one piece of information the card can't carry any other way: the
+            date says *when* it was due, this says how long ago that was. */}
+        {item.overdue && (
+          <span className={`${styles.metaItem} ${styles.late}`}>
+            <ExclamationCircleOutline />
+            {lateBy(item.date)}
           </span>
         )}
       </div>

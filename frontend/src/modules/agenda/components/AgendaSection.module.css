@@ -53,6 +53,32 @@
   background: color-mix(in srgb, var(--wd-kind-note) 14%, transparent);
 }
 
+/* «معوقه‌ها» is the one section that is an alert rather than a list, so it is the
+   one allowed to wear the destructive colour — including on its own surface,
+   which is what separates "you are late on these" from the four neutral boxes
+   below it at a glance. It only ever renders with something in it (see
+   DayDashboard), so the tint is never spent on an empty state. */
+.section[data-group='overdue'] {
+  background: var(--rasagram-theme-secondary-bg-color);
+  background: color-mix(in srgb, var(--rasagram-theme-destructive-text-color) 13%, var(--rasagram-theme-bg-color));
+}
+
+.section[data-group='overdue'] .icon {
+  color: var(--rasagram-theme-destructive-text-color);
+  background: var(--rasagram-theme-bg-color);
+  background: color-mix(in srgb, var(--rasagram-theme-destructive-text-color) 16%, var(--rasagram-theme-bg-color));
+}
+
+.section[data-group='overdue'] .title,
+.section[data-group='overdue'] .chevron {
+  color: var(--rasagram-theme-destructive-text-color);
+}
+
+.section[data-group='overdue'] .count {
+  color: var(--rasagram-theme-bg-color);
+  background: var(--rasagram-theme-destructive-text-color);
+}
+
 .title {
   flex: 1;
   min-width: 0;
@@ -98,6 +124,18 @@
   font-size: 12.5px;
   line-height: 1.8;
   color: var(--rasagram-theme-hint-color);
+}
+
+/* The count in words, above the cards it counts. The rule under it is what makes
+   the sentence a heading for the list rather than a first row of it. */
+.headline {
+  margin: 0;
+  padding: 0 4px 10px;
+  border-bottom: 1px solid var(--rasagram-theme-bg-color);
+  border-bottom-color: color-mix(in srgb, var(--rasagram-theme-destructive-text-color) 22%, transparent);
+  font-size: 12.5px;
+  font-weight: 600;
+  color: var(--rasagram-theme-destructive-text-color);
 }
 
 @keyframes sectionReveal {
