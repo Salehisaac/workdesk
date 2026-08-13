@@ -1,0 +1,167 @@
+/* Sits under the create button (z-index 900) and over the page. The safe-area
+   inset is padding rather than an offset so the bar's own surface runs all the
+   way to the screen edge — a floating strip with a sliver of scrolling content
+   under it reads as a bug on a device with a home indicator. */
+.dock {
+  position: fixed;
+  inset-inline: 0;
+  bottom: 0;
+  z-index: 880;
+  padding-bottom: var(--wd-safe-bottom);
+
+  /* Translucent + blurred, so the list stays visible as it passes underneath
+     and the bar reads as chrome floating over the page rather than a second
+     page glued to the bottom. */
+  background: color-mix(in srgb, var(--rasagram-theme-bg-color) 84%, transparent);
+  -webkit-backdrop-filter: blur(18px) saturate(180%);
+  backdrop-filter: blur(18px) saturate(180%);
+  border-top: 1px solid color-mix(in srgb, var(--rasagram-theme-hint-color) 18%, transparent);
+
+  transition:
+    transform 0.28s cubic-bezier(0.22, 0.61, 0.36, 1),
+    opacity 0.2s linear,
+    visibility 0s;
+}
+
+/* Without the blur the translucency is just a smear of overlapping text. */
+@supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
+  .dock {
+    background: var(--rasagram-theme-bg-color);
+  }
+}
+
+/* The extra few pixels clear the border and shadow, which translateY(100%)
+   alone leaves peeking above the screen edge. visibility is what actually
+   removes the buttons from the tab order, delayed so it lands after the slide
+   rather than blanking the bar mid-flight. */
+.dock[data-hidden] {
+  transform: translateY(calc(100% + 6px));
+  opacity: 0;
+  visibility: hidden;
+  transition:
+    transform 0.28s cubic-bezier(0.55, 0, 0.68, 0.53),
+    opacity 0.24s linear,
+    visibility 0s 0.28s;
+}
+
+/* Matches .content's cap in HomePage.module.css, so on a desktop viewport the
+   tools stay under the column they belong to instead of spreading across the
+   full width of the window. */
+.row {
+  max-width: 560px;
+  margin-inline: auto;
+  height: var(--wd-dock-height);
+  display: grid;
+  /* Five columns at every width — the old grid dropped to four and wrapped,
+     which is free in a scrolling page and doubles a fixed bar's height. At the
+     narrowest supported viewport this is still ~64px per tool. */
+  grid-template-columns: repeat(5, 1fr);
+  align-items: center;
+  gap: 2px;
+  padding-inline: 6px;
+}
+
+@keyframes toolReveal {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.tool {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 3px;
+  height: 100%;
+  padding: 4px 2px;
+  border: none;
+  border-radius: 14px;
+  background: none;
+  font-family: inherit;
+  cursor: pointer;
+  color: var(--rasagram-theme-accent-text-color);
+  -webkit-tap-highlight-color: transparent;
+  animation: toolReveal 0.32s cubic-bezier(0.34, 1.2, 0.64, 1) both;
+  animation-delay: calc(var(--tool-index, 0) * 45ms);
+}
+
+.tool:active {
+  background: var(--rasagram-theme-secondary-bg-color);
+}
+
+.tool:focus-visible {
+  outline: 2px solid var(--rasagram-theme-accent-text-color);
+  outline-offset: -2px;
+}
+
+.toolIcon {
+  position: relative;
+  display: flex;
+  font-size: 21px;
+}
+
+.toolLabel {
+  font-size: 10.5px;
+  line-height: 1.25;
+  text-align: center;
+  color: var(--rasagram-theme-subtitle-text-color);
+}
+
+.toolLocked,
+.toolLocked .toolLabel {
+  color: var(--rasagram-theme-hint-color);
+}
+
+.lockBadge {
+  position: absolute;
+  top: -5px;
+  inset-inline-end: -6px;
+  width: 13px;
+  height: 13px;
+  border-radius: 50%;
+  background: var(--rasagram-theme-secondary-bg-color);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 8px;
+  color: var(--rasagram-theme-hint-color);
+}
+
+@media (max-width: 360px) {
+  .toolIcon {
+    font-size: 19px;
+  }
+
+  .toolLabel {
+    font-size: 9.5px;
+  }
+}
+
+/* The slide is the one thing that must survive: it is the only cue that the bar
+   went somewhere retrievable rather than disappearing. Reduced motion gets it
+   shortened and un-eased, not replaced by a fade. */
+@media (prefers-reduced-motion: reduce) {
+  .dock {
+    transition:
+      transform 0.12s linear,
+      opacity 0.12s linear,
+      visibility 0s;
+  }
+
+  .dock[data-hidden] {
+    transition:
+      transform 0.12s linear,
+      opacity 0.12s linear,
+      visibility 0s 0.12s;
+  }
+
+  .tool {
+    animation: none;
+  }
+}

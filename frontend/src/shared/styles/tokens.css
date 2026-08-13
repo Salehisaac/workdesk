@@ -32,6 +32,12 @@
   --wd-safe-left: env(safe-area-inset-left, 0px);
   --wd-safe-right: env(safe-area-inset-right, 0px);
 
+  /* The home page's tool dock, above the device's own bottom inset. A token
+     because three stylesheets have to agree on it and none of them owns it:
+     the dock sets its row to this height, the page reserves it as bottom
+     padding so the last card clears it, and the create button lifts by it. */
+  --wd-dock-height: 58px;
+
   /* Pre-boot fallback only — bridge/theme.ts overrides both of these
      in JS on every theme apply (using the bridge's live accent color),
      so this is just what shows for the instant before that first runs. */

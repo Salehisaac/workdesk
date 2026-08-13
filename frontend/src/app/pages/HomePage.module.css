@@ -1,6 +1,16 @@
 .page {
   min-height: 100vh;
   background: var(--rasagram-theme-bg-color);
+
+  /* How far the create button rides above its usual corner, read by
+     CreateFab.module.css. It's declared here rather than there because the
+     dock is this page's — the button is shared, and everywhere else the var is
+     undefined and its 0px fallback applies. */
+  --wd-dock-lift: var(--wd-dock-height);
+}
+
+.page[data-dock-hidden] {
+  --wd-dock-lift: 0px;
 }
 
 /* Mobile-first, but capped so the dashboard doesn't stretch into a band of
@@ -11,106 +21,10 @@
   gap: 12px;
   max-width: 560px;
   margin-inline: auto;
-  /* Bottom room for the fixed create button plus the device's safe area, so the
-     last tool tile is never trapped underneath it. */
-  padding-bottom: calc(96px + var(--wd-safe-bottom));
-}
-
-.tools {
-  padding-top: 4px;
-}
-
-.sectionLabel {
-  padding: 4px 16px;
-  font-size: 13px;
-  font-weight: 600;
-  color: var(--rasagram-theme-hint-color);
-}
-
-.grid {
-  display: grid;
-  grid-template-columns: repeat(5, 1fr);
-  gap: 16px 4px;
-  padding: 10px 16px 8px;
-}
-
-@media (max-width: 360px) {
-  .grid {
-    grid-template-columns: repeat(4, 1fr);
-  }
-}
-
-@keyframes tileReveal {
-  from {
-    opacity: 0;
-    transform: translateY(14px) scale(0.92);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0) scale(1);
-  }
-}
-
-.tile {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 6px;
-  border: none;
-  background: none;
-  font-family: inherit;
-  cursor: pointer;
-  padding: 0;
-  animation: tileReveal 0.4s cubic-bezier(0.34, 1.2, 0.64, 1) both;
-  animation-delay: calc(var(--tile-index, 0) * 90ms);
-}
-
-.tileCard {
-  position: relative;
-  width: 52px;
-  height: 52px;
-  border-radius: 14px;
-  background: var(--rasagram-theme-secondary-bg-color);
-  box-shadow: var(--rasagram-card-shadow);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 22px;
-  color: var(--rasagram-theme-accent-text-color);
-}
-
-.tileLocked .tileCard {
-  color: var(--rasagram-theme-hint-color);
-}
-
-.lockBadge {
-  position: absolute;
-  top: -4px;
-  inset-inline-end: -4px;
-  width: 18px;
-  height: 18px;
-  border-radius: 50%;
-  background: var(--rasagram-theme-bg-color);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 10px;
-  color: var(--rasagram-theme-hint-color);
-  box-shadow: var(--rasagram-card-shadow);
-}
-
-.tileLabel {
-  font-size: 12px;
-  text-align: center;
-  color: var(--rasagram-theme-text-color);
-}
-
-.tileLocked .tileLabel {
-  color: var(--rasagram-theme-hint-color);
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .tile {
-    animation: none;
-  }
+  /* Bottom room for both fixed elements in that corner — the tool dock and the
+     create button riding above it — plus the device's safe area, so the last
+     card of the day is never trapped underneath either. The dock forces itself
+     back into view at the end of the page, so this has to clear it even though
+     it spends most of its time hidden. */
+  padding-bottom: calc(96px + var(--wd-dock-height) + var(--wd-safe-bottom));
 }
