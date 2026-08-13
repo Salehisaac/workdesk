@@ -1,13 +1,14 @@
-import { Button, DotLoading, NavBar, Toast } from 'antd-mobile';
+import { Button, DotLoading, Toast } from 'antd-mobile';
 import { AddOutline, ClockCircleOutline, ExclamationCircleOutline, UnorderedListOutline } from 'antd-mobile-icons';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
-import { toPersianDigits } from '../../../shared/date/jalali';
 import { EmptyState } from '../../../shared/ui/EmptyState';
 import { useCreateList, useDeleteList, useJobs, useProject } from '../api';
 import { ListColumn } from '../components/board/ListColumn';
 import { CreateListSheet } from '../components/CreateListSheet';
+import { ProjectHeader } from '../components/ProjectHeader';
 import { openProjectTopic } from '../links';
+import { summarize } from '../report';
 import type { CreateListInput, Job } from '../types';
 import styles from './ProjectBoardPage.module.css';
 
@@ -33,19 +34,33 @@ export function ProjectBoardPage() {
 
   const lists = useMemo(() => project?.lists ?? [], [project]);
 
-  // One pass over every job the user can see, bucketed by list. useJobs() is the
-  // same cached query the home calendar reads, so opening a project doesn't
-  // refetch what's already loaded.
+  // useJobs() is flat across every project the user can see — and it's the same
+  // cached query the home calendar reads, so opening a project doesn't refetch
+  // what's already loaded. Narrow it once here; the board buckets it by list and
+  // the header summarizes it.
+  const projectJobs = useMemo(
+    () => (jobs.data ?? []).filter((job) => job.projectId === projectId),
+    [jobs.data, projectId],
+  );
+
   const jobsByList = useMemo(() => {
     const map = new Map<string, Job[]>();
-    for (const job of jobs.data ?? []) {
-      if (job.projectId !== projectId) continue;
+    for (const job of projectJobs) {
       const bucket = map.get(job.listId);
       if (bucket) bucket.push(job);
       else map.set(job.listId, [job]);
     }
     return map;
-  }, [jobs.data, projectId]);
+  }, [projectJobs]);
+
+  // The header's meter runs the same summarize() the report page does, over the
+  // same jobs — so the number on the board and the number in the report can't
+  // drift apart. Held back until the jobs actually arrive: an empty list looks
+  // identical to a project with nothing done, and «٪۰» flashing before the data
+  // lands reads as bad news rather than as loading.
+  const headerStats = useMemo(() => (jobs.data ? summarize(projectJobs) : null), [jobs.data, projectJobs]);
+
+  const openReport = useCallback(() => navigate(`/projects/${projectId}/report`), [navigate, projectId]);
 
   const registerPage = useCallback((listId: string, node: HTMLElement | null) => {
     if (node) pageRefs.current.set(listId, node);
@@ -138,7 +153,7 @@ export function ProjectBoardPage() {
   if (isError) {
     return (
       <div className={styles.page}>
-        <NavBar onBack={() => navigate('/projects')}>&nbsp;</NavBar>
+        <ProjectHeader project={null} stats={null} onBack={() => navigate('/projects')} onOpenReport={openReport} />
         <div className={styles.fill}>
           <EmptyState
             icon={<ExclamationCircleOutline />}
@@ -153,7 +168,7 @@ export function ProjectBoardPage() {
   if (isLoading || !project) {
     return (
       <div className={styles.page}>
-        <NavBar onBack={() => navigate('/projects')}>&nbsp;</NavBar>
+        <ProjectHeader project={null} stats={null} onBack={() => navigate('/projects')} onOpenReport={openReport} />
         <div className={styles.fill}>
           <EmptyState icon={<DotLoading />} title="در حال بارگذاری…" />
         </div>
@@ -163,12 +178,12 @@ export function ProjectBoardPage() {
 
   return (
     <div className={styles.page}>
-      <NavBar onBack={() => navigate('/projects')}>
-        <div className={styles.titleBlock}>
-          <span className={styles.titleName}>{project.name}</span>
-          <span className={styles.titleMeta}>{toPersianDigits(project.memberCount)} عضو</span>
-        </div>
-      </NavBar>
+      <ProjectHeader
+        project={project}
+        stats={headerStats}
+        onBack={() => navigate('/projects')}
+        onOpenReport={openReport}
+      />
 
       {lists.length === 0 ? (
         <div className={styles.fill}>

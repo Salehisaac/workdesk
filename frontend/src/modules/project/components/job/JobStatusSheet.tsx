@@ -1,19 +1,9 @@
 import { Popup } from 'antd-mobile';
-import { CheckOutline, MinusCircleOutline, PlayOutline, StopOutline, UndoOutline } from 'antd-mobile-icons';
-import type { ReactNode } from 'react';
+import { CheckOutline } from 'antd-mobile-icons';
 import { JOB_STATUS_LABEL, JOB_STATUSES } from '../../types';
 import type { JobStatus } from '../../types';
+import { STATUS_ICON } from '../statusIcon';
 import styles from './JobSheets.module.css';
-
-const STATUS_ICON: Record<JobStatus, ReactNode> = {
-  notStarted: <span className={styles.statusSquare} />,
-  inProgress: <PlayOutline />,
-  paused: <MinusCircleOutline />,
-  // A circle-and-slash — the "forbidden" mark, not a plain close cross.
-  canceled: <StopOutline />,
-  done: <CheckOutline />,
-  rejected: <UndoOutline />,
-};
 
 interface JobStatusSheetProps {
   visible: boolean;

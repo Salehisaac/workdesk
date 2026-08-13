@@ -13,22 +13,6 @@
   background: var(--rasagram-theme-secondary-bg-color);
 }
 
-.titleBlock {
-  display: flex;
-  flex-direction: column;
-}
-
-.titleName {
-  font-size: 16px;
-  font-weight: 600;
-}
-
-.titleMeta {
-  font-size: 11px;
-  color: var(--rasagram-theme-hint-color);
-  font-weight: 400;
-}
-
 /* Anything that isn't the pager — the empty, loading and error states — still
    has to claim the leftover height, or the footer rides up under it and the
    rest of the fixed-height shell sits blank. */

@@ -1,5 +1,8 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { useMemo } from 'react';
 import { apiClient, getCollection } from '../../shared/api/client';
+import { buildProjectReport } from './report';
+import type { ProjectReport } from './report';
 import type {
   CreateJobInput,
   CreateJobTagInput,
@@ -65,6 +68,40 @@ export function useJobs() {
     queryFn: () => getCollection<Job>('/jobs'),
     retry: false,
   });
+}
+
+/**
+ * The project's report, folded out of the two queries the board is already
+ * holding — no `/projects/:id/report` endpoint, because a report is a *view* of
+ * jobs and the jobs are all in the cache. Aggregating server-side would put the
+ * same numbers behind a second round trip and let the board and the report
+ * disagree whenever one of them was stale; here, editing a job's status
+ * invalidates `jobs` and the report re-derives on the next render for free.
+ *
+ * The arithmetic lives in ./report.ts — this only decides *which* jobs go in
+ * (the /jobs list is flat across every project the caller can see) and keeps
+ * the result memoized so scrolling the report doesn't recompute it.
+ */
+export function useProjectReport(projectId: string | undefined) {
+  const project = useProject(projectId);
+  const jobs = useJobs();
+
+  const report = useMemo<ProjectReport | null>(() => {
+    if (!project.data) return null;
+    const mine = (jobs.data ?? []).filter((job) => job.projectId === projectId);
+    return buildProjectReport(project.data, mine);
+  }, [project.data, jobs.data, projectId]);
+
+  return {
+    report,
+    project: project.data,
+    // The jobs query is deliberately not part of isError: it resolves to an
+    // empty list rather than throwing (see getCollection), and a project whose
+    // jobs failed to load should still render its header and an empty report
+    // instead of an error screen.
+    isLoading: project.isLoading || jobs.isLoading,
+    isError: project.isError,
+  };
 }
 
 /**

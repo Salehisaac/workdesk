@@ -1,0 +1,10 @@
+/* «آغاز نشده» has no verb to draw — it's the absence of the other five — so it
+   gets a plain filled square rather than a glyph that would imply an action.
+   currentColor, so it takes whatever status colour its container is wearing. */
+.square {
+  width: 11px;
+  height: 11px;
+  border-radius: 3px;
+  background: currentColor;
+  display: inline-block;
+}

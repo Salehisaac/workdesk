@@ -1,0 +1,348 @@
+/* Shared by the report's four building blocks — the collapsible section shell,
+   the part-to-whole status bar, its legend, and the per-person / per-tag row.
+   Same reasoning as JobSheets.module.css: a tight family with identical chrome
+   is easier to keep from drifting when it has one stylesheet. */
+
+/* -- section shell -- */
+
+.section {
+  border-radius: 18px;
+  background: var(--rasagram-theme-secondary-bg-color);
+  box-shadow: var(--rasagram-card-shadow);
+  overflow: hidden;
+}
+
+.head {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  padding: 13px 14px;
+  border: none;
+  background: none;
+  font-family: inherit;
+  color: var(--rasagram-theme-text-color);
+  text-align: start;
+}
+
+.headButton {
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.headIcon {
+  flex-shrink: 0;
+  width: 30px;
+  height: 30px;
+  border-radius: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 16px;
+  color: var(--rasagram-theme-accent-text-color);
+  background: color-mix(in srgb, var(--rasagram-theme-accent-text-color) 12%, transparent);
+}
+
+.headText {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.headTitle {
+  font-size: 14px;
+  font-weight: 700;
+}
+
+.headHint {
+  font-size: 11.5px;
+  font-weight: 400;
+  color: var(--rasagram-theme-hint-color);
+}
+
+.chevron {
+  flex-shrink: 0;
+  font-size: 13px;
+  color: var(--rasagram-theme-hint-color);
+  transition: transform 0.2s ease;
+}
+
+.chevronOpen {
+  transform: rotate(180deg);
+}
+
+.body {
+  padding: 0 14px 14px;
+}
+
+/* -- part-to-whole status bar --
+   A stacked bar, not a pie: six shares of one total, several of them close
+   together, is exactly the comparison a pie is worst at. The 2px separators are
+   gaps in the card surface rather than strokes around each segment, so no ink
+   is spent on anything that isn't data. */
+
+.bar {
+  display: flex;
+  gap: 2px;
+  height: 12px;
+  border-radius: 4px;
+  /* Clips the segments' square corners to the strip's rounded ends, and keeps
+     the gaps showing the card behind rather than a drawn border. */
+  overflow: hidden;
+}
+
+.segment {
+  flex: 1 1 0;
+  /* One job out of two hundred is still a job — never let a share round away
+     to an invisible sliver. */
+  min-width: 4px;
+  background: var(--wd-segment-color);
+}
+
+.barEmpty {
+  height: 12px;
+  border-radius: 4px;
+  background: color-mix(in srgb, var(--rasagram-theme-hint-color) 16%, transparent);
+}
+
+/* -- legend / status breakdown --
+   Doubles as the "by status" table: the colour is never alone, it always
+   arrives with its icon, its name and its count. */
+
+.legend {
+  display: flex;
+  flex-direction: column;
+  margin: 14px 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.legendRow {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 7px 0;
+}
+
+.legendRow + .legendRow {
+  box-shadow: inset 0 1px 0 color-mix(in srgb, var(--rasagram-theme-hint-color) 14%, transparent);
+}
+
+/* Faded rather than hidden: "nobody has rejected anything" is worth reading,
+   and dropping the row would reshuffle the list every time a count hit zero. */
+.legendRowEmpty {
+  opacity: 0.42;
+}
+
+.legendMark {
+  flex-shrink: 0;
+  width: 24px;
+  height: 24px;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 13px;
+  color: var(--wd-segment-color);
+  background: color-mix(in srgb, var(--wd-segment-color) 15%, transparent);
+}
+
+.legendLabel {
+  flex: 1;
+  min-width: 0;
+  font-size: 13px;
+  /* Text wears text tokens, never the series colour — the mark beside it is
+     what carries identity, and a light status hue is unreadable as type. */
+  color: var(--rasagram-theme-text-color);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.legendCount {
+  flex-shrink: 0;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--rasagram-theme-text-color);
+}
+
+.legendShare {
+  flex-shrink: 0;
+  min-width: 42px;
+  text-align: end;
+  font-size: 12px;
+  color: var(--rasagram-theme-hint-color);
+}
+
+/* -- person / tag row -- */
+
+.group {
+  display: flex;
+  flex-direction: column;
+  gap: 9px;
+  padding: 12px 0;
+}
+
+.group + .group {
+  box-shadow: inset 0 1px 0 color-mix(in srgb, var(--rasagram-theme-hint-color) 14%, transparent);
+}
+
+.groupHead {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+}
+
+.avatar {
+  flex-shrink: 0;
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--rasagram-theme-button-text-color);
+  background: var(--rasagram-hero-gradient);
+}
+
+/* The two «بدون …» buckets aren't people or tags — a dashed outline says so
+   before the label has to. */
+.avatarSynthetic {
+  background: none;
+  border: 1px dashed color-mix(in srgb, var(--rasagram-theme-hint-color) 55%, transparent);
+  color: var(--rasagram-theme-hint-color);
+  font-size: 15px;
+  font-weight: 400;
+}
+
+.swatch {
+  flex-shrink: 0;
+  width: 32px;
+  height: 32px;
+  border-radius: 10px;
+  background: var(--wd-group-color);
+}
+
+/* «بدون برچسب» is the absence of a tag, so it can't wear a tag colour — a
+   filled swatch there reads as a real tag named "no tag". Same dashed
+   treatment as the unassigned bucket's avatar. */
+.swatchSynthetic {
+  background: none;
+  border: 1px dashed color-mix(in srgb, var(--rasagram-theme-hint-color) 55%, transparent);
+}
+
+.groupName {
+  flex: 1;
+  min-width: 0;
+  font-size: 13.5px;
+  font-weight: 600;
+  color: var(--rasagram-theme-text-color);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.groupPercent {
+  flex-shrink: 0;
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--rasagram-theme-text-color);
+  font-feature-settings: 'tnum';
+}
+
+/* -- meter --
+   One ratio against its limit. The unfilled track is the same hue as the fill,
+   several steps lighter, so the whole bar reads as one measure. */
+
+.meter {
+  height: 7px;
+  border-radius: 4px;
+  background: color-mix(in srgb, var(--wd-meter-color) 18%, transparent);
+  overflow: hidden;
+}
+
+/* display:block is load-bearing: the fill is a <span>, and an inline box ignores
+   both the inline width the component sets and this height. */
+.meterFill {
+  display: block;
+  height: 100%;
+  border-radius: 4px;
+  background: var(--wd-meter-color);
+  transition: width 0.35s ease;
+}
+
+/* -- the chips under a row -- */
+
+.facts {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.fact {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 4px 9px;
+  border-radius: 8px;
+  font-size: 11.5px;
+  color: var(--rasagram-theme-subtitle-text-color);
+  background: color-mix(in srgb, var(--rasagram-theme-hint-color) 12%, transparent);
+}
+
+.factIcon {
+  font-size: 12px;
+  color: var(--rasagram-theme-hint-color);
+}
+
+/* Overdue is the one number on the page that asks for action, so it is the one
+   chip allowed to shout — and it still ships with its icon and its label. */
+.factAlert {
+  color: var(--rasagram-theme-destructive-text-color);
+  background: color-mix(in srgb, var(--rasagram-theme-destructive-text-color) 13%, transparent);
+}
+
+.factAlert .factIcon {
+  color: inherit;
+}
+
+.factValue {
+  font-weight: 700;
+  color: var(--rasagram-theme-text-color);
+}
+
+.factAlert .factValue {
+  color: inherit;
+}
+
+.empty {
+  margin: 0;
+  padding: 18px 4px;
+  text-align: center;
+  font-size: 12.5px;
+  color: var(--rasagram-theme-hint-color);
+}
+
+.srOnly {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  margin: -1px;
+  padding: 0;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  clip-path: inset(50%);
+  white-space: nowrap;
+  border: 0;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .chevron,
+  .meterFill {
+    transition: none;
+  }
+}
