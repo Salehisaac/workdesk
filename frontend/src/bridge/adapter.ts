@@ -149,6 +149,19 @@ export const adapterBridge: Bridge = {
       });
     });
   },
+  openLink(url: string): boolean {
+    const wa = webApp();
+    if (typeof wa.openLink !== 'function') return false;
+    try {
+      wa.openLink(url);
+      return true;
+    } catch (err) {
+      // A malformed URL, most likely — someone typed a room name into the
+      // link field. Not worth taking the page down over; the caller says so.
+      console.error('[bridge] openLink rejected', url, err);
+      return false;
+    }
+  },
   openTelegramLink(url: string): boolean {
     const wa = webApp();
     if (typeof wa.openTelegramLink !== 'function' || !canPostTgLink(wa)) return false;

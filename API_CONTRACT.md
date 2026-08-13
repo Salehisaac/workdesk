@@ -4,8 +4,9 @@ What the frontend (`frontend/`) actually calls. Ground truth for the exact shape
 `types.ts`/`api.ts` under `frontend/src/modules/` — this doc summarizes them; if they ever drift, the
 TypeScript is authoritative.
 
-Covered here: **Project** (projects, lists, tags, jobs), **Note**, **Reminder**, and **Meeting repository**
-(sessions, their agendas and decisions — see the «مخزن جلسه» section near the end).
+Covered here: **Project** (projects, lists, tags, jobs), **Note**, **Reminder**, **Meeting repository**
+(sessions, their agendas and decisions — see the «مخزن جلسه» section near the end) and **Ledger**
+(books and their transactions — the «دفتر مالی» section after it).
 
 ## JSON key casing — read this first
 
@@ -496,8 +497,8 @@ calendar indexes by day itself.
     "projectId": null,
     "projectName": null,
     "startsAt": "2026-08-20T09:00:00+03:30",
-    "location": "اتاق جلسات ۲",
-    "isOnline": false,
+    "url": "https://meet.example.com/abc-defg-hij",
+    "isOnline": true,
     "status": "notStarted",
     "memberCount": 4
   }
@@ -505,8 +506,9 @@ calendar indexes by day itself.
 ```
 
 - `status` — `notStarted` | `inProgress` | `done` | `canceled`.
-- `location` is null whenever `isOnline` is true; being online is its own kind of location, not a room
-  named "online". The backend doesn't even store one in that case.
+- `url` is the conferencing link, and it is null unless `isOnline` is true — the backend doesn't store one
+  otherwise. A حضوری session has **no** place field: a room name was prose nobody could act on, whereas a
+  link is the meeting itself. It is optional even for an online one, whose link may be circulated elsewhere.
 
 ### `POST /api/v1/sessions`
 
@@ -514,8 +516,8 @@ calendar indexes by day itself.
 {
   "title": "جلسه‌ی هفتگی محصول",
   "startsAt": "2026-08-20T09:00:00+03:30",
-  "location": "اتاق جلسات ۲",
-  "isOnline": false,
+  "url": "https://meet.example.com/abc-defg-hij",
+  "isOnline": true,
   "projectId": "1",
   "members": [{ "id": "101", "source": "users", "displayName": "علی رضایی", "username": "ali", "phone": null, "online": true }]
 }
@@ -524,6 +526,9 @@ calendar indexes by day itself.
 - `startsAt` — RFC 3339 **carrying the device's offset** (`toLocalIso`, not `toISOString`). The invite
   message renders the Persian wall clock from it, so a normalized UTC instant would tell an Iranian user the
   wrong time.
+- `url` — optional, and stored **only when `isOnline` is true** (otherwise dropped, so flipping the switch
+  can't leave a stale link behind). It travels into the invite message on its own line, where the chat
+  client makes it tappable.
 - `projectId` — optional; must be a project the caller belongs to (422 otherwise).
 - `members` — the additionally invited people, same `PickedItem` shape `POST /projects` takes. The
   authenticated caller is added as `role: "owner"` server-side and is **not** messaged.
@@ -636,6 +641,128 @@ may set it. Returns the `Decision`.
 
 ---
 
+## Ledger — «دفتر مالی»
+
+The money module. Ground truth for the shapes is `frontend/src/modules/ledger/types.ts`.
+
+**How a ledger differs from a project and from a session, and why that's the module.** Creating a project
+provisions a Rasagram supergroup and the group appearing in everyone's chat list *is* the invitation.
+Creating a session provisions nothing but messages every member a deep link, because a meeting nobody was
+told about is not a meeting. A ledger does **neither**: no `chatId`, no topics, and no invite message. It
+is not an event, so there is no moment to summon anyone to — its members simply find the book in their own
+`GET /ledgers`. Nothing here talks to the Bot API or the admin API at all.
+
+**Two rules worth reading before the endpoints:**
+
+- **The sign lives in `type`, never in `amount`.** An amount is always a positive whole number of Tomans and
+  `"expense"` is a direction. `balance` (income − expense) is the only signed figure on the wire, and it is
+  routinely negative.
+- **A ledger's rows travel whole.** `GET /ledgers/{id}` carries every transaction, because every screen in
+  the module — the three tabs, and each of the five report periods — is a *cut* of the same array, computed
+  client-side (`modules/ledger/report.ts`). There is no report endpoint and no date-range parameter; adding
+  one would put a round trip behind tapping «هفته قبل» and let the book and its report disagree.
+
+### `GET /api/v1/ledgers`
+
+Every book the caller may write in, newest first, each already totalled — the list screen shows a balance
+per row without loading a single transaction.
+
+```json
+[
+  {
+    "id": "1", "name": "فروشگاه مرکزی", "memberCount": 2,
+    "totalIncome": 36000000, "totalExpense": 7200000, "balance": 28800000,
+    "transactionCount": 5, "createdAt": "2026-08-13T18:10:00Z"
+  }
+]
+```
+
+### `POST /api/v1/ledgers`
+
+```json
+{ "name": "فروشگاه مرکزی", "members": [{ "id": "101", "source": "users", "displayName": "علی رضایی" }] }
+```
+
+`members` is the same `PickedItem` shape `POST /projects` and `POST /sessions` take, stored verbatim. The
+caller is added as `role: "owner"` server-side and is **not** repeated if the picker also returned them.
+
+**Response 201** — `LedgerDetail`, i.e. the summary above plus `members`, `tags`, `sources` and
+`transactions` (the last three empty by construction — all are written from the screen this redirects to).
+
+### `GET /api/v1/ledgers/{id}`
+
+`LedgerDetail`. 403 for a non-member. Transactions come back newest first (`occurred_at DESC, id DESC` —
+the id breaks ties so a list of same-minute rows doesn't reshuffle between loads).
+
+```json
+{
+  "id": "1", "name": "فروشگاه مرکزی", "memberCount": 2,
+  "totalIncome": 36000000, "totalExpense": 7200000, "balance": 28800000,
+  "transactionCount": 5, "createdAt": "2026-08-13T18:10:00Z",
+  "members": [{ "id": "101", "source": "users", "displayName": "علی رضایی", "username": "ali", "phone": null,
+                "online": true, "role": "member" }],
+  "tags": [{ "id": "1", "ledgerId": "1", "name": "شعبه ۲", "color": null }],
+  "sources": [{ "id": "1", "ledgerId": "1", "name": "صندوق فروشگاه" }],
+  "transactions": [
+    {
+      "id": "5", "ledgerId": "1", "type": "income", "amount": 24500000, "accountGroup": "sales",
+      "description": "فروش نقدی روز", "sourceId": "1", "sourceName": "صندوق فروشگاه", "tagIds": ["1"],
+      "assigneeId": "101", "assigneeName": "علی رضایی",
+      "occurredAt": "2026-08-13T09:18:00+03:30", "createdAt": "2026-08-13T09:20:11+03:30"
+    }
+  ]
+}
+```
+
+- `accountGroup` — one of `other` | `salary` | `bonus` | `sales` | `transfer` («سایر»، «حقوق»، «پاداش»،
+  «فروش»، «انتقال»). A **fixed** five, unlike tags and sources: these are accounting categories that mean
+  the same thing in every book, so a report grouped by them stays comparable between two ledgers.
+- `sourceName` is denormalized (like a session's `projectName`); tags are not — a transaction is only ever
+  read alongside the ledger that owns it, and that response already carries the tag pool.
+- `assigneeId`/`assigneeName` — the «مسئول». Stored verbatim from whatever the picker returned and
+  deliberately **not** required to be a member of the ledger: the responsible party on a receipt is a label,
+  not an access grant, and the client's own contact picker reaches the whole address book.
+
+### `POST /api/v1/ledgers/{id}/transactions`
+
+```json
+{
+  "type": "expense", "amount": 1000000, "accountGroup": "transfer", "description": "کرایه حمل بار",
+  "sourceId": "1", "tagIds": ["1"],
+  "assignee": { "id": "101", "source": "users", "displayName": "علی رضایی" },
+  "occurredAt": "2026-08-13T11:18:00+03:30"
+}
+```
+
+- `type` and a positive `amount` are the only required fields. **`amount` ≤ 0 is 422** — a line worth
+  nothing moves no money.
+- `accountGroup` defaults to `other`; anything outside the five is 422.
+- `sourceId` and every `tagIds` entry must belong to **this** ledger, otherwise 422.
+- `assignee` is the whole picked item; both its `id` and `displayName` must be present or it is ignored.
+- `occurredAt` is RFC 3339 carrying the device's offset (`toLocalIso`) and is the day every period report
+  groups by — not `createdAt`, since a receipt is often entered days after the fact. Absent means now.
+
+**Response 201** — the created `LedgerTransaction`.
+
+### `DELETE /api/v1/ledgers/{id}/transactions/{transactionId}`
+
+**Response 204.** The module's only destructive call, and its only editing: correcting a mistyped amount is
+deleting the line and writing it again. Any member may delete any line — the ledger is the unit of
+authorization, exactly as the session is for a مصوبه. A `transactionId` from another book reads as 404.
+
+### `POST /api/v1/ledgers/{id}/tags` and `POST /api/v1/ledgers/{id}/sources`
+
+The two ledger-scoped pools a transaction draws from. Both take `{ "name": ... }` (tags also accept an
+optional `"color"`), both are **write-only here** — they are read as part of `GET /ledgers/{id}` — and both
+return an existing row with **200** instead of failing when the name is already taken, the same
+create-or-return `POST /projects/{id}/tags` does.
+
+«منبع مالی» is a pool rather than a fixed enum precisely because `accountGroup` is the opposite: a source is
+a thing this particular business owns («صندوق فروشگاه», «کارت بانک ملت») and only its own bookkeeper can
+name it.
+
+---
+
 ## Not in v1 (deliberately out of scope, see plan)
 
 - Adding members to a project after creation — the admin API's `chat/create` takes an initial member list,
@@ -659,3 +786,13 @@ may set it. Returns the `Decision`.
   for the rest (`decisions.agenda_id` is `NullOnDelete`) but no endpoint exposes it yet.
 - Attaching files to a session, an agenda item or a decision. The «فایل» rows on those screens are not
   built — nothing in the meeting module uploads yet.
+- **Editing a ledger transaction, or renaming/deleting a ledger, a tag or a source.** Deleting a
+  transaction *is* shipped (see above) and is the module's answer to a mistyped amount: remove the line and
+  write it again. A partial `PATCH` would be the first place in the app where a stored total could be
+  changed without a trace of what it used to be, which a book people share is exactly the wrong place for.
+- Adding someone to a ledger after it is created, for the same reason a project's and a session's members
+  are fixed.
+- A balance *per «منبع مالی»*. Sources are labels on transactions today, not accounts with their own
+  running totals — the schema is ready for it (`ledger_transactions.source_id`), nothing computes it.
+- Recurring transactions, attachments (a photo of a receipt), and any export. All three are the obvious next
+  things a real bookkeeper asks for; none is built.

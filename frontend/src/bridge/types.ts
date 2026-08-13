@@ -130,10 +130,20 @@ export interface Bridge {
   pick(options: PickOptions): Promise<PickedItem[]>;
   openContactPicker(): Promise<DeviceContact | null>;
   /**
+   * Hands an ordinary web link to the client, which opens it outside the mini
+   * app (its in-app browser, or the system one). This is the right call for
+   * anything that is not a Rasagram destination — a session's conferencing
+   * link, for instance. openTelegramLink is the opposite case and rejects
+   * these outright, since it demands a `t.me` host.
+   *
+   * Returns false when the client is too old to have it, in which case nothing
+   * was opened and the caller should say so.
+   */
+  openLink(url: string): boolean;
+  /**
    * Hands a link to the Rasagram client to open in its own UI — a chat, a
    * forum topic, an invite — and closes/backgrounds the mini app. NOT for
-   * ordinary web links: those want openLink (external browser), which this
-   * app has no use for yet.
+   * ordinary web links: those want openLink, above.
    *
    * `url` MUST be written with the `t.me` host. Read the deployed SDK
    * (see this file's header) and the reason is plain: openTelegramLink

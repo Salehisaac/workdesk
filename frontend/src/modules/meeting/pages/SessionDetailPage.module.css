@@ -101,6 +101,36 @@
   color: var(--wd-module-meeting-repo);
 }
 
+/* The conferencing link, as a pressable row of its own. Full width so a long
+   URL has room to truncate honestly rather than pushing the layout. */
+.linkButton {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  max-width: 100%;
+  padding: 8px 10px;
+  border: none;
+  border-radius: 12px;
+  background: var(--rasagram-theme-bg-color);
+  font-family: inherit;
+  font-size: 12.5px;
+  color: var(--rasagram-theme-accent-text-color);
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.linkButton svg {
+  flex-shrink: 0;
+  font-size: 16px;
+}
+
+.linkText {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
 /* Four states side by side. They wrap rather than scroll — a status you can't
    see is a status nobody sets. */
 .statuses {

@@ -4,6 +4,11 @@ import { bridge } from '../bridge';
 import { MeetingRepoPage } from '../modules/meeting/pages/MeetingRepoPage';
 import { SessionCreatePage } from '../modules/meeting/pages/SessionCreatePage';
 import { SessionDetailPage } from '../modules/meeting/pages/SessionDetailPage';
+import { LedgerBookPage } from '../modules/ledger/pages/LedgerBookPage';
+import { LedgerCreatePage } from '../modules/ledger/pages/LedgerCreatePage';
+import { LedgerListPage } from '../modules/ledger/pages/LedgerListPage';
+import { LedgerReportPage } from '../modules/ledger/pages/LedgerReportPage';
+import { TransactionCreatePage } from '../modules/ledger/pages/TransactionCreatePage';
 import { NoteCreatePage } from '../modules/note/pages/NoteCreatePage';
 import { JobCreatePage } from '../modules/project/pages/JobCreatePage';
 import { JobEditPage } from '../modules/project/pages/JobEditPage';
@@ -102,6 +107,19 @@ export function AppRouter() {
         <Route path="/sessions" element={<MeetingRepoPage />} />
         <Route path="/sessions/new" element={<SessionCreatePage />} />
         <Route path="/sessions/:sessionId" element={<SessionDetailPage />} />
+        {/* «دفتر مالی». The book is the screen; the report is the same book cut
+            to a period, so it hangs off the book's own path rather than living
+            somewhere else. */}
+        <Route path="/ledgers" element={<LedgerListPage />} />
+        <Route path="/ledgers/new" element={<LedgerCreatePage />} />
+        <Route path="/ledgers/:ledgerId" element={<LedgerBookPage />} />
+        {/* Which direction is being recorded is decided by the button that
+            opened the form, and travels in ?type= — a create screen that had to
+            ask again would be asking a question the last tap already answered. */}
+        <Route path="/ledgers/:ledgerId/transactions/new" element={<TransactionCreatePage />} />
+        {/* ?period=daily|weekly|monthly|yearly|custom — chosen in a dialog, so
+            it belongs in the URL where going back returns to the same report. */}
+        <Route path="/ledgers/:ledgerId/report" element={<LedgerReportPage />} />
         <Route path="/reminders" element={<ReminderListPage />} />
         <Route path="/reminders/new" element={<ReminderCreatePage />} />
         {/* Create-only, and no day segment: a note can only be written for today,

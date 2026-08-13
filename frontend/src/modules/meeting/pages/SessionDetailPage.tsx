@@ -1,11 +1,13 @@
 import { Button, DotLoading, Input, Popover, Popup, TextArea, Toast } from 'antd-mobile';
 import {
   AddOutline,
+  CalendarOutline,
   CheckCircleOutline,
   ClockCircleOutline,
   DownOutline,
   EnvironmentOutline,
   ExclamationCircleOutline,
+  LinkOutline,
   RightOutline,
   TeamOutline,
   UnorderedListOutline,
@@ -14,6 +16,7 @@ import {
 import type { CSSProperties } from 'react';
 import { useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
+import { bridge } from '../../../bridge';
 import { monogramGradient, monogramInitial, paletteForSeed } from '../../../shared/brand/monogram';
 import { formatLongDate, formatShortDate, formatTime, toLocalIso, toPersianDigits } from '../../../shared/date/jalali';
 import { DateTimeSheet } from '../../../shared/ui/datetime/DateTimeSheet';
@@ -104,8 +107,29 @@ export function SessionDetailPage() {
             </div>
             <div className={styles.fact}>
               <EnvironmentOutline aria-hidden="true" />
-              {session.isOnline ? 'آنلاین' : session.location || 'مکان مشخص نشده'}
+              {session.isOnline ? 'آنلاین' : 'حضوری'}
             </div>
+
+            {/* The link is a row of its own, not a word inside the one above:
+                for an online meeting it is the thing you came to this screen
+                to press. Handed to the client rather than followed in place —
+                a mini app that navigates away from itself doesn't come back. */}
+            {session.isOnline && session.url && (
+              <button
+                type="button"
+                className={styles.linkButton}
+                onClick={() => {
+                  if (!bridge.openLink(session.url!)) {
+                    Toast.show({ content: 'نشانی باز نشد؛ آن را دستی کپی کنید.' });
+                  }
+                }}
+              >
+                <LinkOutline aria-hidden="true" />
+                <span className={styles.linkText} dir="ltr">
+                  {session.url}
+                </span>
+              </button>
+            )}
           </div>
 
           {/* The status row is a segmented control, not a sheet: there are four
@@ -419,34 +443,39 @@ function AgendaSheet({
     }
   }
 
+  // The duration wheel is a sibling of the sheet, never a child of it: a popup
+  // mounted inside another popup's animated body is positioned against that
+  // body instead of the viewport. See DateTimeSheet's getContainer note.
   return (
-    <Popup visible={visible} onMaskClick={onClose} bodyClassName={styles.sheet} destroyOnClose>
-      <div className={styles.sheetBody}>
-        <h2 className={styles.sheetTitle}>دستور جلسه‌ی تازه</h2>
+    <>
+      <Popup visible={visible} onMaskClick={onClose} bodyClassName={styles.sheet} destroyOnClose>
+        <div className={styles.sheetBody}>
+          <h2 className={styles.sheetTitle}>دستور جلسه‌ی تازه</h2>
 
-        <Input className={styles.sheetInput} placeholder="عنوان" value={title} onChange={setTitle} />
+          <Input className={styles.sheetInput} placeholder="عنوان" value={title} onChange={setTitle} />
 
-        <TextArea
-          className={styles.sheetInput}
-          placeholder="شرح (اختیاری)"
-          value={description}
-          onChange={setDescription}
-          autoSize={{ minRows: 1, maxRows: 5 }}
-        />
+          <TextArea
+            className={styles.sheetInput}
+            placeholder="شرح (اختیاری)"
+            value={description}
+            onChange={setDescription}
+            autoSize={{ minRows: 1, maxRows: 5 }}
+          />
 
-        <button type="button" className={styles.sheetRow} onClick={() => setDurationOpen(true)}>
-          <span className={styles.sheetRowLabel}>
-            <ClockCircleOutline aria-hidden="true" /> مدت زمان
-          </span>
-          <span className={styles.sheetRowValue}>{formatDuration(durationMinutes) ?? 'انتخاب کنید (اختیاری)'}</span>
-        </button>
+          <button type="button" className={styles.sheetRow} onClick={() => setDurationOpen(true)}>
+            <span className={styles.sheetRowLabel}>
+              <ClockCircleOutline aria-hidden="true" /> مدت زمان
+            </span>
+            <span className={styles.sheetRowValue}>{formatDuration(durationMinutes) ?? 'انتخاب کنید (اختیاری)'}</span>
+          </button>
 
-        <AssigneePicker members={members} value={assigneeId} onChange={setAssigneeId} />
+          <AssigneePicker members={members} value={assigneeId} onChange={setAssigneeId} />
 
-        <Button block color="primary" size="large" loading={createAgenda.isPending} onClick={handleSubmit}>
-          ثبت دستور جلسه
-        </Button>
-      </div>
+          <Button block color="primary" size="large" loading={createAgenda.isPending} onClick={handleSubmit}>
+            ثبت دستور جلسه
+          </Button>
+        </div>
+      </Popup>
 
       <DurationSheet
         visible={durationOpen}
@@ -459,7 +488,7 @@ function AgendaSheet({
           setDurationOpen(false);
         }}
       />
-    </Popup>
+    </>
   );
 }
 
@@ -533,64 +562,69 @@ function DecisionSheet({
     }
   }
 
+  // Calendar outside the sheet, for the reason AgendaSheet spells out.
   return (
-    <Popup visible={visible} onMaskClick={onClose} bodyClassName={styles.sheet} destroyOnClose>
-      <div className={styles.sheetBody}>
-        <h2 className={styles.sheetTitle}>مصوبه‌ی تازه</h2>
+    <>
+      <Popup visible={visible} onMaskClick={onClose} bodyClassName={styles.sheet} destroyOnClose>
+        <div className={styles.sheetBody}>
+          <h2 className={styles.sheetTitle}>مصوبه‌ی تازه</h2>
 
-        <Input className={styles.sheetInput} placeholder="عنوان" value={title} onChange={setTitle} />
+          <Input className={styles.sheetInput} placeholder="عنوان" value={title} onChange={setTitle} />
 
-        <TextArea
-          className={styles.sheetInput}
-          placeholder="شرح (اختیاری)"
-          value={description}
-          onChange={setDescription}
-          autoSize={{ minRows: 1, maxRows: 5 }}
-        />
+          <TextArea
+            className={styles.sheetInput}
+            placeholder="شرح (اختیاری)"
+            value={description}
+            onChange={setDescription}
+            autoSize={{ minRows: 1, maxRows: 5 }}
+          />
 
-        {agendas.length > 0 && (
-          <Popover.Menu
-            visible={agendaMenuOpen}
-            onVisibleChange={setAgendaMenuOpen}
-            trigger="click"
-            // antd-mobile's placements are physical, not logical — "start" is
-            // the left edge regardless of direction, which under dir="rtl"
-            // would put the menu on the opposite side from its trigger.
-            placement="bottom-end"
-            actions={[
-              { key: '', text: 'بدون دستور جلسه' },
-              ...agendas.map((agenda) => ({ key: agenda.id, text: agenda.title })),
-            ]}
-            onAction={(action) => {
-              setAgendaId(String(action.key) || null);
-              setAgendaMenuOpen(false);
-            }}
-          >
-            <button type="button" className={styles.sheetRow} aria-label="انتخاب دستور جلسه">
-              <span className={styles.sheetRowLabel}>
-                <UnorderedListOutline aria-hidden="true" /> دستور جلسه
-              </span>
-              <span className={styles.sheetRowValue}>
-                {selectedAgenda?.title ?? 'انتخاب کنید (اختیاری)'}
-                <DownOutline className={styles.sheetRowChevron} />
-              </span>
-            </button>
-          </Popover.Menu>
-        )}
+          {agendas.length > 0 && (
+            <Popover.Menu
+              visible={agendaMenuOpen}
+              onVisibleChange={setAgendaMenuOpen}
+              trigger="click"
+              // antd-mobile's placements are physical, not logical — "start" is
+              // the left edge regardless of direction, which under dir="rtl"
+              // would put the menu on the opposite side from its trigger.
+              placement="bottom-end"
+              actions={[
+                { key: '', text: 'بدون دستور جلسه' },
+                ...agendas.map((agenda) => ({ key: agenda.id, text: agenda.title })),
+              ]}
+              onAction={(action) => {
+                setAgendaId(String(action.key) || null);
+                setAgendaMenuOpen(false);
+              }}
+            >
+              <button type="button" className={styles.sheetRow} aria-label="انتخاب دستور جلسه">
+                <span className={styles.sheetRowLabel}>
+                  <UnorderedListOutline aria-hidden="true" /> دستور جلسه
+                </span>
+                <span className={styles.sheetRowValue}>
+                  {selectedAgenda?.title ?? 'انتخاب کنید (اختیاری)'}
+                  <DownOutline className={styles.sheetRowChevron} />
+                </span>
+              </button>
+            </Popover.Menu>
+          )}
 
-        <button type="button" className={styles.sheetRow} onClick={() => setDateOpen(true)}>
-          <span className={styles.sheetRowLabel}>سررسید</span>
-          <span className={styles.sheetRowValue}>
-            {dueAt ? `${formatShortDate(dueAt)} ساعت ${formatTime(dueAt)}` : 'انتخاب کنید'}
-          </span>
-        </button>
+          <button type="button" className={styles.sheetRow} onClick={() => setDateOpen(true)}>
+            <span className={styles.sheetRowLabel}>
+              <CalendarOutline aria-hidden="true" /> سررسید
+            </span>
+            <span className={styles.sheetRowValue}>
+              {dueAt ? `${formatShortDate(dueAt)} ساعت ${formatTime(dueAt)}` : 'انتخاب کنید'}
+            </span>
+          </button>
 
-        <AssigneePicker members={members} value={assigneeId} onChange={setAssigneeId} />
+          <AssigneePicker members={members} value={assigneeId} onChange={setAssigneeId} />
 
-        <Button block color="primary" size="large" loading={createDecision.isPending} onClick={handleSubmit}>
-          ثبت مصوبه
-        </Button>
-      </div>
+          <Button block color="primary" size="large" loading={createDecision.isPending} onClick={handleSubmit}>
+            ثبت مصوبه
+          </Button>
+        </div>
+      </Popup>
 
       <DateTimeSheet
         visible={dateOpen}
@@ -604,6 +638,6 @@ function DecisionSheet({
           setDateOpen(false);
         }}
       />
-    </Popup>
+    </>
   );
 }

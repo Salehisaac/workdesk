@@ -186,7 +186,8 @@ type storeSessionRequest struct {
 	// RFC 3339 with the device's own offset (see the frontend's toLocalIso) — the
 	// invite message renders the Persian wall clock from it.
 	StartsAt string `json:"startsAt"`
-	Location string `json:"location"`
+	// The conferencing link, for an online meeting. Ignored otherwise.
+	Url      string `json:"url"`
 	IsOnline bool   `json:"isOnline"`
 	// Optional filing under a project the caller belongs to.
 	ProjectId string                   `json:"projectId"`
@@ -237,11 +238,11 @@ func (r *SessionController) Store(ctx http.Context) http.Response {
 		IsOnline:   request.IsOnline,
 		Status:     models.SessionStatusNotStarted,
 	}
-	// A location is meaningless once the meeting is online, so it isn't stored —
-	// otherwise flipping the switch would leave a stale room name behind that
-	// the resource layer has to keep remembering to hide.
-	if location := strings.TrimSpace(request.Location); location != "" && !request.IsOnline {
-		session.Location = &location
+	// A link only means anything for an online meeting, so it is only stored for
+	// one — otherwise flipping the switch off would leave a stale link behind
+	// that the resource layer has to keep remembering to hide.
+	if url := strings.TrimSpace(request.Url); url != "" && request.IsOnline {
+		session.Url = &url
 	}
 	if err := facades.Orm().Query().Create(&session); err != nil {
 		return ctx.Response().Status(500).Json(http.Json{"error": err.Error()})

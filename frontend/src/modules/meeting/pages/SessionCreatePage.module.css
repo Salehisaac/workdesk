@@ -77,10 +77,16 @@
   padding: 12px 4px;
 }
 
-.locationInput {
-  --font-size: 14px;
+/* A URL is Latin text in a right-to-left form: it is read and copied
+   left-to-right, and the RTL paragraph direction would otherwise shuffle its
+   slashes and query string around. This is the opt-out global.css describes —
+   --text-align is the token antd-mobile's input actually reads. */
+.urlInput {
+  --font-size: 13px;
   --color: var(--rasagram-theme-text-color);
   --placeholder-color: var(--rasagram-theme-hint-color);
+  --text-align: left;
+  direction: ltr;
 }
 
 .row {

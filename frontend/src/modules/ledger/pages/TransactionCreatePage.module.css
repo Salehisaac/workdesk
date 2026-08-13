@@ -1,0 +1,196 @@
+.page {
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+  background: var(--rasagram-theme-bg-color);
+}
+
+.header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: calc(12px + var(--wd-safe-top)) 12px 10px;
+}
+
+.back {
+  width: 36px;
+  height: 36px;
+  flex-shrink: 0;
+  border: none;
+  border-radius: 10px;
+  background: none;
+  color: var(--rasagram-theme-text-color);
+  font-size: 20px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+}
+
+.headerTitle {
+  flex: 1;
+  min-width: 0;
+  margin: 0;
+  text-align: center;
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--rasagram-theme-text-color);
+}
+
+.headerSpacer {
+  width: 36px;
+  flex-shrink: 0;
+}
+
+/* The only way out of this screen that keeps anything, so it is a filled
+   circle rather than another ghost icon in the header. */
+.submit {
+  width: 36px;
+  height: 36px;
+  flex-shrink: 0;
+  border: none;
+  border-radius: 50%;
+  background: var(--rasagram-theme-button-color);
+  color: var(--rasagram-theme-button-text-color);
+  font-size: 19px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.submit:disabled {
+  opacity: 0.55;
+}
+
+.fill {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.form {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  padding: 6px 16px calc(24px + var(--wd-safe-bottom));
+  max-width: 560px;
+  width: 100%;
+  margin-inline: auto;
+}
+
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.fieldLabel {
+  padding-inline-start: 4px;
+  font-size: 11.5px;
+  color: var(--rasagram-theme-hint-color);
+}
+
+/* Every field is the same outlined box, whatever it opens — a picker, a keypad
+   or a sheet. What differs is only what is written inside it. */
+.box {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  min-height: 52px;
+  padding: 8px 14px;
+  border: 1px solid color-mix(in srgb, var(--rasagram-theme-hint-color) 30%, transparent);
+  border-radius: 10px;
+  background: var(--rasagram-theme-bg-color);
+  font-family: inherit;
+  text-align: start;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.dateBox {
+  justify-content: center;
+}
+
+.dateText {
+  font-size: 13.5px;
+  font-weight: 600;
+  color: var(--rasagram-theme-link-color);
+}
+
+.select {
+  justify-content: space-between;
+  flex-direction: row-reverse;
+}
+
+.selectValue {
+  flex: 1;
+  min-width: 0;
+  text-align: start;
+  font-size: 14px;
+  color: var(--rasagram-theme-text-color);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.placeholder {
+  color: var(--rasagram-theme-hint-color);
+}
+
+.income {
+  color: var(--wd-ledger-income);
+  font-weight: 600;
+}
+
+.expense {
+  color: var(--wd-ledger-expense);
+  font-weight: 600;
+}
+
+.chevron {
+  flex-shrink: 0;
+  font-size: 15px;
+  color: var(--rasagram-theme-hint-color);
+}
+
+.amountInput {
+  width: 100%;
+  --font-size: 17px;
+  --color: var(--rasagram-theme-text-color);
+  --placeholder-color: var(--rasagram-theme-hint-color);
+  font-variant-numeric: tabular-nums;
+}
+
+.textInput {
+  width: 100%;
+  --font-size: 14px;
+  --placeholder-color: var(--rasagram-theme-hint-color);
+}
+
+.chips {
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.chip {
+  padding: 3px 11px;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 600;
+  color: #ffffff;
+}
+
+/* The "nothing chosen yet" chip, shaped like a real one so the row reads as a
+   place tags go rather than as an empty text field. */
+.ghostChip {
+  padding: 3px 11px;
+  border-radius: 999px;
+  background: var(--rasagram-theme-secondary-bg-color);
+  font-size: 12px;
+  color: var(--rasagram-theme-hint-color);
+}

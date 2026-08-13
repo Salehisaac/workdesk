@@ -96,9 +96,13 @@ func Message(session *models.Session, link string) string {
 
 	if session.IsOnline {
 		b.WriteString("\n📍 آنلاین")
-	} else if session.Location != nil && strings.TrimSpace(*session.Location) != "" {
-		b.WriteString("\n📍 ")
-		b.WriteString(*session.Location)
+		// The link on its own line, unlabelled: every chat client turns a bare
+		// URL into something tappable, and this is the address the meeting
+		// actually happens at — worth being the thing a reader's eye lands on.
+		if session.Url != nil && strings.TrimSpace(*session.Url) != "" {
+			b.WriteString("\n")
+			b.WriteString(strings.TrimSpace(*session.Url))
+		}
 	}
 
 	if link != "" {

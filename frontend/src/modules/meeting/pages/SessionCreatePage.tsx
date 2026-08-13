@@ -3,6 +3,7 @@ import {
   ClockCircleOutline,
   EnvironmentOutline,
   InformationCircleOutline,
+  LinkOutline,
   RightOutline,
 } from 'antd-mobile-icons';
 import { useState } from 'react';
@@ -46,7 +47,7 @@ export function SessionCreatePage() {
   // stays fully editable; tapping the chip reopens the calendar.
   const [startsAt, setStartsAt] = useState<Date>(() => new Date());
   const [isOnline, setIsOnline] = useState(false);
-  const [location, setLocation] = useState('');
+  const [url, setUrl] = useState('');
   const [members, setMembers] = useState<PickedItem[]>([]);
   const [sheetOpen, setSheetOpen] = useState(false);
   const [submitting, setSubmitting] = useState(false);
@@ -81,7 +82,7 @@ export function SessionCreatePage() {
         // Persian wall clock and needs the user's own, not the server's.
         startsAt: toLocalIso(startsAt),
         isOnline,
-        location: isOnline ? undefined : location.trim() || undefined,
+        url: isOnline ? url.trim() || undefined : undefined,
         members,
       };
       const session = await createSession.mutateAsync(input);
@@ -160,12 +161,26 @@ export function SessionCreatePage() {
             </div>
           </div>
 
-          {/* Online is its own kind of location, so the room field goes away
-              rather than sitting there greyed out asking to be filled in. */}
-          {!isOnline && (
+          {/* Only an online meeting has an address worth writing down — a room
+              name was prose nobody could act on, a link is the meeting. The
+              field appears with the switch rather than sitting there greyed
+              out asking a حضوری meeting where it is. */}
+          {isOnline && (
             <div className={styles.row}>
-              <span className={styles.rowIcon} aria-hidden="true" />
-              <Input className={styles.locationInput} placeholder="مکان جلسه (اختیاری)" value={location} onChange={setLocation} />
+              <span className={styles.rowIcon} aria-hidden="true">
+                <LinkOutline />
+              </span>
+              <Input
+                className={styles.urlInput}
+                placeholder="نشانی جلسه‌ی آنلاین (اختیاری)"
+                value={url}
+                onChange={setUrl}
+                type="url"
+                // The link travels into the invite message verbatim, so it is
+                // left exactly as typed — no autocapitalize, no autocorrect.
+                autoCapitalize="none"
+                autoCorrect="off"
+              />
             </div>
           )}
         </section>

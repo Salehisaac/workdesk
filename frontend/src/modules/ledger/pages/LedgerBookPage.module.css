@@ -1,0 +1,101 @@
+.page {
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+  background: var(--rasagram-theme-bg-color);
+}
+
+.header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: calc(12px + var(--wd-safe-top)) 12px 10px;
+}
+
+.back {
+  width: 36px;
+  height: 36px;
+  flex-shrink: 0;
+  border: none;
+  border-radius: 10px;
+  background: none;
+  color: var(--rasagram-theme-text-color);
+  font-size: 20px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+}
+
+.headerTitle {
+  flex: 1;
+  min-width: 0;
+  margin: 0;
+  text-align: center;
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--rasagram-theme-text-color);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.reportButton {
+  width: 34px;
+  height: 34px;
+  flex-shrink: 0;
+  border: none;
+  border-radius: 12px;
+  background: color-mix(in srgb, var(--rasagram-theme-hint-color) 12%, transparent);
+  color: var(--rasagram-theme-subtitle-text-color);
+  font-size: 18px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.reportButton:disabled {
+  opacity: 0.5;
+}
+
+.fill {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* Both directions, always reachable. Expense sits first in the DOM — which puts
+   it on the right under dir="rtl" — matching where the two live in the app this
+   screen is modelled on. */
+.footer {
+  display: flex;
+  gap: 10px;
+  padding: 10px 16px calc(10px + var(--wd-safe-bottom));
+  background: var(--rasagram-theme-bg-color);
+  border-top: 1px solid var(--rasagram-theme-secondary-bg-color);
+}
+
+.action {
+  flex: 1;
+  padding: 13px 10px;
+  border: none;
+  border-radius: 14px;
+  font-family: inherit;
+  font-size: 14px;
+  font-weight: 700;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.income {
+  background: var(--wd-ledger-income);
+  color: var(--wd-ledger-on-income);
+}
+
+.expense {
+  background: var(--wd-ledger-expense);
+  color: var(--wd-ledger-on-expense);
+}

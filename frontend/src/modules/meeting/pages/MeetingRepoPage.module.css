@@ -41,9 +41,21 @@
   color: var(--rasagram-theme-text-color);
 }
 
-.headerSpacer {
-  width: 36px;
+/* Occupies the slot the spacer used to hold, so the title stays centred. */
+.guideButton {
+  width: 34px;
+  height: 34px;
   flex-shrink: 0;
+  border: none;
+  border-radius: 12px;
+  background: color-mix(in srgb, var(--rasagram-theme-hint-color) 12%, transparent);
+  color: var(--rasagram-theme-subtitle-text-color);
+  font-size: 18px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
 }
 
 /* Two tabs, each the full half — a segmented control, not a scrolling tab strip:
@@ -83,6 +95,45 @@
 .tabIcon {
   display: flex;
   font-size: 17px;
+}
+
+/* The status filter, under the tabs. Scrolls rather than wraps: five statuses
+   would take two rows on a narrow screen and push the list itself off the
+   fold, and unlike the session screen's status control this one is a lens, not
+   something you must be able to see all of at once. */
+.filters {
+  display: flex;
+  gap: 6px;
+  padding: 0 16px 10px;
+  max-width: 560px;
+  width: 100%;
+  margin-inline: auto;
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+
+.filters::-webkit-scrollbar {
+  display: none;
+}
+
+.filter {
+  flex-shrink: 0;
+  padding: 6px 13px;
+  border: none;
+  border-radius: 999px;
+  background: transparent;
+  font-family: inherit;
+  font-size: 12.5px;
+  font-weight: 600;
+  color: var(--rasagram-theme-hint-color);
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+  transition: background 0.18s ease, color 0.18s ease;
+}
+
+.filterActive {
+  background: var(--rasagram-theme-secondary-bg-color);
+  color: var(--rasagram-theme-text-color);
 }
 
 .tabLabel {

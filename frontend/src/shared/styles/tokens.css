@@ -61,6 +61,38 @@
   --wd-module-reminder: #e11d48;
   --wd-module-note: #059669;
 
+  /* «دفتر مالی» — the two directions money moves.
+     A polarity pair, not two categories, so it is allowed to be the green/red
+     every accounting app on earth uses. Red↔green is the classic colour-vision
+     trap, so the pair was pushed apart in LIGHTNESS until it clears the CVD
+     gate (protan ΔE 8.5 light / 8.4 dark, OKLab ×100) — a deep green against a
+     bright red rather than two mid-tones. On top of that, nothing in this
+     module is ever told apart by hue alone: every bar, every card and every
+     total carries its own words («مجموع درآمد») and an arrow. */
+  --wd-ledger-income: #166534;
+  --wd-ledger-expense: #ef5350;
+  /* The ink a solid income/expense button wears. Its own token because the two
+     do not stay the same across themes: the dark scheme's expense red is a
+     *light* red (that is what a dark surface needs), and white on it would be
+     unreadable — so there it flips to near-black while income keeps white. */
+  --wd-ledger-on-income: #ffffff;
+  --wd-ledger-on-expense: #ffffff;
+
+  /* One colour per «گروه حساب», for the two donuts.
+     Assigned to the CATEGORY, never to its rank — a group keeps its colour when
+     a filter changes what else is on screen, and the donut paints its arcs in
+     the fixed ACCOUNT_GROUPS order so which colours end up side by side is
+     decided by the category list, not by this month's numbers. The four named
+     groups are a validated categorical set (all-pairs CVD ΔE ≥ 7.6 light,
+     ≥ 8.2 dark; normal vision ≥ 17); «سایر» is the residual category and so
+     wears neutral grey rather than a fifth hue, which is both the honest
+     reading of "uncategorised" and one less hue to confuse. */
+  --wd-ledger-group-other: #64748b;
+  --wd-ledger-group-salary: #e69f00;
+  --wd-ledger-group-bonus: #0072b2;
+  --wd-ledger-group-sales: #009e73;
+  --wd-ledger-group-transfer: #cc79a7;
+
   /* One colour per job status, shared by the status sheet's chips and the
      board card's status square — if these two disagree the square stops
      meaning anything. */
@@ -128,4 +160,17 @@
   --wd-status-paused: #fbbf24;
   --wd-status-done: #34d399;
   --wd-status-rejected: #a78bfa;
+
+  /* Both ledger sets re-stepped for the dark surface — chosen against it and
+     validated as a set, not brightened copies of the light values. */
+  --wd-ledger-income: #1e8756;
+  --wd-ledger-expense: #fc7f7a;
+  --wd-ledger-on-income: #ffffff;
+  --wd-ledger-on-expense: #10151c;
+
+  --wd-ledger-group-other: #8b97a8;
+  --wd-ledger-group-salary: #c98500;
+  --wd-ledger-group-bonus: #3e94dc;
+  --wd-ledger-group-sales: #14875f;
+  --wd-ledger-group-transfer: #cf7fa6;
 }

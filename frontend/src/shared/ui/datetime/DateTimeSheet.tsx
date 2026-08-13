@@ -63,13 +63,22 @@ export function DateTimeSheet({
   return (
     <>
       <Popup
-        visible={visible}
+        // Step one hides while step two is up, rather than sitting behind the
+        // dial: the calendar has done its job by then, and leaving it on screen
+        // is what made confirming a day look like nothing had happened.
+        visible={visible && !timeOpen}
         position="bottom"
         closeOnSwipe
         closeOnMaskClick
         onClose={onClose}
         onMaskClick={onClose}
         bodyStyle={{ borderTopLeftRadius: 12, borderTopRightRadius: 12 }}
+        // antd-mobile renders popups *inline* by default (getContainer: null).
+        // Mounted inside another sheet — which antd-mobile animates with a
+        // transform — an inline popup stops being fixed to the viewport and
+        // becomes fixed to that sheet instead, so it lands behind it. Portaling
+        // to the body makes this work wherever it is mounted.
+        getContainer={() => document.body}
       >
         <div className={styles.sheet}>
           <span className={styles.handle} aria-hidden="true" />

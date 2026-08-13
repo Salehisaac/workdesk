@@ -68,9 +68,11 @@ export function DurationSheet({ visible, value, title = 'مدت', onClose, onCon
         const [hours, minutes] = picked.map((entry) => Number(entry) || 0);
         onConfirm(hours * 60 + minutes);
       }}
-      // Opens on top of a sheet that is itself a Popup at the default z-index —
-      // the same lift ClockTimePicker needs over the date sheet.
+      // Same two guards ClockTimePicker needs: lifted above the sheet that
+      // opened it, and portaled to the body so it is fixed to the viewport
+      // rather than to that sheet's transformed body.
       popupStyle={{ '--z-index': '1100' } as CSSProperties}
+      getContainer={() => document.body}
       destroyOnClose
     />
   );

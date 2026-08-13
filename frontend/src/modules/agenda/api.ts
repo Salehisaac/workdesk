@@ -37,7 +37,9 @@ function sessionToItem(session: Session): AgendaItem {
     subtitle: session.projectName ? `جلسه در ${session.projectName}` : 'جلسه',
     date: new Date(session.startsAt),
     hasTime: true,
-    location: session.isOnline ? 'آنلاین' : session.location,
+    // The link itself would be too long for a calendar row, and pressing it
+    // isn't what a day view is for — the session's own screen has it.
+    location: session.isOnline ? 'آنلاین' : 'حضوری',
     status: SESSION_STATUS_LABEL[session.status] ?? null,
     to: `/sessions/${session.id}`,
   };

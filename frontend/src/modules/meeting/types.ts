@@ -30,8 +30,12 @@ export interface Session {
   projectName: string | null;
   /** ISO 8601, with a meaningful time-of-day — this is when the session starts. */
   startsAt: string;
-  /** Physical place. Null when `isOnline`, which is its own kind of location. */
-  location: string | null;
+  /**
+   * Where an online meeting happens — its conferencing link. Null for a حضوری
+   * one, which has no place field at all: a room name was prose nobody could
+   * act on, while a link is the meeting itself.
+   */
+  url: string | null;
   isOnline: boolean;
   status: SessionStatus;
   memberCount: number;
@@ -94,8 +98,8 @@ export interface CreateSessionInput {
   title: string;
   /** ISO 8601 carrying the device's offset — see toLocalIso. */
   startsAt: string;
-  /** Omitted when `isOnline`; the backend drops it in that case anyway. */
-  location?: string;
+  /** Only for an online meeting; the backend drops it otherwise. Optional. */
+  url?: string;
   isOnline: boolean;
   /** Optional filing under a project the caller belongs to. */
   projectId?: string;

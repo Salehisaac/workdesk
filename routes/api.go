@@ -63,6 +63,26 @@ func Api() {
 		router.Post("/sessions/{id}/decisions", decisionController.Store)
 		router.Patch("/decisions/{id}", decisionController.Update)
 
+		// «دفتر مالی». The third module that gathers people without provisioning
+		// anything — no group like a project, and unlike a session, no invite
+		// either: its members find the book in their own list. Transactions are
+		// written ledger-scoped and read as part of GET /ledgers/{id}, never
+		// flat, because an amount outside its book has no balance to belong to.
+		ledgerController := controllers.NewLedgerController()
+		router.Get("/ledgers", ledgerController.Index)
+		router.Post("/ledgers", ledgerController.Store)
+		router.Get("/ledgers/{id}", ledgerController.Show)
+		// The two pools a transaction draws from. Write-only here, like session
+		// agendas: both are read as part of the ledger they belong to.
+		router.Post("/ledgers/{id}/tags", ledgerController.StoreTag)
+		router.Post("/ledgers/{id}/sources", ledgerController.StoreSource)
+
+		ledgerTransactionController := controllers.NewLedgerTransactionController()
+		router.Post("/ledgers/{id}/transactions", ledgerTransactionController.Store)
+		// The only delete in the app: a mistyped amount is a balance that lies,
+		// and every screen in the module is derived from these rows.
+		router.Delete("/ledgers/{id}/transactions/{transactionId}", ledgerTransactionController.Destroy)
+
 		// Reminders belong to a person, not a project — creating one DMs it to
 		// the owner via the bot.
 		reminderController := controllers.NewReminderController()

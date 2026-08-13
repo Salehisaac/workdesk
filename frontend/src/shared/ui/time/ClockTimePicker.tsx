@@ -184,10 +184,12 @@ export function ClockTimePicker({ visible, value, onCancel, onConfirm }: ClockTi
       onMaskClick={onCancel}
       onClose={onCancel}
       bodyClassName={styles.popup}
-      // This opens as step two *on top of* the date sheet, which is itself a
-      // Popup at the default z-index — without lifting it the dial renders
-      // behind the calendar.
+      // This opens as step two, over whatever sheet led to it — both the lift
+      // and the portal are what keep it there. Inline (antd-mobile's default)
+      // it would be positioned against an animated, transformed sheet body
+      // instead of the viewport, which put the dial behind the calendar.
       style={{ '--z-index': '1100' }}
+      getContainer={() => document.body}
     >
       <div className={styles.dialog}>
         <h2 className={styles.title}>انتخاب زمان</h2>

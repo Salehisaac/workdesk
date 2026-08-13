@@ -27,11 +27,12 @@ func Session(s *models.Session, projectNames map[uint]string) http.Json {
 		}
 	}
 
-	// An online session has no room, so it reports none — «آنلاین» is a separate
-	// flag the UI renders in place of a location, not a location spelled out.
-	var location any
-	if !s.IsOnline && s.Location != nil {
-		location = *s.Location
+	// Only an online session has somewhere to link to. A حضوری one reports null
+	// rather than an empty string — «آنلاین» and its link are one half of the
+	// switch, and the other half has no place field at all.
+	var url any
+	if s.IsOnline && s.Url != nil {
+		url = *s.Url
 	}
 
 	return http.Json{
@@ -40,7 +41,7 @@ func Session(s *models.Session, projectNames map[uint]string) http.Json {
 		"projectId":   projectId,
 		"projectName": projectName,
 		"startsAt":    startsAt,
-		"location":    location,
+		"url":         url,
 		"isOnline":    s.IsOnline,
 		"status":      s.Status,
 		"memberCount": len(s.Members),

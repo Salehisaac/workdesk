@@ -1,0 +1,41 @@
+.options {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.option {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  padding: 11px 4px;
+  border: none;
+  background: none;
+  font-family: inherit;
+  text-align: start;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.label {
+  font-size: 14px;
+  color: var(--rasagram-theme-text-color);
+}
+
+/* Drawn rather than an <input type="radio">: the native control ignores the
+   bridge's theme colours on Android WebViews, and this row is the one place in
+   the module where the accent has to be unmistakable. */
+.radio {
+  flex-shrink: 0;
+  width: 20px;
+  height: 20px;
+  border: 2px solid color-mix(in srgb, var(--rasagram-theme-hint-color) 55%, transparent);
+  border-radius: 50%;
+  transition: border-color 0.16s ease, box-shadow 0.16s ease;
+}
+
+.radio[data-checked] {
+  border-color: var(--rasagram-theme-button-color);
+  box-shadow: inset 0 0 0 4px var(--rasagram-theme-bg-color), inset 0 0 0 10px var(--rasagram-theme-button-color);
+}

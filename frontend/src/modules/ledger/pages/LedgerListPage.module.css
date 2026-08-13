@@ -1,0 +1,146 @@
+.page {
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+  background: var(--rasagram-theme-bg-color);
+}
+
+/* Hand-rolled rather than antd-mobile's NavBar, like every other front door
+   here: this header owes the client's floating chrome its own clearance in
+   fullscreen (see bridge/safeArea.ts). */
+.header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: calc(12px + var(--wd-safe-top)) 12px 10px;
+}
+
+.back {
+  width: 36px;
+  height: 36px;
+  flex-shrink: 0;
+  border: none;
+  border-radius: 10px;
+  background: none;
+  color: var(--rasagram-theme-text-color);
+  font-size: 20px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+}
+
+.headerTitle {
+  flex: 1;
+  min-width: 0;
+  margin: 0;
+  text-align: center;
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--rasagram-theme-text-color);
+}
+
+.headerSpacer {
+  width: 36px;
+  flex-shrink: 0;
+}
+
+.body {
+  flex: 1;
+  overflow-y: auto;
+  max-width: 560px;
+  width: 100%;
+  margin-inline: auto;
+}
+
+.list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 4px 16px 12px;
+}
+
+.card {
+  display: flex;
+  flex-direction: column;
+  gap: 9px;
+  width: 100%;
+  padding: 13px 14px;
+  border: none;
+  border-radius: 16px;
+  background: var(--rasagram-theme-secondary-bg-color);
+  font-family: inherit;
+  text-align: start;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.cardHead {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.cardName {
+  flex: 1;
+  min-width: 0;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--rasagram-theme-text-color);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.balance {
+  flex-shrink: 0;
+  font-size: 13.5px;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  color: var(--rasagram-theme-text-color);
+  white-space: nowrap;
+}
+
+.balance[data-negative] {
+  color: var(--rasagram-theme-destructive-text-color);
+}
+
+.cardMeta {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px;
+  font-size: 11.5px;
+  color: var(--rasagram-theme-hint-color);
+}
+
+.side {
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+
+.income {
+  color: var(--wd-ledger-income);
+}
+
+.expense {
+  color: var(--wd-ledger-expense);
+}
+
+.metaItem {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.footer {
+  position: sticky;
+  bottom: 0;
+  padding: 12px 16px calc(12px + var(--wd-safe-bottom));
+  background: var(--rasagram-theme-bg-color);
+  border-top: 1px solid var(--rasagram-theme-secondary-bg-color);
+  max-width: 560px;
+  width: 100%;
+  margin-inline: auto;
+}

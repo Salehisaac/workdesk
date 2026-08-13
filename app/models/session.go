@@ -19,9 +19,13 @@ type Session struct {
 	// Null unless the meeting was filed under a project the owner belongs to.
 	ProjectId *uint            `gorm:"column:project_id"`
 	StartsAt  *carbon.DateTime `gorm:"column:starts_at"`
-	Location  *string
-	IsOnline  bool   `gorm:"column:is_online"`
-	Status    string `gorm:"column:status"`
+	// Where an online meeting actually happens — the conferencing link. Only
+	// meaningful alongside IsOnline, and optional even then: a room whose link is
+	// circulated elsewhere is still an online meeting. A حضوری session has no
+	// counterpart field; see the migration that replaced `location`.
+	Url      *string `gorm:"column:url"`
+	IsOnline bool    `gorm:"column:is_online"`
+	Status   string  `gorm:"column:status"`
 
 	Members []SessionMember `gorm:"foreignKey:SessionId"`
 }

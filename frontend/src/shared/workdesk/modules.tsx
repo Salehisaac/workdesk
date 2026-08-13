@@ -44,6 +44,9 @@ export const WORKDESK_MODULES: WorkdeskModule[] = [
     tone: 'var(--wd-module-form)',
     inToolGrid: true,
   },
+  // The third module that gathers people without provisioning anything: no
+  // group like a project, and unlike a session no invite either — its members
+  // find the book waiting in their own list.
   {
     key: 'ledger',
     label: 'دفترمالی',
@@ -51,6 +54,8 @@ export const WORKDESK_MODULES: WorkdeskModule[] = [
     action: 'درآمد و هزینه را ثبت و مانده را دنبال کنید',
     icon: <BillOutline />,
     tone: 'var(--wd-module-ledger)',
+    to: '/ledgers',
+    createTo: '/ledgers/new',
     inToolGrid: true,
   },
   {

@@ -1,35 +1,32 @@
-import { Popup } from 'antd-mobile';
 import {
   AddCircleOutline,
   AppOutline,
   CalendarOutline,
   CheckCircleOutline,
-  CloseOutline,
   ContentOutline,
   MessageOutline,
-  MinusCircleOutline,
   PieOutline,
   TagOutline,
   UnorderedListOutline,
   UserAddOutline,
 } from 'antd-mobile-icons';
-import type { ReactNode } from 'react';
+import { GuideSheet } from '../../../shared/ui/guide/GuideSheet';
+import type { GuideChapter } from '../../../shared/ui/guide/GuideSheet';
 import { JOB_STATUS_LABEL, JOB_STATUSES } from '../types';
 import { STATUS_ICON } from './statusIcon';
 import styles from './ProjectsGuideSheet.module.css';
 
-interface GuideEntry {
-  icon: ReactNode;
-  title: string;
-  body: string;
-  /** The status entry renders the six live chips instead of naming them. */
-  chips?: boolean;
-}
-
-interface GuideChapter {
-  title: string;
-  entries: GuideEntry[];
-}
+/** The status entry shows the six live chips instead of naming them in prose. */
+const STATUS_CHIPS = (
+  <div className={styles.statusChips}>
+    {JOB_STATUSES.map((status) => (
+      <span key={status} className={styles.statusChip} data-status={status}>
+        <span className={styles.statusChipIcon}>{STATUS_ICON[status]}</span>
+        {JOB_STATUS_LABEL[status]}
+      </span>
+    ))}
+  </div>
+);
 
 /**
  * The guide to the *service*, not to whichever project happens to be open —
@@ -80,7 +77,7 @@ const CHAPTERS: GuideChapter[] = [
         icon: <CheckCircleOutline />,
         title: 'وضعیت کار',
         body: 'هر کار همیشه یکی از این شش وضعیت را دارد و از «آغاز نشده» شروع می‌کند. مربع رنگی گوشه‌ی هر کارت، همین وضعیت را نشان می‌دهد.',
-        chips: true,
+        extra: STATUS_CHIPS,
       },
       {
         icon: <TagOutline />,
@@ -131,84 +128,14 @@ interface ProjectsGuideSheetProps {
  */
 export function ProjectsGuideSheet({ visible, onClose }: ProjectsGuideSheetProps) {
   return (
-    <Popup
+    <GuideSheet
       visible={visible}
-      position="bottom"
-      closeOnSwipe
-      closeOnMaskClick
       onClose={onClose}
-      onMaskClick={onClose}
-      bodyStyle={{ borderTopLeftRadius: 12, borderTopRightRadius: 12 }}
-    >
-      <div className={styles.sheet}>
-        <span className={styles.handle} aria-hidden="true" />
-
-        <div className={styles.head}>
-          <button type="button" className={styles.headClose} onClick={onClose} aria-label="بستن">
-            <CloseOutline />
-          </button>
-          <div className={styles.headTitle}>راهنمای پروژه‌ها</div>
-          <span className={styles.headSpacer} aria-hidden="true" />
-        </div>
-
-        <div className={styles.body}>
-          {/* One sentence before any of the detail — someone who reads only this
-              much should already know what they're looking at. */}
-          <div className={styles.lede}>
-            <span className={styles.ledeIcon} aria-hidden="true">
-              <AppOutline />
-            </span>
-            <p className={styles.ledeText}>
-              «پروژه‌ها» جایی است که کارهای تیمی‌تان را کنار همان گفتگویی که درباره‌شان دارید نگه می‌دارید:
-              هر پروژه یک گروه در رساگرام است، هر لیست یک موضوع در آن گروه، و هر کار یک ردیف با مسئول،
-              برچسب و سررسید.
-            </p>
-          </div>
-
-          {CHAPTERS.map((chapter) => (
-            <section key={chapter.title} className={styles.chapter}>
-              <h3 className={styles.chapterTitle}>{chapter.title}</h3>
-
-              <div className={styles.entries}>
-                {chapter.entries.map((entry) => (
-                  <div key={entry.title} className={styles.entry}>
-                    <span className={styles.entryIcon} aria-hidden="true">
-                      {entry.icon}
-                    </span>
-                    <div className={styles.entryText}>
-                      <h4 className={styles.entryTitle}>{entry.title}</h4>
-                      <p className={styles.entryBody}>{entry.body}</p>
-
-                      {entry.chips && (
-                        <div className={styles.statusChips}>
-                          {JOB_STATUSES.map((status) => (
-                            <span key={status} className={styles.statusChip} data-status={status}>
-                              <span className={styles.statusChipIcon}>{STATUS_ICON[status]}</span>
-                              {JOB_STATUS_LABEL[status]}
-                            </span>
-                          ))}
-                        </div>
-                      )}
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </section>
-          ))}
-
-          <section className={styles.chapter}>
-            <h3 className={styles.chapterTitle}>فعلاً ممکن نیست</h3>
-            <ul className={styles.limits}>
-              {LIMITS.map((limit) => (
-                <li key={limit} className={styles.limit}>
-                  <MinusCircleOutline className={styles.limitIcon} aria-hidden="true" />
-                  {limit}
-                </li>
-              ))}
-            </ul>
-          </section>
-        </div>
-      </div>
-    </Popup>
+      title="راهنمای پروژه‌ها"
+      ledeIcon={<AppOutline />}
+      lede="«پروژه‌ها» جایی است که کارهای تیمی‌تان را کنار همان گفتگویی که درباره‌شان دارید نگه می‌دارید: هر پروژه یک گروه در رساگرام است، هر لیست یک موضوع در آن گروه، و هر کار یک ردیف با مسئول، برچسب و سررسید."
+      chapters={CHAPTERS}
+      limits={LIMITS}
+    />
   );
 }

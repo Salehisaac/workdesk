@@ -165,6 +165,12 @@ export const mockBridge: Bridge = {
   async openContactPicker(): Promise<DeviceContact | null> {
     return { contact_id: 'device-1', name: 'مخاطب دستگاه', phones: ['09120000000'], emails: [] };
   },
+  openLink(url: string): boolean {
+    // A real window, unlike openTelegramLink's — this one goes to an ordinary
+    // site, so opening it in a new tab is exactly what the client would do.
+    window.open(url, '_blank', 'noopener,noreferrer');
+    return true;
+  },
   openTelegramLink(url: string): boolean {
     // There is no client to hand this to in dev, and actually following it
     // would navigate away from the app being worked on. Log the path the real

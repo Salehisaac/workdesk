@@ -6,6 +6,7 @@ import {
   EnvironmentOutline,
   ExclamationCircleOutline,
   FileOutline,
+  QuestionCircleOutline,
   RightOutline,
   TeamOutline,
 } from 'antd-mobile-icons';
@@ -15,8 +16,14 @@ import { useNavigate } from 'react-router-dom';
 import { formatShortDate, formatTime, toPersianDigits } from '../../../shared/date/jalali';
 import { EmptyState } from '../../../shared/ui/EmptyState';
 import { useDecisions, useSessions, useUpdateDecisionStatus } from '../api';
-import { DECISION_STATUS_LABEL, SESSION_STATUS_LABEL } from '../types';
-import type { Decision, Session } from '../types';
+import { MeetingGuideSheet } from '../components/MeetingGuideSheet';
+import {
+  DECISION_STATUSES,
+  DECISION_STATUS_LABEL,
+  SESSION_STATUSES,
+  SESSION_STATUS_LABEL,
+} from '../types';
+import type { Decision, DecisionStatus, Session, SessionStatus } from '../types';
 import styles from './MeetingRepoPage.module.css';
 
 type Tab = 'sessions' | 'decisions';
@@ -37,13 +44,30 @@ type Tab = 'sessions' | 'decisions';
 export function MeetingRepoPage() {
   const navigate = useNavigate();
   const [tab, setTab] = useState<Tab>('sessions');
+  const [guideOpen, setGuideOpen] = useState(false);
+  // One filter per tab, kept apart: they filter different things by different
+  // vocabularies, and switching tabs shouldn't silently hide rows because of a
+  // choice made about the other one.
+  const [sessionFilter, setSessionFilter] = useState<SessionStatus | 'all'>('all');
+  const [decisionFilter, setDecisionFilter] = useState<DecisionStatus | 'all'>('all');
   const sessions = useSessions();
   const decisions = useDecisions();
 
-  const { upcoming, past } = useMemo(() => splitByTime(sessions.data ?? []), [sessions.data]);
+  const visibleSessions = useMemo(
+    () => (sessions.data ?? []).filter((session) => sessionFilter === 'all' || session.status === sessionFilter),
+    [sessions.data, sessionFilter],
+  );
+  const { upcoming, past } = useMemo(() => splitByTime(visibleSessions), [visibleSessions]);
+  const visibleDecisions = useMemo(
+    () => (decisions.data ?? []).filter((decision) => decisionFilter === 'all' || decision.status === decisionFilter),
+    [decisions.data, decisionFilter],
+  );
 
   const isLoading = tab === 'sessions' ? sessions.isLoading : decisions.isLoading;
   const isError = tab === 'sessions' ? sessions.isError : decisions.isError;
+  // "Nothing at all" and "nothing in this filter" are different states and get
+  // different words — the second one is a choice the reader can undo.
+  const filtered = tab === 'sessions' ? sessionFilter !== 'all' : decisionFilter !== 'all';
 
   return (
     <div className={styles.page}>
@@ -52,7 +76,17 @@ export function MeetingRepoPage() {
           <RightOutline />
         </button>
         <h1 className={styles.headerTitle}>مخزن جلسه</h1>
-        <span className={styles.headerSpacer} aria-hidden="true" />
+        {/* Same place and same shape as the projects guide: this is the front
+            door of a module whose rules (invites, fixed members, what can't be
+            edited) aren't guessable from the screen. */}
+        <button
+          type="button"
+          className={styles.guideButton}
+          onClick={() => setGuideOpen(true)}
+          aria-label="راهنمای مخزن جلسه"
+        >
+          <QuestionCircleOutline />
+        </button>
       </header>
 
       <div className={styles.tabs} role="tablist">
@@ -72,6 +106,30 @@ export function MeetingRepoPage() {
         />
       </div>
 
+      {/* Under the tabs, above the list — the row reads as "which of these", so
+          it belongs to the list it filters rather than to the page. */}
+      {!isLoading && !isError && (
+        <div className={styles.filters} role="tablist" aria-label="فیلتر وضعیت">
+          {tab === 'sessions'
+            ? SESSION_FILTERS.map((option) => (
+                <FilterChip
+                  key={option.key}
+                  label={option.label}
+                  active={sessionFilter === option.key}
+                  onClick={() => setSessionFilter(option.key)}
+                />
+              ))
+            : DECISION_FILTERS.map((option) => (
+                <FilterChip
+                  key={option.key}
+                  label={option.label}
+                  active={decisionFilter === option.key}
+                  onClick={() => setDecisionFilter(option.key)}
+                />
+              ))}
+        </div>
+      )}
+
       <div className={styles.body}>
         {isLoading && <EmptyState icon={<DotLoading />} title="در حال بارگذاری…" />}
 
@@ -84,11 +142,15 @@ export function MeetingRepoPage() {
         )}
 
         {!isLoading && !isError && tab === 'sessions' && (
-          <SessionsTab upcoming={upcoming} past={past} onOpen={(id) => navigate(`/sessions/${id}`)} />
+          <SessionsTab upcoming={upcoming} past={past} filtered={filtered} onOpen={(id) => navigate(`/sessions/${id}`)} />
         )}
 
         {!isLoading && !isError && tab === 'decisions' && (
-          <DecisionsTab decisions={decisions.data ?? []} onOpenSession={(id) => navigate(`/sessions/${id}`)} />
+          <DecisionsTab
+            decisions={visibleDecisions}
+            filtered={filtered}
+            onOpenSession={(id) => navigate(`/sessions/${id}`)}
+          />
         )}
       </div>
 
@@ -97,7 +159,38 @@ export function MeetingRepoPage() {
           <AddOutline /> جلسه جدید
         </Button>
       </div>
+
+      {guideOpen && <MeetingGuideSheet visible={guideOpen} onClose={() => setGuideOpen(false)} />}
     </div>
+  );
+}
+
+/**
+ * «همه» first, then the statuses in their natural order — the same lists the
+ * session screen and the مصوبات rows use, so nothing here can drift out of sync
+ * with what a status actually means.
+ */
+const SESSION_FILTERS: { key: SessionStatus | 'all'; label: string }[] = [
+  { key: 'all', label: 'همه' },
+  ...SESSION_STATUSES.map((status) => ({ key: status, label: SESSION_STATUS_LABEL[status] })),
+];
+
+const DECISION_FILTERS: { key: DecisionStatus | 'all'; label: string }[] = [
+  { key: 'all', label: 'همه' },
+  ...DECISION_STATUSES.map((status) => ({ key: status, label: DECISION_STATUS_LABEL[status] })),
+];
+
+function FilterChip({ label, active, onClick }: { label: string; active: boolean; onClick: () => void }) {
+  return (
+    <button
+      type="button"
+      role="tab"
+      aria-selected={active}
+      className={`${styles.filter} ${active ? styles.filterActive : ''}`}
+      onClick={onClick}
+    >
+      {label}
+    </button>
   );
 }
 
@@ -153,18 +246,23 @@ function splitByTime(sessions: Session[]): { upcoming: Session[]; past: Session[
 function SessionsTab({
   upcoming,
   past,
+  filtered,
   onOpen,
 }: {
   upcoming: Session[];
   past: Session[];
+  /** Whether a status filter is narrowing the list — changes what empty means. */
+  filtered: boolean;
   onOpen: (id: string) => void;
 }) {
   if (upcoming.length === 0 && past.length === 0) {
-    return (
+    return filtered ? (
+      <EmptyState icon={<TeamOutline />} title="جلسه‌ای با این وضعیت نیست" description="فیلتر را روی «همه» بگذارید." />
+    ) : (
       <EmptyState
         icon={<TeamOutline />}
         title="هنوز جلسه‌ای ثبت نشده"
-        description="جلسه بسازید تا زمان و مکانش برای شرکت‌کنندگان فرستاده شود و مصوبه‌هایش همین‌جا بماند."
+        description="جلسه بسازید تا زمان و نشانی‌اش برای شرکت‌کنندگان فرستاده شود و مصوبه‌هایش همین‌جا بماند."
       />
     );
   }
@@ -216,7 +314,7 @@ function SessionCard({ session, onOpen, past }: { session: Session; onOpen: (id:
         <span className={styles.cardMeta}>
           <span className={styles.metaItem}>
             <EnvironmentOutline aria-hidden="true" />
-            {session.isOnline ? 'آنلاین' : session.location || 'بدون مکان'}
+            {session.isOnline ? 'آنلاین' : 'حضوری'}
           </span>
           <span className={styles.metaItem}>
             <TeamOutline aria-hidden="true" />
@@ -238,9 +336,11 @@ function SessionCard({ session, onOpen, past }: { session: Session; onOpen: (id:
 
 function DecisionsTab({
   decisions,
+  filtered,
   onOpenSession,
 }: {
   decisions: Decision[];
+  filtered: boolean;
   onOpenSession: (id: string) => void;
 }) {
   // One mutation for the whole tab: which decision it targets travels in the
@@ -248,7 +348,9 @@ function DecisionsTab({
   const updateStatus = useUpdateDecisionStatus();
 
   if (decisions.length === 0) {
-    return (
+    return filtered ? (
+      <EmptyState icon={<FileOutline />} title="مصوبه‌ای با این وضعیت نیست" description="فیلتر را روی «همه» بگذارید." />
+    ) : (
       <EmptyState
         icon={<FileOutline />}
         title="هنوز مصوبه‌ای ثبت نشده"

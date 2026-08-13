@@ -15,8 +15,10 @@
 import {
   addDays,
   addMonths,
+  addYears,
   endOfMonth,
   endOfWeek,
+  endOfYear,
   format,
   getDate,
   getMonth,
@@ -26,10 +28,22 @@ import {
   startOfDay,
   startOfMonth,
   startOfWeek,
+  startOfYear,
 } from 'date-fns-jalali';
 import { faIR } from 'date-fns-jalali/locale';
 
-export { addDays, addMonths, isSameDay, isSameMonth, startOfDay, startOfMonth };
+export {
+  addDays,
+  addMonths,
+  addYears,
+  endOfMonth,
+  endOfYear,
+  isSameDay,
+  isSameMonth,
+  startOfDay,
+  startOfMonth,
+  startOfYear,
+};
 
 /** Saturday-first, matching the Persian week. Index === column index in the grid. */
 export const WEEKDAY_LABELS_SHORT = ['شنبه', 'یک', 'دو', 'سه', 'چهار', 'پنج', 'جمعه'] as const;
@@ -127,6 +141,22 @@ export function formatShortDate(date: Date): string {
   return toPersianDigits(format(date, 'd MMMM', { locale: faIR }));
 }
 
+/**
+ * «۱۴۰۵/۵/۲۲» — the whole date as numerals.
+ *
+ * The form a period report's header wears: «۲۲ مرداد» is what you *say*, but a
+ * screen with «روز قبل» and «روز بعد» on either side of it is being read as a
+ * position on a line, and numerals are what a position looks like.
+ */
+export function formatNumericDate(date: Date): string {
+  return toPersianDigits(format(date, 'yyyy/M/d'));
+}
+
+/** «۱۴۰۵» — the Jalali year alone. */
+export function formatYear(date: Date): string {
+  return toPersianDigits(getYear(date));
+}
+
 /** «۲۱» — the day-of-month number alone, for a calendar cell. */
 export function formatDayNumber(date: Date): string {
   return toPersianDigits(getDate(date));
@@ -140,6 +170,11 @@ export function formatTime(date: Date): string {
 /** The Saturday that starts `date`'s week. */
 export function startOfJalaliWeek(date: Date): Date {
   return startOfWeek(date, { locale: faIR });
+}
+
+/** The Friday that ends `date`'s week — the other half of the pair above. */
+export function endOfJalaliWeek(date: Date): Date {
+  return endOfWeek(date, { locale: faIR });
 }
 
 /**
