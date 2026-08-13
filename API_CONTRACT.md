@@ -1,8 +1,11 @@
-# WorkDesk API Contract — v1 (Project module)
+# WorkDesk API Contract
 
-What the frontend (`frontend/`) actually calls, for the backend to implement. Ground truth for the exact
-shapes is `frontend/src/modules/project/types.ts` and `frontend/src/modules/project/api.ts` — this doc
-summarizes them; if they ever drift, the TypeScript is authoritative.
+What the frontend (`frontend/`) actually calls. Ground truth for the exact shapes is each module's
+`types.ts`/`api.ts` under `frontend/src/modules/` — this doc summarizes them; if they ever drift, the
+TypeScript is authoritative.
+
+Covered here: **Project** (projects, lists, tags, jobs), **Note**, **Reminder**, and **Meeting repository**
+(sessions and decisions — see the «مخزن جلسه» section near the end).
 
 ## JSON key casing — read this first
 
@@ -456,6 +459,134 @@ create wizard calls this immediately on file selection).
 
 ---
 
+## Meeting repository — «مخزن جلسه»
+
+The second module that reaches people directly instead of posting into a group. Ground truth for the shapes
+is `frontend/src/modules/meeting/types.ts`.
+
+**How a session differs from a project, and why that's the whole module.** Creating a project provisions a
+Rasagram supergroup, and the group appearing in everyone's chat list *is* the invitation. A session
+provisions nothing — no `chatId`, no group, no topics. Instead `POST /sessions` messages each picked member
+directly, from the bot, with a link that opens the mini app on that session:
+
+```
+<services.rasagram.miniapp_url>?startapp=session-<id>
+```
+
+`RASAGRAM_MINIAPP_URL` is the app's own deep link as the Rasagram client resolves it (e.g.
+`https://rsog.rso-co.ir/<bot username>/<app short name>`). Note this is *not* the `t.me` formality
+`modules/project/links.ts` observes — that constraint comes from the SDK's `openTelegramLink` validator,
+which only ever sees links built inside the webview. This one travels the other way, as text in a chat
+message, so it must be an address the client can actually resolve. Leave the variable blank and sessions
+are still created; their members just get no message. See `app/services/sessioninvite`.
+
+The frontend turns the launch parameter back into a route in `app/router.tsx` (`startParamRoute`), so
+`/sessions/:sessionId` is part of this contract, not just internal routing.
+
+### `GET /api/v1/sessions`
+
+Every session the caller is a member of, **soonest first**. Flat and unfiltered, like `GET /jobs` — the home
+calendar indexes by day itself.
+
+```json
+[
+  {
+    "id": "3",
+    "title": "جلسه‌ی هفتگی محصول",
+    "projectId": null,
+    "projectName": null,
+    "startsAt": "2026-08-20T09:00:00+03:30",
+    "location": "اتاق جلسات ۲",
+    "isOnline": false,
+    "status": "notStarted",
+    "memberCount": 4
+  }
+]
+```
+
+- `status` — `notStarted` | `inProgress` | `done` | `canceled`.
+- `location` is null whenever `isOnline` is true; being online is its own kind of location, not a room
+  named "online". The backend doesn't even store one in that case.
+
+### `POST /api/v1/sessions`
+
+```json
+{
+  "title": "جلسه‌ی هفتگی محصول",
+  "startsAt": "2026-08-20T09:00:00+03:30",
+  "location": "اتاق جلسات ۲",
+  "isOnline": false,
+  "projectId": "1",
+  "members": [{ "id": "101", "source": "users", "displayName": "علی رضایی", "username": "ali", "phone": null, "online": true }]
+}
+```
+
+- `startsAt` — RFC 3339 **carrying the device's offset** (`toLocalIso`, not `toISOString`). The invite
+  message renders the Persian wall clock from it, so a normalized UTC instant would tell an Iranian user the
+  wrong time.
+- `projectId` — optional; must be a project the caller belongs to (422 otherwise).
+- `members` — the additionally invited people, same `PickedItem` shape `POST /projects` takes. The
+  authenticated caller is added as `role: "owner"` server-side and is **not** messaged.
+
+**Response 201** — `SessionDetail` (the session above, plus `members` and an empty `decisions`). Each member
+carries `role` and `notifiedAt`:
+
+```json
+{ "id": "101", "source": "users", "displayName": "علی رضایی", "username": "ali", "phone": null, "online": true,
+  "role": "member", "notifiedAt": "2026-08-13T12:00:03+03:30" }
+```
+
+`notifiedAt` is null when the bot couldn't reach them — normally because they have never started it, since a
+bot can't open a chat first. **That is not an error and does not fail the request**: the session is created
+either way and the create screen reports how many of the invited were actually reached.
+
+### `GET /api/v1/sessions/:id`
+
+`SessionDetail` — the session, its `members`, and its `decisions` (by due date), in one response.
+403 for a non-member, which is what makes the deep link safe to hand out: a forged `startapp` buys a 403.
+
+### `PATCH /api/v1/sessions/:id`
+
+`{ "status": "done" }` — **status only**. Title, time and place are what the invite message already told
+everyone; changing them here would leave every member holding a message that is now wrong. Any member may
+set it. Returns the `Session`.
+
+### `GET /api/v1/decisions`
+
+Every «مصوبه» from every session the caller is a member of, by due date. Scoped through session membership,
+not authorship: a resolution assigned to you in a meeting you attended is yours to see.
+
+```json
+[
+  {
+    "id": "7",
+    "title": "ارسال پیش‌نویس قرارداد",
+    "sessionId": "3",
+    "sessionTitle": "جلسه‌ی هفتگی محصول",
+    "dueAt": "2026-08-24T00:00:00+03:30",
+    "assigneeId": "101",
+    "assigneeName": "علی رضایی",
+    "status": "open"
+  }
+]
+```
+
+- `status` — `open` | `done` | `canceled`.
+- `sessionId`/`assigneeId` are null when the meeting was deleted / nobody in particular owes it.
+
+### `POST /api/v1/sessions/:id/decisions`
+
+`{ "title": "...", "dueAt": "<RFC 3339>", "assigneeId": "101" }`. `assigneeId` is optional and **must be a
+member of that session** (422 otherwise) — the display name is denormalized off the member row, so an
+arbitrary id would store a name nothing could ever correct. Returns the created `Decision` (201).
+
+### `PATCH /api/v1/decisions/:id`
+
+`{ "status": "done" }` — status only, same reasoning as a session's. Any member of the decision's session
+may set it. Returns the `Decision`.
+
+---
+
 ## Not in v1 (deliberately out of scope, see plan)
 
 - Adding members to a project after creation — the admin API's `chat/create` takes an initial member list,
@@ -468,3 +599,9 @@ create wizard calls this immediately on file selection).
   hands off to the project's group in the Rasagram client, opening the topic of whichever list is on screen
   (`openTelegramLink` with `/c/<chatId>/<topicId>` — see `modules/project/links.ts`). The group already *is*
   the activity feed, so there is nothing here to build or keep in sync.
+- Adding participants to a session after creation, or editing/deleting one. Same reason a project's members
+  are fixed, plus one of its own: the invite message already went out with a time, a place and a link, and
+  nothing can recall it. Only `status` is mutable afterwards.
+- Re-sending a failed session invite. The session screen names who wasn't reached so it can be done by hand;
+  a retry button would keep failing for exactly the same reason (they've never started the bot) until they
+  do something the app can't make them do.

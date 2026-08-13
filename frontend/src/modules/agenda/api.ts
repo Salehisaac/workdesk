@@ -39,7 +39,7 @@ function sessionToItem(session: Session): AgendaItem {
     hasTime: true,
     location: session.isOnline ? 'آنلاین' : session.location,
     status: SESSION_STATUS_LABEL[session.status] ?? null,
-    to: null,
+    to: `/sessions/${session.id}`,
   };
 }
 
@@ -53,7 +53,10 @@ function decisionToItem(decision: Decision): AgendaItem {
     hasTime: false,
     location: decision.assigneeName,
     status: DECISION_STATUS_LABEL[decision.status] ?? null,
-    to: null,
+    // The meeting it came out of, when it still has one — a resolution is read
+    // in the context of the session that produced it. Otherwise the مصوبات tab,
+    // which is the only other place it appears.
+    to: decision.sessionId ? `/sessions/${decision.sessionId}` : '/sessions',
   };
 }
 

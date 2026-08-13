@@ -77,6 +77,17 @@ export interface BridgeEnv {
   initData: string;
   platform: string;
   version: string;
+  /**
+   * The launch parameter, when the app was opened through a link carrying
+   * `?startapp=…` rather than from the bot's menu. Empty otherwise.
+   *
+   * This is the return path of the session invite: the backend messages every
+   * member a link with `startapp=session-<id>`, and app/router.tsx turns that
+   * back into a route. Read from initDataUnsafe, so it is NOT trusted input —
+   * it only ever selects which screen to open, and the screen it opens
+   * re-authorizes on its own (GET /sessions/{id} is membership-checked).
+   */
+  startParam: string;
 }
 
 export interface Bridge {

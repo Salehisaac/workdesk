@@ -41,6 +41,23 @@ func Api() {
 		router.Post("/projects/{id}/jobs", jobController.Store)
 		router.Patch("/projects/{id}/jobs/{jobId}", jobController.Update)
 
+		// «مخزن جلسه». A session is shaped like a project and provisions no
+		// group — creating one DMs every member a deep link back into the mini
+		// app instead (app/services/sessioninvite).
+		sessionController := controllers.NewSessionController()
+		router.Get("/sessions", sessionController.Index)
+		router.Post("/sessions", sessionController.Store)
+		router.Get("/sessions/{id}", sessionController.Show)
+		router.Patch("/sessions/{id}", sessionController.Update)
+
+		// Decisions read flat and write session-scoped, the same split /jobs
+		// uses: the flat read feeds the home calendar and the مصوبات tab, the
+		// scoped write gives the membership check a session to check against.
+		decisionController := controllers.NewDecisionController()
+		router.Get("/decisions", decisionController.Index)
+		router.Post("/sessions/{id}/decisions", decisionController.Store)
+		router.Patch("/decisions/{id}", decisionController.Update)
+
 		// Reminders belong to a person, not a project — creating one DMs it to
 		// the owner via the bot.
 		reminderController := controllers.NewReminderController()

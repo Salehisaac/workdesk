@@ -5,9 +5,9 @@ import { useNavigate } from 'react-router-dom';
 import type { PickedItem } from '../../../bridge/types';
 import { meDisplayName, useMe } from '../../../shared/api/me';
 import { DEFAULT_PALETTE, paletteByKey, renderMonogramFile } from '../../../shared/brand/monogram';
+import { PeoplePicker } from '../../../shared/ui/people/PeoplePicker';
 import { useCreateProject, useUploadAvatar } from '../api';
 import { ProjectIdentityCard } from '../components/create/ProjectIdentityCard';
-import { ProjectTeamPicker } from '../components/create/ProjectTeamPicker';
 import type { CreateProjectInput } from '../types';
 import styles from './ProjectCreatePage.module.css';
 
@@ -141,7 +141,14 @@ export function ProjectCreatePage() {
           onPhotoCleared={() => setPhotoUrl(null)}
         />
 
-        <ProjectTeamPicker members={members} ownerName={meDisplayName(me.data)} onChange={setMembers} />
+        <PeoplePicker
+          members={members}
+          ownerName={meDisplayName(me.data)}
+          onChange={setMembers}
+          title="هم‌تیمی‌ها"
+          ownerRoleLabel="مالک"
+          hint="اعضا فقط همین حالا انتخاب می‌شوند؛ پس از ساخت پروژه، عضو تازه‌ای به آن اضافه نمی‌شود."
+        />
 
         <p className={styles.note}>
           <InformationCircleOutline className={styles.noteIcon} aria-hidden="true" />

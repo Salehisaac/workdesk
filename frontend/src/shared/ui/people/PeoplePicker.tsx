@@ -1,16 +1,22 @@
 import { Dialog } from 'antd-mobile';
 import { AddOutline, CloseOutline } from 'antd-mobile-icons';
 import type { CSSProperties } from 'react';
-import { bridge } from '../../../../bridge';
-import type { PickedItem } from '../../../../bridge/types';
-import { monogramGradient, monogramInitial, paletteForSeed } from '../../../../shared/brand/monogram';
-import styles from './ProjectTeamPicker.module.css';
+import { bridge } from '../../../bridge';
+import type { PickedItem } from '../../../bridge/types';
+import { monogramGradient, monogramInitial, paletteForSeed } from '../../brand/monogram';
+import styles from './PeoplePicker.module.css';
 
-interface ProjectTeamPickerProps {
+interface PeoplePickerProps {
   members: PickedItem[];
-  /** The signed-in user, who is always the project's owner. Empty while /me is in flight. */
+  /** The signed-in user, who always leads the rail. Empty while /me is in flight. */
   ownerName: string;
   onChange: (members: PickedItem[]) => void;
+  /** Section heading — «هم‌تیمی‌ها» for a project, «شرکت‌کنندگان» for a session. */
+  title: string;
+  /** What the owner's chip says under their name. */
+  ownerRoleLabel: string;
+  /** The one thing about this member list that can't be fixed afterwards. */
+  hint: string;
 }
 
 function sameItem(a: PickedItem, b: PickedItem) {
@@ -30,7 +36,7 @@ const SAMPLE_USER: PickedItem = {
 };
 
 /**
- * Who is in the project.
+ * Who is in the thing being created.
  *
  * A rail of avatar chips rather than a list with swipe-to-delete rows: the
  * members of a small team are a set you glance at, not a list you scroll, and
@@ -38,10 +44,15 @@ const SAMPLE_USER: PickedItem = {
  * that the row can be swiped. Every chip carries its own ✕.
  *
  * The owner leads the rail and can't be removed — the backend adds the creator
- * as owner regardless of what this sends (project_controller.go), so showing
- * them is the honest count, not a courtesy.
+ * as owner regardless of what this sends (project_controller.go,
+ * session_controller.go), so showing them is the honest count, not a courtesy.
+ *
+ * Shared by the project and session create screens because the interaction is
+ * identical; only the copy differs, which is what the label props are for. What
+ * the two flows *do* with the list is where they diverge — a project adds these
+ * people to a group, a session messages each of them a link.
  */
-export function ProjectTeamPicker({ members, ownerName, onChange }: ProjectTeamPickerProps) {
+export function PeoplePicker({ members, ownerName, onChange, title, ownerRoleLabel, hint }: PeoplePickerProps) {
   async function handlePick() {
     // Confirmed API — plan section 4. The picker UI is entirely native; we
     // only ever receive what the user chose to share.
@@ -75,7 +86,7 @@ export function ProjectTeamPicker({ members, ownerName, onChange }: ProjectTeamP
   return (
     <section className={styles.section}>
       <div className={styles.head}>
-        <h2 className={styles.title}>هم‌تیمی‌ها</h2>
+        <h2 className={styles.title}>{title}</h2>
         <span className={styles.count}>{members.length + 1} نفر</span>
       </div>
 
@@ -96,7 +107,7 @@ export function ProjectTeamPicker({ members, ownerName, onChange }: ProjectTeamP
             {monogramInitial(ownerLabel) || '؟'}
           </span>
           <span className={styles.chipName}>{ownerLabel}</span>
-          <span className={styles.chipRole}>مالک</span>
+          <span className={styles.chipRole}>{ownerRoleLabel}</span>
         </div>
 
         {members.map((member) => (
@@ -126,9 +137,7 @@ export function ProjectTeamPicker({ members, ownerName, onChange }: ProjectTeamP
       {/* The one limit that can't be fixed after the fact — said here, where it
           can still change what someone does, instead of in the guide they read
           afterwards. */}
-      <p className={styles.hint}>
-        اعضا فقط همین حالا انتخاب می‌شوند؛ پس از ساخت پروژه، عضو تازه‌ای به آن اضافه نمی‌شود.
-      </p>
+      <p className={styles.hint}>{hint}</p>
 
       <button type="button" className={styles.sampleUser} onClick={handleAddSampleUser}>
         افزودن کاربر نمونه (برای آزمایش)

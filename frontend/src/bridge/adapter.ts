@@ -69,6 +69,9 @@ export const adapterBridge: Bridge = {
       initData: wa.initData ?? '',
       platform: wa.platform ?? 'unknown',
       version: wa.version ?? '0',
+      // Telegram's own field name, which this SDK is a fork of — the value
+      // after `?startapp=` on the link that launched the app.
+      startParam: wa.initDataUnsafe?.start_param ?? '',
     };
   },
   ready() {

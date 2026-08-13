@@ -77,12 +77,13 @@ export const apiClient = {
  * GET a collection, reading "this route doesn't exist on the backend yet" as
  * an empty collection instead of a hard error.
  *
- * WorkDesk's v1 backend only implements the Project module (API_CONTRACT.md) —
- * sessions, decisions and notes are real product domains with agreed shapes but
- * no routes yet. The home dashboard queries them anyway so that the day it goes
- * live nothing here has to change; until then those sections render their empty
- * state rather than an error. A 5xx or an auth failure still throws, so real
- * outages stay visible.
+ * Every collection the dashboard reads has a route now (API_CONTRACT.md), but
+ * they didn't all land at once — sessions, decisions and notes were queried by
+ * the home dashboard for weeks before their endpoints existed, rendering an
+ * empty section instead of an error screen. Kept for the same reason it was
+ * introduced: a frontend deployed ahead of its backend, or against an older
+ * server, degrades to "nothing here yet" rather than a wall of failures. A 5xx
+ * or an auth failure still throws, so real outages stay visible.
  */
 export async function getCollection<T>(path: string): Promise<T[]> {
   try {

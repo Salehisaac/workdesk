@@ -4,9 +4,9 @@ import type { ReactNode } from 'react';
 /**
  * WorkDesk's modules, in one place.
  *
- * Six tools, of which Project and Reminder are built; the rest are declared
- * here anyway so the home page's tool grid and the create menu describe the
- * product's real shape instead of only the finished parts. Both surfaces read
+ * Six tools, of which Project, Meeting-repo and Reminder are built; the rest are
+ * declared here anyway so the home page's tool grid and the create menu describe
+ * the product's real shape instead of only the finished parts. Both surfaces read
  * this list, so they can't drift apart — they're two views of the same set.
  *
  * `action` is the imperative the create menu puts on each card («پروژه‌ای
@@ -64,6 +64,8 @@ export const WORKDESK_MODULES: WorkdeskModule[] = [
     createTo: '/projects/new',
     inToolGrid: true,
   },
+  // The second module that messages people directly rather than posting into a
+  // group: creating a session DMs every participant a link back into the app.
   {
     key: 'meeting-repo',
     label: 'مخزن‌جلسه',
@@ -71,6 +73,8 @@ export const WORKDESK_MODULES: WorkdeskModule[] = [
     action: 'جلسه‌ها و مصوبه‌ها را یک‌جا بایگانی کنید',
     icon: <FolderOutline />,
     tone: 'var(--wd-module-meeting-repo)',
+    to: '/sessions',
+    createTo: '/sessions/new',
     inToolGrid: true,
   },
   // The one module that talks to a person instead of a project: creating a

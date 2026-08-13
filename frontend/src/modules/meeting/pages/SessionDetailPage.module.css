@@ -1,0 +1,425 @@
+.page {
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+  background: var(--rasagram-theme-bg-color);
+}
+
+.header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: calc(12px + var(--wd-safe-top)) 12px 10px;
+  position: sticky;
+  top: 0;
+  z-index: 10;
+  background: var(--rasagram-theme-bg-color);
+}
+
+.back {
+  width: 36px;
+  height: 36px;
+  flex-shrink: 0;
+  border: none;
+  border-radius: 10px;
+  background: none;
+  color: var(--rasagram-theme-text-color);
+  font-size: 20px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+}
+
+.headerTitle {
+  flex: 1;
+  min-width: 0;
+  margin: 0;
+  text-align: center;
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--rasagram-theme-text-color);
+}
+
+.headerSpacer {
+  width: 36px;
+  flex-shrink: 0;
+}
+
+.body {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  padding: 4px 16px calc(24px + var(--wd-safe-bottom));
+  overflow-y: auto;
+  max-width: 560px;
+  width: 100%;
+  margin-inline: auto;
+}
+
+.hero {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 16px;
+  border-radius: 20px;
+  background: var(--rasagram-theme-secondary-bg-color);
+}
+
+.title {
+  margin: 0;
+  font-size: 18px;
+  font-weight: 700;
+  line-height: 1.6;
+  color: var(--rasagram-theme-text-color);
+  overflow-wrap: anywhere;
+}
+
+.project {
+  font-size: 12px;
+  color: var(--rasagram-theme-hint-color);
+}
+
+.facts {
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+}
+
+.fact {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+  color: var(--rasagram-theme-subtitle-text-color);
+}
+
+.fact svg {
+  flex-shrink: 0;
+  font-size: 16px;
+  color: var(--wd-module-meeting-repo);
+}
+
+/* Four states side by side. They wrap rather than scroll — a status you can't
+   see is a status nobody sets. */
+.statuses {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.statusButton {
+  padding: 6px 12px;
+  border: none;
+  border-radius: 999px;
+  background: var(--rasagram-theme-bg-color);
+  font-family: inherit;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--rasagram-theme-hint-color);
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+  transition: background 0.18s ease, color 0.18s ease;
+}
+
+.statusButton:disabled {
+  opacity: 0.6;
+}
+
+/* Only the selected one is tinted, and in its own status colour — the same
+   tokens the job board uses, so a state means one thing app-wide. */
+.statusActive_notStarted {
+  background: color-mix(in srgb, var(--wd-status-notStarted) 20%, transparent);
+  color: var(--rasagram-theme-text-color);
+}
+
+.statusActive_inProgress {
+  background: color-mix(in srgb, var(--wd-status-inProgress) 18%, transparent);
+  color: var(--wd-status-inProgress);
+}
+
+.statusActive_done {
+  background: color-mix(in srgb, var(--wd-status-done) 18%, transparent);
+  color: var(--wd-status-done);
+}
+
+.statusActive_canceled {
+  background: color-mix(in srgb, var(--wd-status-canceled) 18%, transparent);
+  color: var(--wd-status-canceled);
+}
+
+.section {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.sectionHead {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding-inline: 2px;
+}
+
+.sectionTitle {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin: 0;
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--rasagram-theme-text-color);
+}
+
+.sectionCount {
+  font-size: 12px;
+  color: var(--rasagram-theme-hint-color);
+}
+
+.addDecision {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 5px 10px;
+  border: none;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--rasagram-theme-button-color) 12%, transparent);
+  font-family: inherit;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--rasagram-theme-accent-text-color);
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.rail {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.chip {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 12px 6px 6px;
+  border-radius: 999px;
+  background: var(--rasagram-theme-secondary-bg-color);
+  max-width: 100%;
+}
+
+.chipAvatar {
+  flex-shrink: 0;
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 13px;
+  font-weight: 700;
+  color: #ffffff;
+}
+
+.chipName {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--rasagram-theme-text-color);
+  max-width: 140px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.chipRole {
+  font-size: 11px;
+  color: var(--rasagram-theme-hint-color);
+  white-space: nowrap;
+}
+
+.warn {
+  margin: 0;
+  padding: 10px 12px;
+  border-radius: 12px;
+  background: color-mix(in srgb, var(--rasagram-theme-destructive-text-color) 10%, transparent);
+  font-size: 11.5px;
+  line-height: 1.9;
+  color: var(--rasagram-theme-destructive-text-color);
+}
+
+.emptyLine {
+  margin: 0;
+  padding-inline: 2px;
+  font-size: 12.5px;
+  color: var(--rasagram-theme-hint-color);
+}
+
+.decisions {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.decision {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 10px 12px;
+  border-radius: 14px;
+  background: var(--rasagram-theme-secondary-bg-color);
+}
+
+.check {
+  flex-shrink: 0;
+  width: 30px;
+  height: 30px;
+  border: none;
+  border-radius: 50%;
+  background: none;
+  color: var(--rasagram-theme-hint-color);
+  font-size: 21px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.checkDone {
+  color: var(--wd-status-done);
+}
+
+.decisionBody {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.decisionTitle {
+  font-size: 13.5px;
+  font-weight: 600;
+  line-height: 1.6;
+  color: var(--rasagram-theme-text-color);
+  overflow-wrap: anywhere;
+}
+
+.decisionClosed {
+  text-decoration: line-through;
+  color: var(--rasagram-theme-hint-color);
+}
+
+.decisionMeta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  font-size: 11.5px;
+  color: var(--rasagram-theme-hint-color);
+}
+
+.overdue {
+  color: var(--rasagram-theme-destructive-text-color);
+  font-weight: 600;
+}
+
+.sheet {
+  border-top-left-radius: 20px;
+  border-top-right-radius: 20px;
+  background: var(--rasagram-theme-bg-color);
+}
+
+.sheetBody {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  padding: 18px 16px calc(18px + var(--wd-safe-bottom));
+}
+
+.sheetTitle {
+  margin: 0;
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--rasagram-theme-text-color);
+}
+
+.sheetInput {
+  --font-size: 15px;
+  --color: var(--rasagram-theme-text-color);
+  --placeholder-color: var(--rasagram-theme-hint-color);
+  padding: 12px 14px;
+  border-radius: 14px;
+  background: var(--rasagram-theme-secondary-bg-color);
+}
+
+.sheetRow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 12px 14px;
+  border: none;
+  border-radius: 14px;
+  background: var(--rasagram-theme-secondary-bg-color);
+  font-family: inherit;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.sheetRowLabel {
+  font-size: 13px;
+  color: var(--rasagram-theme-subtitle-text-color);
+}
+
+.sheetRowValue {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--rasagram-theme-accent-text-color);
+}
+
+.assignees {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding-inline: 2px;
+}
+
+/* Scrolls, unlike the create screen's member rail: here the list is read-only
+   and the choice is one tap, so an overflowing row costs a swipe rather than
+   hiding someone you were about to review. */
+.assigneeRail {
+  display: flex;
+  gap: 6px;
+  overflow-x: auto;
+  padding-bottom: 2px;
+  scrollbar-width: none;
+}
+
+.assigneeRail::-webkit-scrollbar {
+  display: none;
+}
+
+.assignee {
+  flex-shrink: 0;
+  max-width: 150px;
+  padding: 6px 12px;
+  border: none;
+  border-radius: 999px;
+  background: var(--rasagram-theme-secondary-bg-color);
+  font-family: inherit;
+  font-size: 12.5px;
+  color: var(--rasagram-theme-subtitle-text-color);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.assigneeActive {
+  background: color-mix(in srgb, var(--rasagram-theme-button-color) 16%, transparent);
+  color: var(--rasagram-theme-accent-text-color);
+  font-weight: 600;
+}

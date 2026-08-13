@@ -18,6 +18,13 @@ func init() {
 			// /bot<token>/<method>, standard Telegram Bot API shape). Used
 			// by app/services/botapi for the per-List forum topic lifecycle.
 			"bot_api_base_url": config.Env("RASAGRAM_BOT_API_BASE_URL", ""),
+			// The mini app's own link, as the Rasagram client resolves it —
+			// e.g. https://rsog.rso-co.ir/<bot username>/<app short name>.
+			// app/services/sessioninvite appends ?startapp=<param> to it, which
+			// is the only way an outgoing message can point a member at one
+			// particular screen inside the app (see that package). Blank
+			// disables session invites rather than sending a broken link.
+			"miniapp_url": config.Env("RASAGRAM_MINIAPP_URL", ""),
 		},
 
 		// Internal admin API (app/services/rasagramadmin) — creates the
