@@ -50,6 +50,11 @@ func Api() {
 		router.Get("/sessions/{id}", sessionController.Show)
 		router.Patch("/sessions/{id}", sessionController.Update)
 
+		// «دستور جلسه» — the meeting's running order. Write-only here: it is read
+		// as part of GET /sessions/{id}, which carries `agendas`.
+		sessionAgendaController := controllers.NewSessionAgendaController()
+		router.Post("/sessions/{id}/agendas", sessionAgendaController.Store)
+
 		// Decisions read flat and write session-scoped, the same split /jobs
 		// uses: the flat read feeds the home calendar and the مصوبات tab, the
 		// scoped write gives the membership check a session to check against.

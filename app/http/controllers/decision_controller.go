@@ -53,6 +53,31 @@ func decisionSessionTitles(decisions []models.Decision) (map[uint]string, error)
 	return titles, nil
 }
 
+// decisionAgendaTitles is the same one-query lookup for the «دستور جلسه» each
+// decision came out of — Decision.agendaTitle is denormalized on the wire so the
+// مصوبات tab can say which item of the running order produced a resolution
+// without loading every session's agenda.
+func decisionAgendaTitles(decisions []models.Decision) (map[uint]string, error) {
+	agendaIds := make([]any, 0, len(decisions))
+	seen := make(map[uint]bool, len(decisions))
+	for i := range decisions {
+		if decisions[i].AgendaId == nil || seen[*decisions[i].AgendaId] {
+			continue
+		}
+		seen[*decisions[i].AgendaId] = true
+		agendaIds = append(agendaIds, *decisions[i].AgendaId)
+	}
+	if len(agendaIds) == 0 {
+		return nil, nil
+	}
+
+	var agendas []models.SessionAgenda
+	if err := facades.Orm().Query().WhereIn("id", agendaIds).Find(&agendas); err != nil {
+		return nil, err
+	}
+	return resources.AgendaTitles(agendas), nil
+}
+
 // Index — GET /api/v1/decisions. Every resolution from every meeting the caller
 // was invited to, by due date.
 //
@@ -69,7 +94,7 @@ func (r *DecisionController) Index(ctx http.Context) http.Response {
 		return ctx.Response().Status(500).Json(http.Json{"error": err.Error()})
 	}
 	if len(sessionIds) == 0 {
-		return ctx.Response().Success().Json(resources.Decisions(nil, nil))
+		return ctx.Response().Success().Json(resources.Decisions(nil, nil, nil))
 	}
 
 	var decisions []models.Decision
@@ -85,14 +110,24 @@ func (r *DecisionController) Index(ctx http.Context) http.Response {
 		return ctx.Response().Status(500).Json(http.Json{"error": err.Error()})
 	}
 
-	return ctx.Response().Success().Json(resources.Decisions(decisions, titles))
+	agendaTitles, err := decisionAgendaTitles(decisions)
+	if err != nil {
+		return ctx.Response().Status(500).Json(http.Json{"error": err.Error()})
+	}
+
+	return ctx.Response().Success().Json(resources.Decisions(decisions, titles, agendaTitles))
 }
 
 type storeDecisionRequest struct {
 	Title string `json:"title"`
-	// RFC 3339 — the day it's owed. Time-of-day is accepted and stored, but the
-	// UI treats a decision as a whole-day item (Decision.hasTime is false).
+	// The resolution's own text, under its one-line title. Optional.
+	Description string `json:"description"`
+	// RFC 3339 — the «سررسید», picked on the Jalali calendar. Time-of-day is
+	// accepted and stored; the session screen shows it alongside the day.
 	DueAt string `json:"dueAt"`
+	// Which «دستور جلسه» of this session it came out of. Optional — a room
+	// decides things nobody put on the running order.
+	AgendaId string `json:"agendaId"`
 	// One of the session's members, by their picked-item id. Optional: a
 	// resolution the room owns collectively has no single assignee.
 	AssigneeId string `json:"assigneeId"`
@@ -136,15 +171,35 @@ func (r *DecisionController) Store(ctx http.Context) http.Response {
 		DueAt:      carbon.NewDateTime(carbon.FromStdTime(dueAt)),
 		Status:     models.DecisionStatusOpen,
 	}
+	if description := strings.TrimSpace(request.Description); description != "" {
+		decision.Description = &description
+	}
+
+	// The agenda item must belong to *this* meeting. Checked rather than trusted
+	// for the same reason the assignee is: agendaTitle is denormalized on the
+	// wire, and pointing a resolution at another session's running order would
+	// label it with a heading nobody in this room ever saw.
+	agendaTitles := map[uint]string{}
+	if rawAgendaId := strings.TrimSpace(request.AgendaId); rawAgendaId != "" {
+		agendaId, ok := parseRouteId(rawAgendaId)
+		if !ok {
+			return ctx.Response().Status(422).Json(http.Json{"error": "agendaId is not an agenda item of this session"})
+		}
+
+		var agenda models.SessionAgenda
+		if err := facades.Orm().Query().Where("id", agendaId).Where("session_id", session.ID).First(&agenda); err != nil {
+			return ctx.Response().Status(500).Json(http.Json{"error": err.Error()})
+		}
+		if agenda.ID == 0 {
+			return ctx.Response().Status(422).Json(http.Json{"error": "agendaId is not an agenda item of this session"})
+		}
+
+		decision.AgendaId = &agenda.ID
+		agendaTitles[agenda.ID] = agenda.Title
+	}
 
 	if assigneeId := strings.TrimSpace(request.AssigneeId); assigneeId != "" {
-		var assignee *models.SessionMember
-		for i := range session.Members {
-			if session.Members[i].RefId == assigneeId {
-				assignee = &session.Members[i]
-				break
-			}
-		}
+		assignee := sessionMemberByRef(session, assigneeId)
 		if assignee == nil {
 			return ctx.Response().Status(422).Json(http.Json{"error": "assigneeId is not a member of this session"})
 		}
@@ -157,7 +212,7 @@ func (r *DecisionController) Store(ctx http.Context) http.Response {
 	}
 
 	return ctx.Response().Status(201).Json(
-		resources.Decision(&decision, map[uint]string{session.ID: session.Title}),
+		resources.Decision(&decision, map[uint]string{session.ID: session.Title}, agendaTitles),
 	)
 }
 
@@ -227,5 +282,10 @@ func (r *DecisionController) Update(ctx http.Context) http.Response {
 		return ctx.Response().Status(500).Json(http.Json{"error": err.Error()})
 	}
 
-	return ctx.Response().Success().Json(resources.Decision(&decision, titles))
+	agendaTitles, err := decisionAgendaTitles([]models.Decision{decision})
+	if err != nil {
+		return ctx.Response().Status(500).Json(http.Json{"error": err.Error()})
+	}
+
+	return ctx.Response().Success().Json(resources.Decision(&decision, titles, agendaTitles))
 }

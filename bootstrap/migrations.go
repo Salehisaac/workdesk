@@ -25,5 +25,7 @@ func Migrations() []schema.Migration {
 		&migrations.M20260813000002CreateSessionsTable{},
 		&migrations.M20260813000003CreateSessionMembersTable{},
 		&migrations.M20260813000004CreateDecisionsTable{},
+		&migrations.M20260813000005CreateSessionAgendasTable{},
+		&migrations.M20260813000006AddAgendaToDecisionsTable{},
 	}
 }

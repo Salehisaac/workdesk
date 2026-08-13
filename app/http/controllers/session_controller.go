@@ -144,8 +144,9 @@ func (r *SessionController) Index(ctx http.Context) http.Response {
 	return ctx.Response().Success().Json(resources.Sessions(sessions, projectNames))
 }
 
-// Show — GET /api/v1/sessions/{id}. The session, its members, and the decisions
-// taken in it, in one response — everything the session screen renders.
+// Show — GET /api/v1/sessions/{id}. The session, its members, its running order
+// («دستورات جلسه») and the decisions taken in it, in one response — everything
+// the session screen renders.
 func (r *SessionController) Show(ctx http.Context) http.Response {
 	authUser, errResp := currentUser(ctx)
 	if errResp != nil {
@@ -162,6 +163,11 @@ func (r *SessionController) Show(ctx http.Context) http.Response {
 		return ctx.Response().Status(500).Json(http.Json{"error": err.Error()})
 	}
 
+	agendas, err := sessionAgendas(session.ID)
+	if err != nil {
+		return ctx.Response().Status(500).Json(http.Json{"error": err.Error()})
+	}
+
 	var decisions []models.Decision
 	if err := facades.Orm().Query().
 		Where("session_id", session.ID).
@@ -171,7 +177,7 @@ func (r *SessionController) Show(ctx http.Context) http.Response {
 	}
 
 	return ctx.Response().Success().Json(
-		resources.SessionDetail(session, projectNames, decisions, map[uint]string{session.ID: session.Title}),
+		resources.SessionDetail(session, projectNames, agendas, decisions, map[uint]string{session.ID: session.Title}),
 	)
 }
 
@@ -277,8 +283,10 @@ func (r *SessionController) Store(ctx http.Context) http.Response {
 		return ctx.Response().Status(500).Json(http.Json{"error": err.Error()})
 	}
 
+	// No agendas and no decisions yet by construction — both are written on the
+	// session screen this response redirects to.
 	return ctx.Response().Status(201).Json(
-		resources.SessionDetail(&session, projectNames, nil, nil),
+		resources.SessionDetail(&session, projectNames, nil, nil, nil),
 	)
 }
 

@@ -1,12 +1,15 @@
-import { Button, DotLoading, Input, Popup, Toast } from 'antd-mobile';
+import { Button, DotLoading, Input, Popover, Popup, TextArea, Toast } from 'antd-mobile';
 import {
   AddOutline,
   CheckCircleOutline,
   ClockCircleOutline,
+  DownOutline,
   EnvironmentOutline,
   ExclamationCircleOutline,
   RightOutline,
   TeamOutline,
+  UnorderedListOutline,
+  UserAddOutline,
 } from 'antd-mobile-icons';
 import type { CSSProperties } from 'react';
 import { useState } from 'react';
@@ -15,10 +18,17 @@ import { monogramGradient, monogramInitial, paletteForSeed } from '../../../shar
 import { formatLongDate, formatShortDate, formatTime, toLocalIso, toPersianDigits } from '../../../shared/date/jalali';
 import { DateTimeSheet } from '../../../shared/ui/datetime/DateTimeSheet';
 import { EmptyState } from '../../../shared/ui/EmptyState';
+import { DurationSheet, formatDuration } from '../../../shared/ui/time/DurationSheet';
 import { useAgendaCalendar } from '../../agenda/api';
-import { useCreateDecision, useSession, useUpdateDecisionStatus, useUpdateSessionStatus } from '../api';
+import {
+  useCreateAgenda,
+  useCreateDecision,
+  useSession,
+  useUpdateDecisionStatus,
+  useUpdateSessionStatus,
+} from '../api';
 import { DECISION_STATUS_LABEL, SESSION_STATUSES, SESSION_STATUS_LABEL } from '../types';
-import type { SessionMember, SessionStatus } from '../types';
+import type { SessionAgenda, SessionMember, SessionStatus } from '../types';
 import styles from './SessionDetailPage.module.css';
 
 /**
@@ -31,9 +41,11 @@ import styles from './SessionDetailPage.module.css';
  * app/router.tsx for the other half.
  *
  * What it shows, in order: when and where, who was invited (and who the invite
- * actually reached), and the resolutions. مصوبات are recorded here rather than
- * on the repository's مصوبات tab because a resolution only means anything
- * attached to the meeting that produced it — the tab is the read-across view.
+ * actually reached), the running order, and the resolutions. The last two are
+ * both written here rather than anywhere else, and they are the module's two
+ * halves: «دستورات جلسه» is what the room means to get through, «مصوبات» is what
+ * it committed to afterwards. The repository's مصوبات tab is the read-across
+ * view of the second; the first is never read outside its own meeting.
  */
 export function SessionDetailPage() {
   const { sessionId } = useParams<{ sessionId: string }>();
@@ -41,6 +53,7 @@ export function SessionDetailPage() {
   const { data: session, isLoading, isError } = useSession(sessionId);
   const updateStatus = useUpdateSessionStatus(sessionId ?? '');
   const updateDecision = useUpdateDecisionStatus(sessionId);
+  const [agendaOpen, setAgendaOpen] = useState(false);
   const [decisionOpen, setDecisionOpen] = useState(false);
 
   if (isLoading) {
@@ -73,6 +86,7 @@ export function SessionDetailPage() {
   const startsAt = new Date(session.startsAt);
   const invited = session.members.filter((member) => member.role !== 'owner');
   const unreached = invited.filter((member) => !member.notifiedAt).length;
+  const agendas = session.agendas ?? [];
 
   return (
     <div className={styles.page}>
@@ -146,9 +160,30 @@ export function SessionDetailPage() {
 
         <section className={styles.section}>
           <div className={styles.sectionHead}>
+            <h2 className={styles.sectionTitle}>
+              <UnorderedListOutline aria-hidden="true" /> دستورات جلسه
+            </h2>
+            <button type="button" className={styles.addButton} onClick={() => setAgendaOpen(true)}>
+              <AddOutline /> افزودن
+            </button>
+          </div>
+
+          {agendas.length === 0 ? (
+            <p className={styles.emptyLine}>هنوز دستور جلسه‌ای ثبت نشده.</p>
+          ) : (
+            <div className={styles.agendas}>
+              {agendas.map((agenda, index) => (
+                <AgendaCard key={agenda.id} agenda={agenda} index={index} />
+              ))}
+            </div>
+          )}
+        </section>
+
+        <section className={styles.section}>
+          <div className={styles.sectionHead}>
             <h2 className={styles.sectionTitle}>مصوبات</h2>
-            <button type="button" className={styles.addDecision} onClick={() => setDecisionOpen(true)}>
-              <AddOutline /> مصوبه‌ی تازه
+            <button type="button" className={styles.addButton} onClick={() => setDecisionOpen(true)}>
+              <AddOutline /> افزودن
             </button>
           </div>
 
@@ -183,11 +218,19 @@ export function SessionDetailPage() {
                       >
                         {decision.title}
                       </div>
+                      {decision.description && <p className={styles.itemDescription}>{decision.description}</p>}
                       <div className={styles.decisionMeta}>
-                        <span className={overdue ? styles.overdue : undefined}>{formatShortDate(dueAt)}</span>
+                        <span className={overdue ? styles.overdue : undefined}>
+                          سررسید: {formatShortDate(dueAt)} ساعت {formatTime(dueAt)}
+                        </span>
                         {decision.assigneeName && <span>{decision.assigneeName}</span>}
                         {decision.status !== 'open' && <span>{DECISION_STATUS_LABEL[decision.status]}</span>}
                       </div>
+                      {/* Which item of the running order produced it — the pair
+                          the whole session screen exists to hold together. */}
+                      {decision.agendaTitle && (
+                        <div className={styles.decisionAgenda}>دستور جلسه: {decision.agendaTitle}</div>
+                      )}
                     </div>
                   </div>
                 );
@@ -197,10 +240,18 @@ export function SessionDetailPage() {
         </section>
       </div>
 
+      <AgendaSheet
+        visible={agendaOpen}
+        sessionId={session.id}
+        members={session.members}
+        onClose={() => setAgendaOpen(false)}
+      />
+
       <DecisionSheet
         visible={decisionOpen}
         sessionId={session.id}
         members={session.members}
+        agendas={agendas}
         onClose={() => setDecisionOpen(false)}
       />
     </div>
@@ -239,11 +290,89 @@ function MemberChip({ member }: { member: SessionMember }) {
   );
 }
 
+/** One line of the running order, numbered — an agenda is read in sequence. */
+function AgendaCard({ agenda, index }: { agenda: SessionAgenda; index: number }) {
+  const duration = formatDuration(agenda.durationMinutes);
+
+  return (
+    <div className={styles.agenda}>
+      <span className={styles.agendaIndex} aria-hidden="true">
+        {toPersianDigits(index + 1)}
+      </span>
+
+      <div className={styles.agendaBody}>
+        <div className={styles.agendaTitle}>{agenda.title}</div>
+        {agenda.description && <p className={styles.itemDescription}>{agenda.description}</p>}
+        {(duration || agenda.assigneeName) && (
+          <div className={styles.decisionMeta}>
+            {duration && (
+              <span className={styles.agendaDuration}>
+                <ClockCircleOutline aria-hidden="true" /> {duration}
+              </span>
+            )}
+            {agenda.assigneeName && <span>{agenda.assigneeName}</span>}
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
 /**
- * Recording a resolution — a sheet, not a route, because it is three fields and
- * belongs to the meeting on screen behind it.
+ * Picking the «مسئول اجرایی» — the one member who is to carry an item.
+ *
+ * Shared by both sheets because both ask the same question of the same list.
+ * "Nobody in particular" leads and is the default: a slot on the agenda the
+ * whole room works through, or a resolution it owns collectively, shouldn't have
+ * to be pinned on someone before it can be written down.
  */
-function DecisionSheet({
+function AssigneePicker({
+  members,
+  value,
+  onChange,
+}: {
+  members: SessionMember[];
+  value: string | null;
+  onChange: (assigneeId: string | null) => void;
+}) {
+  return (
+    <div className={styles.assignees}>
+      <span className={styles.sheetRowLabel}>
+        <UserAddOutline aria-hidden="true" /> مسئول اجرایی
+      </span>
+      <div className={styles.assigneeRail}>
+        <button
+          type="button"
+          className={`${styles.assignee} ${value === null ? styles.assigneeActive : ''}`}
+          onClick={() => onChange(null)}
+        >
+          همه
+        </button>
+        {members.map((member) => (
+          <button
+            key={`${member.source}-${member.id}`}
+            type="button"
+            className={`${styles.assignee} ${value === member.id ? styles.assigneeActive : ''}`}
+            onClick={() => onChange(member.id)}
+          >
+            {member.displayName}
+          </button>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+/**
+ * Adding to the running order — «دستور جلسه».
+ *
+ * A sheet rather than a route, like the مصوبه one: four fields that belong to
+ * the meeting on screen behind it. What it asks for that the other doesn't is
+ * «مدت زمان» — an agenda item is a slice of the meeting's own time, and adding
+ * up what the room has scheduled is the only way anyone finds out beforehand
+ * that two hours of items were put into a one-hour meeting.
+ */
+function AgendaSheet({
   visible,
   sessionId,
   members,
@@ -254,16 +383,126 @@ function DecisionSheet({
   members: SessionMember[];
   onClose: () => void;
 }) {
+  const createAgenda = useCreateAgenda(sessionId);
+
+  const [title, setTitle] = useState('');
+  const [description, setDescription] = useState('');
+  const [durationMinutes, setDurationMinutes] = useState<number | null>(null);
+  const [assigneeId, setAssigneeId] = useState<string | null>(null);
+  const [durationOpen, setDurationOpen] = useState(false);
+
+  function reset() {
+    setTitle('');
+    setDescription('');
+    setDurationMinutes(null);
+    setAssigneeId(null);
+  }
+
+  async function handleSubmit() {
+    if (createAgenda.isPending) return;
+    if (!title.trim()) {
+      Toast.show({ content: 'عنوان دستور جلسه را وارد کنید' });
+      return;
+    }
+
+    try {
+      await createAgenda.mutateAsync({
+        title: title.trim(),
+        description: description.trim() || undefined,
+        durationMinutes: durationMinutes ?? undefined,
+        assigneeId: assigneeId ?? undefined,
+      });
+      reset();
+      onClose();
+    } catch (error) {
+      Toast.show({ content: error instanceof Error ? error.message : 'ثبت دستور جلسه با خطا مواجه شد' });
+    }
+  }
+
+  return (
+    <Popup visible={visible} onMaskClick={onClose} bodyClassName={styles.sheet} destroyOnClose>
+      <div className={styles.sheetBody}>
+        <h2 className={styles.sheetTitle}>دستور جلسه‌ی تازه</h2>
+
+        <Input className={styles.sheetInput} placeholder="عنوان" value={title} onChange={setTitle} />
+
+        <TextArea
+          className={styles.sheetInput}
+          placeholder="شرح (اختیاری)"
+          value={description}
+          onChange={setDescription}
+          autoSize={{ minRows: 1, maxRows: 5 }}
+        />
+
+        <button type="button" className={styles.sheetRow} onClick={() => setDurationOpen(true)}>
+          <span className={styles.sheetRowLabel}>
+            <ClockCircleOutline aria-hidden="true" /> مدت زمان
+          </span>
+          <span className={styles.sheetRowValue}>{formatDuration(durationMinutes) ?? 'انتخاب کنید (اختیاری)'}</span>
+        </button>
+
+        <AssigneePicker members={members} value={assigneeId} onChange={setAssigneeId} />
+
+        <Button block color="primary" size="large" loading={createAgenda.isPending} onClick={handleSubmit}>
+          ثبت دستور جلسه
+        </Button>
+      </div>
+
+      <DurationSheet
+        visible={durationOpen}
+        value={durationMinutes}
+        onClose={() => setDurationOpen(false)}
+        onConfirm={(minutes) => {
+          // Zero is how the wheel says "no duration after all" — stored as null
+          // rather than a nought, which would render as «۰ دقیقه».
+          setDurationMinutes(minutes > 0 ? minutes : null);
+          setDurationOpen(false);
+        }}
+      />
+    </Popup>
+  );
+}
+
+/**
+ * Recording a resolution — a sheet, not a route, because it belongs to the
+ * meeting on screen behind it.
+ *
+ * «سررسید» is the field that makes it a مصوبه rather than a note: it is picked
+ * on the same Jalali calendar the rest of the app uses, and it is what puts the
+ * resolution on the home dashboard on its day. The optional «دستور جلسه» above
+ * it links the commitment back to whichever item of the running order produced
+ * it — offered only when the meeting has a running order to point at.
+ */
+function DecisionSheet({
+  visible,
+  sessionId,
+  members,
+  agendas,
+  onClose,
+}: {
+  visible: boolean;
+  sessionId: string;
+  members: SessionMember[];
+  agendas: SessionAgenda[];
+  onClose: () => void;
+}) {
   const createDecision = useCreateDecision(sessionId);
   const { markers, dayCounts } = useAgendaCalendar();
 
   const [title, setTitle] = useState('');
+  const [description, setDescription] = useState('');
+  const [agendaId, setAgendaId] = useState<string | null>(null);
   const [dueAt, setDueAt] = useState<Date | null>(null);
   const [assigneeId, setAssigneeId] = useState<string | null>(null);
   const [dateOpen, setDateOpen] = useState(false);
+  const [agendaMenuOpen, setAgendaMenuOpen] = useState(false);
+
+  const selectedAgenda = agendas.find((agenda) => agenda.id === agendaId);
 
   function reset() {
     setTitle('');
+    setDescription('');
+    setAgendaId(null);
     setDueAt(null);
     setAssigneeId(null);
   }
@@ -275,14 +514,16 @@ function DecisionSheet({
       return;
     }
     if (!dueAt) {
-      Toast.show({ content: 'مهلت انجام را انتخاب کنید' });
+      Toast.show({ content: 'سررسید مصوبه را انتخاب کنید' });
       return;
     }
 
     try {
       await createDecision.mutateAsync({
         title: title.trim(),
+        description: description.trim() || undefined,
         dueAt: toLocalIso(dueAt),
+        agendaId: agendaId ?? undefined,
         assigneeId: assigneeId ?? undefined,
       });
       reset();
@@ -297,37 +538,54 @@ function DecisionSheet({
       <div className={styles.sheetBody}>
         <h2 className={styles.sheetTitle}>مصوبه‌ی تازه</h2>
 
-        <Input className={styles.sheetInput} placeholder="چه چیزی مصوب شد؟" value={title} onChange={setTitle} />
+        <Input className={styles.sheetInput} placeholder="عنوان" value={title} onChange={setTitle} />
+
+        <TextArea
+          className={styles.sheetInput}
+          placeholder="شرح (اختیاری)"
+          value={description}
+          onChange={setDescription}
+          autoSize={{ minRows: 1, maxRows: 5 }}
+        />
+
+        {agendas.length > 0 && (
+          <Popover.Menu
+            visible={agendaMenuOpen}
+            onVisibleChange={setAgendaMenuOpen}
+            trigger="click"
+            // antd-mobile's placements are physical, not logical — "start" is
+            // the left edge regardless of direction, which under dir="rtl"
+            // would put the menu on the opposite side from its trigger.
+            placement="bottom-end"
+            actions={[
+              { key: '', text: 'بدون دستور جلسه' },
+              ...agendas.map((agenda) => ({ key: agenda.id, text: agenda.title })),
+            ]}
+            onAction={(action) => {
+              setAgendaId(String(action.key) || null);
+              setAgendaMenuOpen(false);
+            }}
+          >
+            <button type="button" className={styles.sheetRow} aria-label="انتخاب دستور جلسه">
+              <span className={styles.sheetRowLabel}>
+                <UnorderedListOutline aria-hidden="true" /> دستور جلسه
+              </span>
+              <span className={styles.sheetRowValue}>
+                {selectedAgenda?.title ?? 'انتخاب کنید (اختیاری)'}
+                <DownOutline className={styles.sheetRowChevron} />
+              </span>
+            </button>
+          </Popover.Menu>
+        )}
 
         <button type="button" className={styles.sheetRow} onClick={() => setDateOpen(true)}>
-          <span className={styles.sheetRowLabel}>مهلت انجام</span>
-          <span className={styles.sheetRowValue}>{dueAt ? formatShortDate(dueAt) : 'انتخاب کنید'}</span>
+          <span className={styles.sheetRowLabel}>سررسید</span>
+          <span className={styles.sheetRowValue}>
+            {dueAt ? `${formatShortDate(dueAt)} ساعت ${formatTime(dueAt)}` : 'انتخاب کنید'}
+          </span>
         </button>
 
-        <div className={styles.assignees}>
-          <span className={styles.sheetRowLabel}>بر عهده‌ی</span>
-          <div className={styles.assigneeRail}>
-            {/* Nobody-in-particular is a real answer — a decision the whole room
-                owns shouldn't have to be pinned on someone to be recorded. */}
-            <button
-              type="button"
-              className={`${styles.assignee} ${assigneeId === null ? styles.assigneeActive : ''}`}
-              onClick={() => setAssigneeId(null)}
-            >
-              همه
-            </button>
-            {members.map((member) => (
-              <button
-                key={`${member.source}-${member.id}`}
-                type="button"
-                className={`${styles.assignee} ${assigneeId === member.id ? styles.assigneeActive : ''}`}
-                onClick={() => setAssigneeId(member.id)}
-              >
-                {member.displayName}
-              </button>
-            ))}
-          </div>
-        </div>
+        <AssigneePicker members={members} value={assigneeId} onChange={setAssigneeId} />
 
         <Button block color="primary" size="large" loading={createDecision.isPending} onClick={handleSubmit}>
           ثبت مصوبه
@@ -337,7 +595,7 @@ function DecisionSheet({
       <DateTimeSheet
         visible={dateOpen}
         value={dueAt}
-        title="مهلت مصوبه"
+        title="سررسید مصوبه"
         markers={markers}
         dayCounts={dayCounts}
         onClose={() => setDateOpen(false)}

@@ -1,11 +1,13 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { apiClient, getCollection } from '../../shared/api/client';
 import type {
+  CreateAgendaInput,
   CreateDecisionInput,
   CreateSessionInput,
   Decision,
   DecisionStatus,
   Session,
+  SessionAgenda,
   SessionDetail,
   SessionStatus,
 } from './types';
@@ -74,6 +76,22 @@ export function useUpdateSessionStatus(sessionId: string) {
       queryClient.invalidateQueries({ queryKey: meetingKeys.sessions });
       queryClient.invalidateQueries({ queryKey: meetingKeys.session(sessionId) });
     },
+  });
+}
+
+/**
+ * Adding to the meeting's running order — «دستور جلسه».
+ *
+ * Only the session query is invalidated: unlike a decision, an agenda item is
+ * never read outside the meeting it belongs to, so nothing else on screen can
+ * be holding a stale copy of it.
+ */
+export function useCreateAgenda(sessionId: string) {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (input: CreateAgendaInput) =>
+      apiClient.post<SessionAgenda>(`/sessions/${sessionId}/agendas`, input),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: meetingKeys.session(sessionId) }),
   });
 }
 

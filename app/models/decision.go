@@ -15,10 +15,15 @@ type Decision struct {
 	orm.Model
 	// Null when the meeting it came out of has since been deleted, or when a
 	// resolution is recorded outside a session.
-	SessionId  *uint  `gorm:"column:session_id"`
-	OwnerRefId string `gorm:"column:owner_ref_id"`
-	Title      string
-	DueAt      *carbon.DateTime `gorm:"column:due_at"`
+	SessionId *uint `gorm:"column:session_id"`
+	// Which «دستور جلسه» it came out of, when it came out of one — a room decides
+	// things nobody put on the running order. Null too once that item is deleted:
+	// the heading goes, the commitment stays.
+	AgendaId    *uint  `gorm:"column:agenda_id"`
+	OwnerRefId  string `gorm:"column:owner_ref_id"`
+	Title       string
+	Description *string
+	DueAt       *carbon.DateTime `gorm:"column:due_at"`
 	// Opaque picked-item reference plus its denormalized display name — the same
 	// bargain project_members makes, so nothing here joins against data WorkDesk
 	// doesn't own.

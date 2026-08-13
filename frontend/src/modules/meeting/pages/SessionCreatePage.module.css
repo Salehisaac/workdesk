@@ -122,50 +122,26 @@
   gap: 8px;
 }
 
-.rowAdd {
-  width: 32px;
-  height: 32px;
-  flex-shrink: 0;
-  border: none;
-  border-radius: 50%;
-  background: var(--rasagram-theme-bg-color);
-  color: var(--rasagram-theme-accent-text-color);
-  font-size: 18px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  cursor: pointer;
-}
-
+/* The whole chip is the button that reopens the calendar — the row always has
+   a time in it (it starts at «now»), so there is no add-or-remove state left
+   for a separate control to express. */
 .whenChip {
   display: inline-flex;
   align-items: center;
   gap: 10px;
-  padding: 5px 12px;
+  padding: 7px 14px;
+  border: none;
   border-radius: 999px;
   background: var(--rasagram-theme-bg-color);
+  font-family: inherit;
   font-size: 12.5px;
   color: var(--rasagram-theme-text-color);
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
 }
 
 .whenTime {
   color: var(--rasagram-theme-hint-color);
-}
-
-.chipRemove {
-  width: 20px;
-  height: 20px;
-  flex-shrink: 0;
-  border: none;
-  border-radius: 50%;
-  background: none;
-  color: inherit;
-  opacity: 0.7;
-  font-size: 13px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  cursor: pointer;
 }
 
 .note {

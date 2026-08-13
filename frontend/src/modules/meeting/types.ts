@@ -50,8 +50,43 @@ export interface SessionMember extends PickedItem {
   notifiedAt: string | null;
 }
 
+/**
+ * «دستور جلسه» — one line of the meeting's running order.
+ *
+ * The counterpart of a Decision, facing the other way. An agenda item is written
+ * before the meeting and is spent inside it, so what it carries is a duration —
+ * a slice of the session's own time. A مصوبه comes out of the meeting and
+ * reaches into somebody's calendar, so what it carries is a deadline. That is
+ * the whole difference between `durationMinutes` here and `dueAt` there.
+ *
+ * Note the name: `modules/agenda` is the home calendar («تقویم»), nothing to do
+ * with this. Inside the meeting module, "agenda" always means دستور جلسه.
+ */
+export interface SessionAgenda {
+  id: string;
+  sessionId: string;
+  title: string;
+  description: string | null;
+  /** How long it should take, in minutes. Null when nobody budgeted it. */
+  durationMinutes: number | null;
+  /** The «مسئول اجرایی» — one of the session's members, or nobody. */
+  assigneeId: string | null;
+  assigneeName: string | null;
+}
+
+export interface CreateAgendaInput {
+  title: string;
+  description?: string;
+  /** Minutes — the picker's hours and minutes, already summed. Omit for none. */
+  durationMinutes?: number;
+  /** A member of the session it's being added to, or omitted. */
+  assigneeId?: string;
+}
+
 export interface SessionDetail extends Session {
   members: SessionMember[];
+  /** In the order it was written — an agenda is a sequence, not a set. */
+  agendas: SessionAgenda[];
   decisions: Decision[];
 }
 
@@ -82,10 +117,14 @@ export const DECISION_STATUSES: DecisionStatus[] = ['open', 'done', 'canceled'];
 export interface Decision {
   id: string;
   title: string;
+  description: string | null;
   /** The session it was decided in, when it came out of one. */
   sessionId: string | null;
   sessionTitle: string | null;
-  /** ISO 8601 — the day it's due. This is what places it on the calendar. */
+  /** Which «دستور جلسه» produced it — null when it came out of none of them. */
+  agendaId: string | null;
+  agendaTitle: string | null;
+  /** ISO 8601 — the «سررسید». This is what places it on the calendar. */
   dueAt: string;
   /** Who owes it — one of the session's members, or nobody in particular. */
   assigneeId: string | null;
@@ -96,8 +135,11 @@ export interface Decision {
 
 export interface CreateDecisionInput {
   title: string;
+  description?: string;
   /** ISO 8601 carrying the device's offset — see toLocalIso. */
   dueAt: string;
+  /** An agenda item of the session it's being recorded in, or omitted. */
+  agendaId?: string;
   /** A member of the session it's being recorded in, or omitted. */
   assigneeId?: string;
 }

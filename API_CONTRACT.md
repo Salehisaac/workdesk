@@ -5,7 +5,7 @@ What the frontend (`frontend/`) actually calls. Ground truth for the exact shape
 TypeScript is authoritative.
 
 Covered here: **Project** (projects, lists, tags, jobs), **Note**, **Reminder**, and **Meeting repository**
-(sessions and decisions — see the «مخزن جلسه» section near the end).
+(sessions, their agendas and decisions — see the «مخزن جلسه» section near the end).
 
 ## JSON key casing — read this first
 
@@ -542,7 +542,8 @@ either way and the create screen reports how many of the invited were actually r
 
 ### `GET /api/v1/sessions/:id`
 
-`SessionDetail` — the session, its `members`, and its `decisions` (by due date), in one response.
+`SessionDetail` — the session, its `members`, its `agendas` (in the order they were written) and its
+`decisions` (by due date), in one response.
 403 for a non-member, which is what makes the deep link safe to hand out: a forged `startapp` buys a 403.
 
 ### `PATCH /api/v1/sessions/:id`
@@ -550,6 +551,39 @@ either way and the create screen reports how many of the invited were actually r
 `{ "status": "done" }` — **status only**. Title, time and place are what the invite message already told
 everyone; changing them here would leave every member holding a message that is now wrong. Any member may
 set it. Returns the `Session`.
+
+### `POST /api/v1/sessions/:id/agendas`
+
+A «دستور جلسه» — one line of the meeting's running order. Written on the session screen, alongside the
+مصوبات, and **only ever read back through `GET /sessions/:id`**: an agenda item outside its meeting is a
+sentence with no subject, unlike a resolution, which is owed whether or not its meeting is on screen.
+
+```json
+{ "title": "بررسی پیش‌نویس قرارداد", "description": "…", "durationMinutes": 90, "assigneeId": "101" }
+```
+
+- `durationMinutes` — how long the item is meant to take, **already summed** from the picker's hours and
+  minutes (1:30 → 90). Optional; `0` and absent both mean nobody budgeted it. Max 1439 (23:59), 422 above.
+  This is the field that makes an agenda item the mirror image of a decision: an item is spent *inside* the
+  meeting, so it carries a duration, while a resolution reaches past it and carries a `dueAt`.
+- `assigneeId` — the «مسئول اجرایی». Optional, and **must be a member of that session** (422 otherwise),
+  same reason a decision's must be: the display name is denormalized off the member row.
+
+Any member may add one — the meeting is the unit of authorization, exactly as it is for decisions.
+
+**Response 201** — the created `SessionAgenda`:
+
+```json
+{
+  "id": "4",
+  "sessionId": "3",
+  "title": "بررسی پیش‌نویس قرارداد",
+  "description": null,
+  "durationMinutes": 90,
+  "assigneeId": "101",
+  "assigneeName": "علی رضایی"
+}
+```
 
 ### `GET /api/v1/decisions`
 
@@ -561,8 +595,11 @@ not authorship: a resolution assigned to you in a meeting you attended is yours 
   {
     "id": "7",
     "title": "ارسال پیش‌نویس قرارداد",
+    "description": null,
     "sessionId": "3",
     "sessionTitle": "جلسه‌ی هفتگی محصول",
+    "agendaId": "4",
+    "agendaTitle": "بررسی پیش‌نویس قرارداد",
     "dueAt": "2026-08-24T00:00:00+03:30",
     "assigneeId": "101",
     "assigneeName": "علی رضایی",
@@ -573,12 +610,24 @@ not authorship: a resolution assigned to you in a meeting you attended is yours 
 
 - `status` — `open` | `done` | `canceled`.
 - `sessionId`/`assigneeId` are null when the meeting was deleted / nobody in particular owes it.
+- `agendaId`/`agendaTitle` are null when the room decided something nobody had put on the running order, and
+  become null again if that agenda item is deleted — the heading goes, the commitment stays.
 
 ### `POST /api/v1/sessions/:id/decisions`
 
-`{ "title": "...", "dueAt": "<RFC 3339>", "assigneeId": "101" }`. `assigneeId` is optional and **must be a
-member of that session** (422 otherwise) — the display name is denormalized off the member row, so an
-arbitrary id would store a name nothing could ever correct. Returns the created `Decision` (201).
+```json
+{ "title": "...", "description": "…", "dueAt": "<RFC 3339>", "agendaId": "4", "assigneeId": "101" }
+```
+
+- `dueAt` — the «سررسید», picked on the Jalali calendar. Required, and offset-carrying like every other
+  timestamp the client sends.
+- `agendaId` — which «دستور جلسه» produced it. Optional, and **must belong to that session** (422
+  otherwise): `agendaTitle` is denormalized on the wire, so pointing at another meeting's running order
+  would label the resolution with a heading nobody in this room ever saw.
+- `assigneeId` — optional and **must be a member of that session** (422 otherwise) — the display name is
+  denormalized off the member row, so an arbitrary id would store a name nothing could ever correct.
+
+Returns the created `Decision` (201).
 
 ### `PATCH /api/v1/decisions/:id`
 
@@ -605,3 +654,8 @@ may set it. Returns the `Decision`.
 - Re-sending a failed session invite. The session screen names who wasn't reached so it can be done by hand;
   a retry button would keep failing for exactly the same reason (they've never started the bot) until they
   do something the app can't make them do.
+- Editing, reordering or deleting a «دستور جلسه», and editing or deleting a «مصوبه» (a decision's `status`
+  is mutable, its text is not). Both are written on the session screen and read there; the schema is ready
+  for the rest (`decisions.agenda_id` is `NullOnDelete`) but no endpoint exposes it yet.
+- Attaching files to a session, an agenda item or a decision. The «فایل» rows on those screens are not
+  built — nothing in the meeting module uploads yet.

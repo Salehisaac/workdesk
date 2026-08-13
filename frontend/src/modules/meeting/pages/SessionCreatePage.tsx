@@ -1,8 +1,6 @@
 import { Button, Dialog, DotLoading, Input, Switch, Toast } from 'antd-mobile';
 import {
-  AddOutline,
   ClockCircleOutline,
-  CloseOutline,
   EnvironmentOutline,
   InformationCircleOutline,
   RightOutline,
@@ -42,7 +40,11 @@ export function SessionCreatePage() {
   const { markers, dayCounts } = useAgendaCalendar();
 
   const [title, setTitle] = useState('');
-  const [startsAt, setStartsAt] = useState<Date | null>(null);
+  // Now, seeded once on mount. A meeting is most often being written down as it
+  // is about to happen — or while it already is — so the empty state that made
+  // everyone pick today's date by hand was answering a question nobody had. It
+  // stays fully editable; tapping the chip reopens the calendar.
+  const [startsAt, setStartsAt] = useState<Date>(() => new Date());
   const [isOnline, setIsOnline] = useState(false);
   const [location, setLocation] = useState('');
   const [members, setMembers] = useState<PickedItem[]>([]);
@@ -55,10 +57,6 @@ export function SessionCreatePage() {
     const trimmed = title.trim();
     if (!trimmed) {
       Toast.show({ content: 'عنوان جلسه را وارد کنید' });
-      return;
-    }
-    if (!startsAt) {
-      Toast.show({ content: 'زمان جلسه را انتخاب کنید' });
       return;
     }
 
@@ -137,29 +135,18 @@ export function SessionCreatePage() {
             </span>
             <span className={styles.rowLabel}>زمان برگزاری</span>
             <div className={styles.rowValue}>
-              {startsAt ? (
-                <span className={styles.whenChip}>
-                  {formatShortDate(startsAt)}
-                  <span className={styles.whenTime}>{formatTime(startsAt)}</span>
-                  <button
-                    type="button"
-                    className={styles.chipRemove}
-                    onClick={() => setStartsAt(null)}
-                    aria-label="حذف زمان جلسه"
-                  >
-                    <CloseOutline />
-                  </button>
-                </span>
-              ) : (
-                <button
-                  type="button"
-                  className={styles.rowAdd}
-                  onClick={() => setSheetOpen(true)}
-                  aria-label="تعیین زمان جلسه"
-                >
-                  <AddOutline />
-                </button>
-              )}
+              {/* The chip is the control, not a removable token: a session
+                  always has a time, so there is nothing to clear — only
+                  another time to pick. */}
+              <button
+                type="button"
+                className={styles.whenChip}
+                onClick={() => setSheetOpen(true)}
+                aria-label="تغییر زمان جلسه"
+              >
+                {formatShortDate(startsAt)}
+                <span className={styles.whenTime}>{formatTime(startsAt)}</span>
+              </button>
             </div>
           </div>
 
