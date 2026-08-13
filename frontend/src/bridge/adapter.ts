@@ -25,6 +25,30 @@ function webApp(): any {
 const NO_INSETS: Insets = { top: 0, bottom: 0, left: 0, right: 0 };
 
 /**
+ * How long to wait for the client to answer `web_app_pick` before giving up.
+ *
+ * Generous on purpose: this clock covers the user actually browsing and
+ * choosing people in the native sheet, not just the client's round trip. The
+ * case it exists for is the opposite one — a client that never opens a sheet
+ * at all — where the whole window elapses with nothing on screen.
+ */
+const PICK_TIMEOUT_MS = 45_000;
+
+/**
+ * Fills in the two options the documented example always passes.
+ *
+ * Both are marked optional in the docs, and the SDK happily omits them from
+ * the payload when they are absent — but the native side is what actually
+ * parses that payload, and a required-field read there (`getString("title")`
+ * and friends) would throw on a key that isn't present, which from the
+ * webview looks exactly like the client ignoring the event. Cheap enough to
+ * always send that it isn't worth leaving as a variable.
+ */
+function pickPayload(options: PickOptions): PickOptions {
+  return { maxSelection: 10, title: 'انتخاب مخاطب', ...options };
+}
+
+/**
  * The SDK exposes safeAreaInset / contentSafeAreaInset as plain objects it
  * fills in from client events, so before the client has answered (or on a
  * client that never does) the fields can be missing entirely — not just zero.
@@ -139,8 +163,63 @@ export const adapterBridge: Bridge = {
     },
   },
   // -- confirmed --
+  /**
+   * The native multi-source picker.
+   *
+   * Wrapped rather than passed straight through, because the SDK's own pick()
+   * settles in exactly one place — its `pick_result` handler, matched by the
+   * `req_id` it generated — and does nothing else. A client that ignores
+   * `web_app_pick`, or answers it with a req_id that doesn't match, leaves
+   * that promise pending forever; the caller's catch never runs and the user
+   * sees the button do literally nothing. Both holes are closed here:
+   *
+   *  - a raw `pickResult` listener, which the SDK fires on every reply
+   *    regardless of req_id, so a mismatched answer still delivers the choice
+   *  - a timeout, so "the client never answered" surfaces as an error the
+   *    caller can show instead of a silent hang
+   */
   async pick(options: PickOptions): Promise<PickedItem[]> {
-    return webApp().pick(options);
+    const wa = webApp();
+    if (typeof wa.pick !== 'function') {
+      throw new Error('این نسخه‌ی رساگرام انتخاب مخاطب را ندارد (pick تعریف نشده است).');
+    }
+
+    return new Promise<PickedItem[]>((resolve, reject) => {
+      let settled = false;
+      let timer = 0;
+      let stopWatching = () => {};
+
+      function finish(action: () => void) {
+        if (settled) return;
+        settled = true;
+        window.clearTimeout(timer);
+        stopWatching();
+        action();
+      }
+
+      // Registered BEFORE the event goes out — a client that answers
+      // synchronously would otherwise beat the listener into place.
+      stopWatching = adapterBridge.onEvent('pickResult', (payload: any) => {
+        finish(() => resolve(payload?.status === 'picked' ? payload?.items ?? [] : []));
+      });
+
+      timer = window.setTimeout(() => {
+        finish(() =>
+          reject(
+            new Error(
+              'رساگرام به درخواست انتخاب مخاطب پاسخی نداد. ' +
+                'رویداد web_app_pick ارسال شد ولی pick_result برنگشت — ' +
+                'یعنی این نسخه‌ی کلاینت این قابلیت را پیاده‌سازی نکرده است.',
+            ),
+          ),
+        );
+      }, PICK_TIMEOUT_MS);
+
+      wa.pick(pickPayload(options)).then(
+        (items: PickedItem[]) => finish(() => resolve(items ?? [])),
+        (err: unknown) => finish(() => reject(err instanceof Error ? err : new Error(String(err)))),
+      );
+    });
   },
   openContactPicker(): Promise<DeviceContact | null> {
     return new Promise((resolve) => {

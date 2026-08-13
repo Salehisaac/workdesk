@@ -1,6 +1,6 @@
 import { Dialog } from 'antd-mobile';
 import { AddOutline, CloseOutline } from 'antd-mobile-icons';
-import type { CSSProperties } from 'react';
+import { useState, type CSSProperties } from 'react';
 import { bridge } from '../../../bridge';
 import type { PickedItem } from '../../../bridge/types';
 import { monogramGradient, monogramInitial, paletteForSeed } from '../../brand/monogram';
@@ -53,7 +53,15 @@ const SAMPLE_USER: PickedItem = {
  * people to a group, a session messages each of them a link.
  */
 export function PeoplePicker({ members, ownerName, onChange, title, ownerRoleLabel, hint }: PeoplePickerProps) {
+  // Whether the client is holding an unanswered pick request. Tracked only so
+  // the button can say so: bridge.pick() now waits up to 45s for a reply, and
+  // a button that looks tappable but does nothing for that long reads as a
+  // broken app rather than as a client that isn't answering.
+  const [picking, setPicking] = useState(false);
+
   async function handlePick() {
+    if (picking) return;
+    setPicking(true);
     // Confirmed API — plan section 4. The picker UI is entirely native; we
     // only ever receive what the user chose to share.
     try {
@@ -73,6 +81,8 @@ export function PeoplePicker({ members, ownerName, onChange, title, ownerRoleLab
         title: 'انتخاب مخاطب با خطا مواجه شد',
         content: error instanceof Error ? error.message : String(error),
       });
+    } finally {
+      setPicking(false);
     }
   }
 
@@ -91,11 +101,11 @@ export function PeoplePicker({ members, ownerName, onChange, title, ownerRoleLab
       </div>
 
       <div className={styles.rail}>
-        <button type="button" className={styles.add} onClick={handlePick}>
+        <button type="button" className={styles.add} onClick={handlePick} disabled={picking}>
           <span className={styles.addIcon} aria-hidden="true">
             <AddOutline />
           </span>
-          <span className={styles.addLabel}>افزودن</span>
+          <span className={styles.addLabel}>{picking ? 'در انتظار رساگرام…' : 'افزودن'}</span>
         </button>
 
         <div className={styles.chip}>

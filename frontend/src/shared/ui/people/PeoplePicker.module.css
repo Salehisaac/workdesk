@@ -47,6 +47,14 @@
   -webkit-tap-highlight-color: transparent;
 }
 
+/* While the client has the request and hasn't answered. On a client that
+   opens the picker this is hidden behind the native sheet; it is on screen
+   only in the case it exists for — one that never opens anything. */
+.add:disabled {
+  opacity: 0.55;
+  cursor: default;
+}
+
 .addIcon {
   display: flex;
   font-size: 18px;
