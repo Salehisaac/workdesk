@@ -1,0 +1,187 @@
+.card {
+  position: relative;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+  padding: 22px 18px 18px;
+  border-radius: 24px;
+  background: var(--rasagram-theme-secondary-bg-color);
+  box-shadow: var(--rasagram-card-shadow);
+}
+
+/* The chosen palette, bled across the top of the card and faded out — the card
+   itself wears the colour being picked, so the swatch row below is previewing
+   the whole identity and not just a dot. */
+.wash {
+  position: absolute;
+  inset: 0 0 auto;
+  height: 120px;
+  background: linear-gradient(160deg, var(--from) 0%, var(--to) 100%);
+  opacity: 0.16;
+  -webkit-mask-image: linear-gradient(to bottom, #000 0%, transparent 100%);
+  mask-image: linear-gradient(to bottom, #000 0%, transparent 100%);
+  transition: background 0.25s ease;
+  pointer-events: none;
+}
+
+.avatar {
+  position: relative;
+  width: 88px;
+  height: 88px;
+  border-radius: 28px;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+  box-shadow: 0 14px 30px -16px rgba(15, 23, 31, 0.55);
+}
+
+.fileInput {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  opacity: 0;
+  pointer-events: none;
+}
+
+.photo,
+.monogram {
+  width: 100%;
+  height: 100%;
+  border-radius: inherit;
+  display: block;
+  object-fit: cover;
+}
+
+.monogram {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 38px;
+  font-weight: 700;
+  color: #ffffff;
+  /* Matches renderMonogramFile's sheen, so the preview and the PNG that
+     actually gets uploaded are the same picture. */
+  box-shadow: inset 0 18px 40px -18px rgba(255, 255, 255, 0.55);
+  transition: background 0.25s ease;
+}
+
+.avatarBadge {
+  position: absolute;
+  bottom: -4px;
+  inset-inline-end: -4px;
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 14px;
+  color: var(--rasagram-theme-text-color);
+  background: var(--rasagram-theme-bg-color);
+  border: 2px solid var(--rasagram-theme-secondary-bg-color);
+}
+
+.avatarBusy {
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(15, 23, 31, 0.45);
+}
+
+.srOnly {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+}
+
+/* A title, not a field: no box, no underline, centred under the picture. The
+   underlined-input-beside-a-circle row is the messenger group-creation
+   convention this screen deliberately no longer follows. */
+.nameInput {
+  width: 100%;
+  border: none;
+  background: none;
+  padding: 2px 0;
+  text-align: center;
+  font-size: 19px;
+  font-weight: 700;
+  color: var(--rasagram-theme-text-color);
+  outline: none;
+}
+
+.nameInput::placeholder {
+  font-weight: 600;
+  color: var(--rasagram-theme-hint-color);
+}
+
+.nameInputInvalid::placeholder {
+  color: var(--rasagram-theme-destructive-text-color);
+}
+
+.error {
+  font-size: 12px;
+  color: var(--rasagram-theme-destructive-text-color);
+}
+
+.palette {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.swatch {
+  width: 26px;
+  height: 26px;
+  padding: 0;
+  border: none;
+  border-radius: 50%;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+  /* The selected ring is drawn with box-shadow rather than a border so the
+     swatch's own size never changes when selection moves. */
+  box-shadow: 0 0 0 0 var(--rasagram-theme-bg-color), 0 0 0 0 var(--rasagram-theme-text-color);
+  transition: box-shadow 0.18s ease, transform 0.18s ease;
+}
+
+.swatch[data-selected] {
+  transform: scale(1.12);
+  box-shadow: 0 0 0 2px var(--rasagram-theme-secondary-bg-color), 0 0 0 4px var(--rasagram-theme-text-color);
+}
+
+.clearPhoto {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 6px 12px;
+  border: none;
+  border-radius: 999px;
+  background: var(--rasagram-theme-bg-color);
+  font-family: inherit;
+  font-size: 12.5px;
+  color: var(--rasagram-theme-subtitle-text-color);
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.caption {
+  margin: 0;
+  text-align: center;
+  font-size: 11.5px;
+  line-height: 1.7;
+  color: var(--rasagram-theme-hint-color);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .wash,
+  .monogram,
+  .swatch {
+    transition: none;
+  }
+}

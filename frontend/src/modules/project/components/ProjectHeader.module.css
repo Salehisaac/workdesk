@@ -71,9 +71,10 @@
   color: var(--rasagram-theme-hint-color);
 }
 
-/* Icon-only, and the one control on the bar that can be: ⓘ is about the only
-   glyph that carries its whole meaning without a word beside it. Quieter than
-   «گزارش» on purpose — it's the thing you press once, not every visit. */
+/* Icon-only, and the one control on the bar that can be: a question mark is
+   about the only glyph that carries its whole meaning without a word beside
+   it. Quieter than «گزارش» on purpose — it's the thing you press once, not
+   every visit. */
 .info {
   flex-shrink: 0;
   width: 34px;

@@ -359,6 +359,52 @@ project reads as **404**, not 403: it does not exist as far as this caller is co
 
 ---
 
+## `GET /api/v1/notes` and `POST /api/v1/notes`
+
+Notes are personal, like reminders: no project owns them, and the caller only ever sees their own. `GET`
+returns every one of the caller's notes, newest first — flat rather than per-day, for the same reason
+`GET /jobs` is flat.
+
+**Response 200** — `Note[]`:
+
+```json
+[
+  {
+    "id": "5", "title": "جمع‌بندی تماس با کارفرما",
+    "excerpt": "قرار شد نسخه‌ی اول تا آخر هفته تحویل شود…",
+    "projectId": "3", "projectName": "بازطراحی اپلیکیشن",
+    "createdAt": "2026-08-13T18:10:00Z"
+  }
+]
+```
+
+- `excerpt` — the body flattened to one line and cut at 120 **characters** (the card never renders the whole
+  note). Null when the note has no body.
+- `createdAt` **is** the note's day. There is no separate date field, because there is no way to write a note
+  for any day but the one you're on — see below.
+
+**Request** (`POST`):
+
+```json
+{ "title": "جمع‌بندی تماس با کارفرما", "body": "…", "projectId": "3", "date": "2026-08-13T21:40:00+03:30" }
+```
+
+- **`date` must be today, or 422** (`a note can only be created for the current day`). It's compared in the
+  offset the client sent, not a server zone — a calendar day is whatever the writer's own wall clock calls
+  it, and comparing Gregorian y/m/d is the same test as comparing the Jalali day they see, since both roll
+  over at the same local midnight. Omitting `date` is allowed and means "no claim about the day".
+- Nothing is ever backdated regardless: `date` is checked and thrown away, and the stored day is `created_at`
+  from the insert. The check exists so a client whose clock has drifted, or a form left open past midnight,
+  is *told* rather than having its note filed under a day the user wasn't looking at.
+- `body` and `projectId` are optional. A `projectId` the caller isn't a member of is **422** — it's a field of
+  the note, not the resource being addressed, so it doesn't read as 403.
+- Notes are create-only in v1: no edit, no delete, and no screen of their own. A note shows up on its day in
+  the home dashboard's «یادداشت‌ها» section and nowhere else.
+
+**Response 201** — the created `Note`.
+
+---
+
 ## `GET /api/v1/topic-icons`
 
 Proxies the Bot API's `getForumTopicIconStickers` (`POST /bot<token>/getForumTopicIconStickers`, no params) —

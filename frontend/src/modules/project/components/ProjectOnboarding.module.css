@@ -6,93 +6,181 @@
 
 .body {
   flex: 1;
-  padding: 24px 16px 8px;
+  padding: 8px 20px 8px;
   overflow-y: auto;
+  max-width: 560px;
+  width: 100%;
+  margin-inline: auto;
 }
 
-.illustration {
+.hero {
   display: flex;
-  justify-content: center;
-  margin-bottom: 20px;
+  flex-direction: column;
+  align-items: center;
+  padding: 12px 0 28px;
 }
 
-.illustrationCircle {
-  width: 88px;
-  height: 88px;
-  border-radius: 50%;
-  background: var(--rasagram-theme-secondary-bg-color);
+/* The product's own mark, tinted with the accent and set on a soft wash of it —
+   the previous flame-in-a-grey-circle was a stock icon standing in for a brand
+   that already exists in public/brand. */
+.mark {
+  width: 84px;
+  height: 84px;
+  border-radius: 26px;
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 40px;
+  font-size: 46px;
   color: var(--rasagram-theme-accent-text-color);
+  background: color-mix(in srgb, var(--rasagram-theme-button-color) 12%, transparent);
+  box-shadow: 0 12px 30px -18px color-mix(in srgb, var(--rasagram-theme-button-color) 90%, transparent);
 }
 
 .title {
-  text-align: center;
-  font-size: 20px;
+  margin: 18px 0 6px;
+  font-size: 22px;
   font-weight: 700;
-  margin-bottom: 8px;
+  color: var(--rasagram-theme-text-color);
 }
 
 .subtitle {
-  text-align: center;
-  font-size: 13px;
+  margin: 0;
+  font-size: 13.5px;
   color: var(--rasagram-theme-hint-color);
-  margin-bottom: 24px;
 }
 
-.items {
+.steps {
+  list-style: none;
+  margin: 0;
+  padding: 0;
   display: flex;
   flex-direction: column;
 }
 
-.item {
+.step {
   display: flex;
-  align-items: center;
-  gap: 12px;
-  padding: 12px 0;
-  border-bottom: 1px solid var(--rasagram-theme-secondary-bg-color);
-  cursor: pointer;
-  background: none;
-  border-inline: none;
-  border-top: none;
-  text-align: start;
-  width: 100%;
-  font-family: inherit;
+  align-items: flex-start;
+  gap: 14px;
+  padding-bottom: 22px;
 }
 
-.item:last-child {
-  border-bottom: none;
+.step:last-child {
+  padding-bottom: 0;
 }
 
-.itemIcon {
+/* The rail: a line dropped from each marker to the next, so the three read as
+   one sequence rather than three unrelated rows. Drawn on the marker itself so
+   it can't outlive the last step. */
+.stepMarker {
+  position: relative;
   flex-shrink: 0;
-  width: 36px;
-  height: 36px;
-  border-radius: 50%;
+  width: 42px;
+  height: 42px;
+  border-radius: 15px;
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 18px;
+  font-size: 20px;
+  color: var(--rasagram-theme-accent-text-color);
+  background: var(--rasagram-theme-secondary-bg-color);
 }
 
-.itemText {
+.step:not(:last-child) .stepMarker::after {
+  content: '';
+  position: absolute;
+  top: 100%;
+  inset-inline-start: calc(50% - 1px);
+  width: 2px;
+  height: 22px;
+  background: linear-gradient(
+    to bottom,
+    var(--rasagram-theme-secondary-bg-color),
+    color-mix(in srgb, var(--rasagram-theme-secondary-bg-color) 30%, transparent)
+  );
+}
+
+.stepIcon {
+  display: flex;
+}
+
+.stepNumber {
+  position: absolute;
+  top: -5px;
+  inset-inline-end: -5px;
+  width: 19px;
+  height: 19px;
+  border-radius: 50%;
+  background: var(--rasagram-theme-button-color);
+  color: var(--rasagram-theme-button-text-color);
+  font-size: 11px;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 2px solid var(--rasagram-theme-bg-color);
+  box-sizing: content-box;
+}
+
+.stepText {
   flex: 1;
+  min-width: 0;
+  padding-top: 3px;
 }
 
-.itemTitle {
-  font-size: 14px;
-  font-weight: 600;
+.stepTitle {
+  margin: 0 0 4px;
+  font-size: 14.5px;
+  font-weight: 700;
+  color: var(--rasagram-theme-text-color);
 }
 
-.itemDescription {
-  font-size: 12px;
-  color: var(--rasagram-theme-hint-color);
-  margin-top: 2px;
+.stepBody {
+  margin: 0;
+  font-size: 12.5px;
+  line-height: 1.85;
+  color: var(--rasagram-theme-subtitle-text-color);
+}
+
+.note {
+  margin: 26px 0 0;
+  padding: 13px 14px;
+  border-radius: 16px;
+  /* Start-edge rule rather than a full border: it flags the paragraph as an
+     aside without turning it into another card competing with the steps. */
+  border-inline-start: 3px solid color-mix(in srgb, var(--rasagram-theme-button-color) 55%, transparent);
+  background: var(--rasagram-theme-secondary-bg-color);
+  font-size: 12.5px;
+  line-height: 1.9;
+  color: var(--rasagram-theme-subtitle-text-color);
+}
+
+.note b {
+  color: var(--rasagram-theme-text-color);
+  font-weight: 700;
 }
 
 .footer {
-  padding: 12px 16px calc(12px + var(--wd-safe-bottom));
-  border-top: 1px solid var(--rasagram-theme-secondary-bg-color);
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 4px;
+  padding: 12px 16px calc(8px + var(--wd-safe-bottom));
+  max-width: 560px;
+  width: 100%;
+  margin-inline: auto;
+}
+
+.guideLink {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 10px;
+  border: none;
+  background: none;
+  font-family: inherit;
+  font-size: 13px;
+  color: var(--rasagram-theme-link-color);
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
 }

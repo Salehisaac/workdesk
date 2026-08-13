@@ -1,9 +1,9 @@
-import { ExclamationCircleOutline, InformationCircleOutline, LeftOutline, PieOutline } from 'antd-mobile-icons';
+import { ExclamationCircleOutline, LeftOutline, PieOutline, QuestionCircleOutline } from 'antd-mobile-icons';
 import { useState } from 'react';
 import { toPersianDigits } from '../../../shared/date/jalali';
 import type { ReportStats } from '../report';
 import type { ProjectDetail } from '../types';
-import { ProjectInfoSheet } from './ProjectInfoSheet';
+import { ProjectsGuideSheet } from './ProjectsGuideSheet';
 import styles from './ProjectHeader.module.css';
 
 interface ProjectHeaderProps {
@@ -24,13 +24,14 @@ interface ProjectHeaderProps {
  * the state of the project is worth a glance every time you open it, and it's
  * what makes the button next to it something you'd think to press.
  *
- * «درباره» is the icon and «گزارش» the labelled pill, not the other way round:
- * a chart glyph alone doesn't read as "progress", whereas ⓘ is about the only
+ * «راهنما» is the icon and «گزارش» the labelled pill, not the other way round:
+ * a chart glyph alone doesn't read as "progress", whereas ? is about the only
  * icon that needs no label at all — and only one of the two can carry words
- * before the project's name starts getting squeezed.
+ * before the project's name starts getting squeezed. The guide it opens is
+ * about the *service*, not this project, so it takes nothing from here.
  */
 export function ProjectHeader({ project, stats, onBack, onOpenReport }: ProjectHeaderProps) {
-  const [infoOpen, setInfoOpen] = useState(false);
+  const [guideOpen, setGuideOpen] = useState(false);
   const showProgress = !!stats && stats.total > 0;
 
   return (
@@ -56,14 +57,15 @@ export function ProjectHeader({ project, stats, onBack, onOpenReport }: ProjectH
           </span>
         </span>
 
+        {/* Not disabled while the project loads, unlike the other two: the guide
+            explains the service and needs no project to be ready. */}
         <button
           type="button"
           className={styles.info}
-          onClick={() => setInfoOpen(true)}
-          disabled={!project}
-          aria-label="درباره و راهنمای پروژه"
+          onClick={() => setGuideOpen(true)}
+          aria-label="راهنمای پروژه‌ها"
         >
-          <InformationCircleOutline />
+          <QuestionCircleOutline />
         </button>
 
         <button
@@ -101,17 +103,9 @@ export function ProjectHeader({ project, stats, onBack, onOpenReport }: ProjectH
         </div>
       )}
 
-      {/* Mounted only once opened: the sheet carries the whole guide, and none
-          of that needs to be in the tree behind a board the user is working on. */}
-      {project && infoOpen && (
-        <ProjectInfoSheet
-          visible={infoOpen}
-          project={project}
-          stats={stats}
-          onClose={() => setInfoOpen(false)}
-          onOpenReport={onOpenReport}
-        />
-      )}
+      {/* Mounted only once opened: it's a screenful of guide text, and none of
+          it needs to be in the tree behind a board the user is working on. */}
+      {guideOpen && <ProjectsGuideSheet visible={guideOpen} onClose={() => setGuideOpen(false)} />}
     </header>
   );
 }

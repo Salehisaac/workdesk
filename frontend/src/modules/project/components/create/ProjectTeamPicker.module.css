@@ -1,0 +1,140 @@
+.section {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 8px;
+  padding-inline: 2px;
+}
+
+.title {
+  margin: 0;
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--rasagram-theme-text-color);
+}
+
+.count {
+  font-size: 12px;
+  color: var(--rasagram-theme-hint-color);
+}
+
+/* Wraps instead of scrolling horizontally: a member who has fallen off the end
+   of a scroller is a member nobody checks before creating a group with them
+   in it. */
+.rail {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.add {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 14px 8px 12px;
+  border: 1px dashed color-mix(in srgb, var(--rasagram-theme-button-color) 45%, transparent);
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--rasagram-theme-button-color) 8%, transparent);
+  font-family: inherit;
+  color: var(--rasagram-theme-accent-text-color);
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.addIcon {
+  display: flex;
+  font-size: 18px;
+}
+
+.addLabel {
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.chip {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 12px 6px 6px;
+  border-radius: 999px;
+  background: var(--rasagram-theme-secondary-bg-color);
+  max-width: 100%;
+}
+
+.chipAvatar {
+  flex-shrink: 0;
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 13px;
+  font-weight: 700;
+  color: #ffffff;
+}
+
+.chipName {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--rasagram-theme-text-color);
+  max-width: 140px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.chipRole {
+  font-size: 11px;
+  color: var(--rasagram-theme-hint-color);
+  max-width: 110px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.chipRemove {
+  flex-shrink: 0;
+  width: 22px;
+  height: 22px;
+  border: none;
+  border-radius: 50%;
+  background: color-mix(in srgb, var(--rasagram-theme-hint-color) 18%, transparent);
+  color: var(--rasagram-theme-subtitle-text-color);
+  font-size: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.hint {
+  margin: 2px 0 0;
+  padding-inline: 2px;
+  font-size: 11.5px;
+  line-height: 1.8;
+  color: var(--rasagram-theme-hint-color);
+}
+
+/* A dev bypass, dressed as one: it used to be a full-width outlined button
+   sitting level with «انتخاب مخاطب», which reads as a product feature. */
+.sampleUser {
+  align-self: flex-start;
+  padding: 4px 2px;
+  border: none;
+  background: none;
+  font-family: inherit;
+  font-size: 11.5px;
+  color: var(--rasagram-theme-link-color);
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}

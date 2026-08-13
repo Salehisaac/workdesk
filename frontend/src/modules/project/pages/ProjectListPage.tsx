@@ -1,14 +1,17 @@
 import { Avatar, Button, DotLoading, NavBar } from 'antd-mobile';
-import { LeftOutline, TeamOutline } from 'antd-mobile-icons';
+import { LeftOutline, QuestionCircleOutline, TeamOutline } from 'antd-mobile-icons';
+import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { EmptyState } from '../../../shared/ui/EmptyState';
 import { useProjects } from '../api';
 import { ProjectOnboarding } from '../components/ProjectOnboarding';
+import { ProjectsGuideSheet } from '../components/ProjectsGuideSheet';
 import styles from './ProjectListPage.module.css';
 
 export function ProjectListPage() {
   const navigate = useNavigate();
   const { data: projects, isLoading, isError } = useProjects();
+  const [guideOpen, setGuideOpen] = useState(false);
 
   // No projects yet → the onboarding/"getting started" screen is the landing
   // page (matches the reference screenshots' first screen). Once the user has
@@ -19,7 +22,24 @@ export function ProjectListPage() {
 
   return (
     <div className={styles.page}>
-      <NavBar onBack={() => navigate('/')}>پروژه‌ها</NavBar>
+      {/* The service's front door is where someone who doesn't yet know what a
+          project *is* actually stands, so the guide has to be reachable from
+          here and not only from inside a board they haven't opened. */}
+      <NavBar
+        onBack={() => navigate('/')}
+        right={
+          <button
+            type="button"
+            className={styles.guideButton}
+            onClick={() => setGuideOpen(true)}
+            aria-label="راهنمای پروژه‌ها"
+          >
+            <QuestionCircleOutline />
+          </button>
+        }
+      >
+        پروژه‌ها
+      </NavBar>
 
       <div className={styles.body}>
         {isLoading && (
@@ -64,6 +84,8 @@ export function ProjectListPage() {
           پروژه جدید
         </Button>
       </div>
+
+      {guideOpen && <ProjectsGuideSheet visible={guideOpen} onClose={() => setGuideOpen(false)} />}
     </div>
   );
 }

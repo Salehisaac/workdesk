@@ -77,3 +77,18 @@
   color: var(--rasagram-theme-hint-color);
   font-size: 16px;
 }
+
+.guideButton {
+  width: 34px;
+  height: 34px;
+  border: none;
+  border-radius: 12px;
+  background: color-mix(in srgb, var(--rasagram-theme-hint-color) 12%, transparent);
+  color: var(--rasagram-theme-subtitle-text-color);
+  font-size: 18px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}

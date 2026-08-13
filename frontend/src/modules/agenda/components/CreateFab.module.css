@@ -1,6 +1,6 @@
 /* Fixed, so it survives scrolling. Placed on the inline-end side, which under
-   <html dir="rtl"> is the bottom-left corner — the reference's position, and
-   the thumb-reachable corner in an RTL layout. */
+   <html dir="rtl"> is the bottom-left corner — the thumb-reachable corner in an
+   RTL layout. */
 .fab {
   position: fixed;
   inset-inline-end: 16px;
@@ -12,17 +12,30 @@
   width: 56px;
   height: 56px;
   border: none;
-  border-radius: 18px;
-  background: var(--rasagram-theme-button-color);
-  color: var(--rasagram-theme-button-text-color);
+  /* Squircle rather than a circle — the app's cards, tool tiles and avatars are
+     all soft-cornered squares, and the create button is the loudest element on
+     the home screen to leave in a different shape language. */
+  border-radius: 20px;
+  background: var(--rasagram-hero-gradient);
+  color: #ffffff;
   font-size: 26px;
   display: flex;
   align-items: center;
   justify-content: center;
   cursor: pointer;
-  box-shadow: 0 6px 20px rgba(15, 23, 31, 0.22);
-  transition: transform 0.16s ease;
+  box-shadow: 0 10px 24px -8px color-mix(in srgb, var(--rasagram-theme-button-color) 65%, transparent);
+  transition: transform 0.22s cubic-bezier(0.34, 1.3, 0.64, 1);
   -webkit-tap-highlight-color: transparent;
+}
+
+.fab > * {
+  transition: transform 0.22s cubic-bezier(0.34, 1.3, 0.64, 1);
+}
+
+/* The plus turns into the × that closes the sheet, so the button reads as the
+   sheet's own control rather than something the sheet covered up. */
+.fab[data-open] > * {
+  transform: rotate(45deg);
 }
 
 .fab:active {
@@ -34,92 +47,153 @@
   outline-offset: 3px;
 }
 
+/* The sheet floats clear of the screen edges instead of being welded to the
+   bottom: it is a menu, not a page, and the gap keeps the app visible behind it
+   as the thing being added to. Popup's own body is transparent (set in the
+   component) so these corners are the ones that show. */
 .sheet {
+  margin: 0 8px calc(8px + var(--wd-safe-bottom));
+  padding: 8px 14px 16px;
+  border-radius: 24px;
+  background: var(--rasagram-theme-bg-color);
+  box-shadow: 0 -8px 40px -12px rgba(15, 23, 31, 0.35);
   display: flex;
   flex-direction: column;
-  padding: 8px 0 0;
-  /* No cancel row to sit on any more, so the sheet owes the home indicator its
-     own clearance. */
-  padding-bottom: calc(8px + var(--wd-safe-bottom));
-  background: var(--rasagram-theme-bg-color);
-}
-
-.sheetHandle {
-  align-self: center;
-  width: 40px;
-  height: 4px;
-  margin-bottom: 8px;
-  border-radius: 999px;
-  background: var(--rasagram-theme-secondary-bg-color);
-  border: 1px solid var(--rasagram-theme-hint-color);
-  border-color: color-mix(in srgb, var(--rasagram-theme-hint-color) 35%, transparent);
-}
-
-.option {
-  display: flex;
-  align-items: center;
   gap: 12px;
-  width: 100%;
-  padding: 12px 16px;
-  border: none;
-  background: none;
+}
+
+.handle {
+  align-self: center;
+  width: 38px;
+  height: 4px;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--rasagram-theme-hint-color) 40%, transparent);
+}
+
+.title {
+  margin: 0;
+  padding-inline: 2px;
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--rasagram-theme-text-color);
+}
+
+.cards {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 10px;
+}
+
+@keyframes cardReveal {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.card {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 6px;
+  padding: 14px 12px;
+  border: 1px solid color-mix(in srgb, var(--tone) 22%, transparent);
+  border-radius: 18px;
+  /* A wash of the module's own tone, not a grey card — the colour is what tells
+     the six tools apart before any label is read. */
+  background: color-mix(in srgb, var(--tone) 8%, var(--rasagram-theme-bg-color));
   font-family: inherit;
   text-align: start;
   cursor: pointer;
   -webkit-tap-highlight-color: transparent;
+  animation: cardReveal 0.26s ease both;
+  animation-delay: calc(var(--card-index, 0) * 50ms);
 }
 
-.option + .option {
-  /* Hairline separators, inset past the icon like the rest of the app's lists. */
-  box-shadow: inset 0 1px 0 var(--rasagram-theme-secondary-bg-color);
+.card:active {
+  background: color-mix(in srgb, var(--tone) 16%, var(--rasagram-theme-bg-color));
 }
 
-.option:active {
-  background: var(--rasagram-theme-secondary-bg-color);
-}
-
-.optionIcon {
-  width: 36px;
-  height: 36px;
-  flex-shrink: 0;
-  border-radius: 12px;
+.cardIcon {
+  width: 38px;
+  height: 38px;
+  border-radius: 13px;
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 18px;
-  color: var(--rasagram-theme-accent-text-color);
-  background: var(--rasagram-theme-secondary-bg-color);
+  font-size: 20px;
+  color: #ffffff;
+  background: var(--tone);
 }
 
-.optionText {
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
-  min-width: 0;
-}
-
-.optionLabel {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  font-size: 14px;
-  font-weight: 600;
+.cardLabel {
+  font-size: 14.5px;
+  font-weight: 700;
   color: var(--rasagram-theme-text-color);
 }
 
-.optionLock {
-  display: inline-flex;
+.cardAction {
   font-size: 12px;
+  line-height: 1.6;
+  color: var(--rasagram-theme-subtitle-text-color);
+}
+
+/* Declared-but-unbuilt modules: named, tinted, and plainly not buttons. */
+/* Label above the chips rather than beside them: once the chips wrap to a
+   second line, a side label ends up floating against the middle of the block
+   with a ragged gap next to it. */
+.planned {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 8px;
+  padding-top: 12px;
+  border-top: 1px solid var(--rasagram-theme-secondary-bg-color);
+}
+
+.plannedLabel {
+  font-size: 11.5px;
+  font-weight: 700;
   color: var(--rasagram-theme-hint-color);
 }
 
-.optionDescription {
-  font-size: 12px;
-  color: var(--rasagram-theme-hint-color);
+/* min-width:0 so the chips wrap inside the row instead of overflowing it: a
+   flex item's default min-width is auto, which lets this one grow past the
+   sheet's edge and clip the last label. */
+.plannedItems {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.plannedItem {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 4px 9px;
+  border-radius: 999px;
+  background: var(--rasagram-theme-secondary-bg-color);
+  font-size: 11.5px;
+  color: var(--rasagram-theme-subtitle-text-color);
+}
+
+.plannedIcon {
+  display: inline-flex;
+  font-size: 13px;
+  color: color-mix(in srgb, var(--tone) 70%, var(--rasagram-theme-hint-color));
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .fab {
+  .fab,
+  .fab > *,
+  .card {
     transition: none;
+    animation: none;
   }
 }

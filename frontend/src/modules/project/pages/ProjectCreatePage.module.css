@@ -2,22 +2,132 @@
   display: flex;
   flex-direction: column;
   min-height: 100vh;
+  background: var(--rasagram-theme-bg-color);
+}
+
+/* Hand-rolled rather than antd-mobile's NavBar, for the same reason the job and
+   reminder forms are: this header owes the client's floating chrome its own
+   clearance in fullscreen (see bridge/safeArea.ts), and it carries no action —
+   the only primary button on the screen lives in the footer, where it can say
+   «ساخت پروژه» instead of being a ✓ glyph whose meaning depends on the step. */
+.header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: calc(12px + var(--wd-safe-top)) 12px 10px;
+  position: sticky;
+  top: 0;
+  z-index: 10;
+  background: var(--rasagram-theme-bg-color);
+}
+
+.back {
+  width: 36px;
+  height: 36px;
+  flex-shrink: 0;
+  border: none;
+  border-radius: 10px;
+  background: none;
+  color: var(--rasagram-theme-text-color);
+  font-size: 20px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+}
+
+.headerTitle {
+  flex: 1;
+  min-width: 0;
+  margin: 0;
+  text-align: center;
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--rasagram-theme-text-color);
+}
+
+/* Balances the back button so the title sits centred on the screen, not on
+   what's left of it. */
+.headerSpacer {
+  width: 36px;
+  flex-shrink: 0;
 }
 
 .body {
   flex: 1;
-  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 22px;
+  padding: 6px 16px 20px;
   overflow-y: auto;
+  max-width: 560px;
+  width: 100%;
+  margin-inline: auto;
 }
 
-.confirm {
-  font-size: 22px;
+.note {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  margin: 0;
+  padding-inline: 2px;
+  font-size: 12px;
+  line-height: 1.9;
+  color: var(--rasagram-theme-hint-color);
+}
+
+.noteIcon {
+  flex-shrink: 0;
+  margin-top: 4px;
+  font-size: 14px;
   color: var(--rasagram-theme-accent-text-color);
 }
 
-.card {
+.footer {
+  position: sticky;
+  bottom: 0;
+  padding: 12px 16px calc(12px + var(--wd-safe-bottom));
+  background: var(--rasagram-theme-bg-color);
+  border-top: 1px solid var(--rasagram-theme-secondary-bg-color);
+  max-width: 560px;
+  width: 100%;
+  margin-inline: auto;
+}
+
+.creating {
+  position: fixed;
+  inset: 0;
+  z-index: 1000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+  background: color-mix(in srgb, var(--rasagram-theme-bg-color) 82%, transparent);
+  backdrop-filter: blur(3px);
+}
+
+.creatingCard {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  max-width: 300px;
+  padding: 24px 22px;
+  border-radius: 22px;
+  text-align: center;
   background: var(--rasagram-theme-secondary-bg-color);
-  border-radius: 18px;
   box-shadow: var(--rasagram-card-shadow);
-  padding: 20px;
+}
+
+.creatingTitle {
+  margin-top: 4px;
+  font-size: 14.5px;
+  font-weight: 700;
+  color: var(--rasagram-theme-text-color);
+}
+
+.creatingBody {
+  font-size: 12px;
+  line-height: 1.9;
+  color: var(--rasagram-theme-subtitle-text-color);
 }

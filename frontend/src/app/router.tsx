@@ -1,4 +1,5 @@
 import { Route, Routes } from 'react-router-dom';
+import { NoteCreatePage } from '../modules/note/pages/NoteCreatePage';
 import { JobCreatePage } from '../modules/project/pages/JobCreatePage';
 import { JobEditPage } from '../modules/project/pages/JobEditPage';
 import { ProjectBoardPage } from '../modules/project/pages/ProjectBoardPage';
@@ -29,6 +30,9 @@ export function AppRouter() {
       <Route path="/projects/:projectId/jobs/:jobId/edit" element={<JobEditPage />} />
       <Route path="/reminders" element={<ReminderListPage />} />
       <Route path="/reminders/new" element={<ReminderCreatePage />} />
+      {/* Create-only, and no day segment: a note can only be written for today,
+          so there is no other day this route could address. */}
+      <Route path="/notes/new" element={<NoteCreatePage />} />
     </Routes>
   );
 }

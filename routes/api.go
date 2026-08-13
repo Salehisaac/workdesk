@@ -47,6 +47,13 @@ func Api() {
 		router.Get("/reminders", reminderController.Index)
 		router.Post("/reminders", reminderController.Store)
 
+		// Notes are personal like reminders, and flat for the same reason
+		// /jobs is: the home calendar wants every day at once. Writes accept
+		// today only — the rule lives in NoteController.Store.
+		noteController := controllers.NewNoteController()
+		router.Get("/notes", noteController.Index)
+		router.Post("/notes", noteController.Store)
+
 		topicIconController := controllers.NewTopicIconController()
 		router.Get("/topic-icons", topicIconController.Index)
 		router.Get("/topic-icons/animation", topicIconController.Animation)

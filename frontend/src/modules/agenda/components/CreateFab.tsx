@@ -1,15 +1,21 @@
-import { Popup, Toast } from 'antd-mobile';
-import { AddOutline, LockOutline } from 'antd-mobile-icons';
+import { Popup } from 'antd-mobile';
+import { AddOutline } from 'antd-mobile-icons';
+import type { CSSProperties } from 'react';
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { WORKDESK_MODULES } from '../../../shared/workdesk/modules';
+import { CREATABLE_MODULES, PLANNED_MODULES } from '../../../shared/workdesk/modules';
 import styles from './CreateFab.module.css';
 
 /**
- * The one create entry point: every WorkDesk module, nothing else. Project is
- * the only one with a flow behind it (the three-step wizard at /projects/new);
- * the rest carry the same lock badge and "coming soon" toast the home page's
- * tool tiles already use, rather than opening a form that can't save anything.
+ * The one create entry point.
+ *
+ * The menu is split by what it can actually do: the modules with a flow behind
+ * them get real cards, and the four that don't get a single «به‌زودی» strip of
+ * labels underneath. That split is the point — the previous version listed all
+ * six identically and put a lock badge on the ones that only showed a toast,
+ * which spends four of six rows' worth of attention teaching people which
+ * buttons don't work. A roadmap strip says the same thing without pretending to
+ * be tappable.
  *
  * Built on Popup rather than ActionSheet: there's no cancel button, so the two
  * ways out are tapping the app behind it and swiping the sheet down — and
@@ -19,15 +25,16 @@ export function CreateFab() {
   const navigate = useNavigate();
   const [open, setOpen] = useState(false);
 
-  function handleSelect(createTo: string | undefined) {
-    setOpen(false);
-    if (createTo) navigate(createTo);
-    else Toast.show({ content: 'به‌زودی اضافه می‌شود' });
-  }
-
   return (
     <>
-      <button type="button" className={styles.fab} onClick={() => setOpen(true)} aria-label="ایجاد مورد جدید">
+      <button
+        type="button"
+        className={styles.fab}
+        data-open={open || undefined}
+        onClick={() => setOpen(true)}
+        aria-label="ساختن مورد تازه"
+        aria-expanded={open}
+      >
         <AddOutline />
       </button>
 
@@ -38,29 +45,47 @@ export function CreateFab() {
         closeOnMaskClick
         onClose={() => setOpen(false)}
         onMaskClick={() => setOpen(false)}
-        bodyStyle={{ borderTopLeftRadius: 12, borderTopRightRadius: 12 }}
+        bodyStyle={{ background: 'transparent' }}
       >
-        <div className={styles.sheet} role="group" aria-label="ایجاد مورد جدید">
+        <div className={styles.sheet} role="group" aria-label="ساختن مورد تازه">
           {/* The only visible affordance for "this closes by dragging down",
               now that there's no cancel button to point at. */}
-          <span className={styles.sheetHandle} aria-hidden="true" />
+          <span className={styles.handle} aria-hidden="true" />
 
-          {WORKDESK_MODULES.map((module) => (
-            <button key={module.key} type="button" className={styles.option} onClick={() => handleSelect(module.createTo)}>
-              <span className={styles.optionIcon}>{module.icon}</span>
-              <span className={styles.optionText}>
-                <span className={styles.optionLabel}>
-                  {module.label} جدید
-                  {!module.createTo && (
-                    <span className={styles.optionLock}>
-                      <LockOutline />
-                    </span>
-                  )}
+          <h2 className={styles.title}>چه چیز تازه‌ای بسازیم؟</h2>
+
+          <div className={styles.cards}>
+            {CREATABLE_MODULES.map((module, index) => (
+              <button
+                key={module.key}
+                type="button"
+                className={styles.card}
+                style={{ '--tone': module.tone, '--card-index': index } as CSSProperties}
+                onClick={() => {
+                  setOpen(false);
+                  navigate(module.createTo!);
+                }}
+              >
+                <span className={styles.cardIcon}>{module.icon}</span>
+                <span className={styles.cardLabel}>{module.label}</span>
+                <span className={styles.cardAction}>{module.action}</span>
+              </button>
+            ))}
+          </div>
+
+          <div className={styles.planned}>
+            <span className={styles.plannedLabel}>به‌زودی</span>
+            <span className={styles.plannedItems}>
+              {PLANNED_MODULES.map((module) => (
+                <span key={module.key} className={styles.plannedItem} style={{ '--tone': module.tone } as CSSProperties}>
+                  <span className={styles.plannedIcon} aria-hidden="true">
+                    {module.icon}
+                  </span>
+                  {module.label}
                 </span>
-                <span className={styles.optionDescription}>{module.description}</span>
-              </span>
-            </button>
-          ))}
+              ))}
+            </span>
+          </div>
         </div>
       </Popup>
     </>
