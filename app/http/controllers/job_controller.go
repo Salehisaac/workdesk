@@ -10,6 +10,7 @@ import (
 	"goravel/app/facades"
 	"goravel/app/http/resources"
 	"goravel/app/models"
+	"goravel/app/services/projectfeed"
 )
 
 // Ids cross the wire as strings (see resources.formatId) — this is the same
@@ -330,6 +331,12 @@ func (r *JobController) Store(ctx http.Context) http.Response {
 			job.Checklist = items
 		}
 	}
+
+	// Into the topic of the list it was filed in, so that topic reads as that
+	// list's activity rather than only as its chat. Best-effort — a job that
+	// exists but wasn't announced is a missing message, not a failed write
+	// (app/services/projectfeed).
+	projectfeed.AnnounceJob(project, list, &job)
 
 	contexts, err := buildJobContext([]models.Project{*project})
 	if err != nil {

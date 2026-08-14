@@ -21,41 +21,53 @@ import { ReminderListPage } from '../modules/reminder/pages/ReminderListPage';
 import { HomePage } from './pages/HomePage';
 
 /**
- * The two things an invite message can point at, by the `<kind>` prefix the
- * backend writes — sessioninvite.StartParamPrefix and
- * ledgerinvite.StartParamPrefix are the other half of this pair. A Map rather
- * than an object literal so a `<kind>` of `constructor` or `toString` looks up
- * to nothing instead of to something inherited.
+ * Everything a message from the bot can point at, by the `<kind>` prefix the
+ * backend writes — sessioninvite.StartParamPrefix, ledgerinvite.StartParamPrefix
+ * and app/services/projectfeed's three prefixes are the other half of this pair.
+ * A Map rather than an object literal so a `<kind>` of `constructor` or
+ * `toString` looks up to nothing instead of to something inherited.
+ *
+ * `ids` is how many id segments that kind carries, checked before `path` is
+ * called: everything under a project is nested under it in the routes below, so
+ * a list or a job needs its project's id alongside its own.
  */
-const START_PARAM_ROUTES = new Map<string, string>([
-  ['session', '/sessions'],
-  ['ledger', '/ledgers'],
+const START_PARAM_ROUTES = new Map<string, { ids: number; path: (ids: string[]) => string }>([
+  ['session', { ids: 1, path: ([sessionId]) => `/sessions/${sessionId}` }],
+  ['ledger', { ids: 1, path: ([ledgerId]) => `/ledgers/${ledgerId}` }],
+  ['project', { ids: 1, path: ([projectId]) => `/projects/${projectId}` }],
+  // A list has no screen of its own — it is a column of its project's board, so
+  // its link opens that board and asks it to scroll to the column (?list=, read
+  // by ProjectBoardPage).
+  ['list', { ids: 2, path: ([projectId, listId]) => `/projects/${projectId}?list=${listId}` }],
+  ['job', { ids: 2, path: ([projectId, jobId]) => `/projects/${projectId}/jobs/${jobId}/edit` }],
 ]);
 
 /**
  * Where a `?startapp=` launch parameter should land.
  *
- * The parameter is `<kind>-<id>`, written by whichever module messaged the link
- * (app/services/sessioninvite, app/services/ledgerinvite — both are modules that
- * provision no group, so the message is how their members find them). Split on
- * the FIRST hyphen only, so an id containing one wouldn't be truncated, and
- * validated rather than interpolated: this string arrives from initDataUnsafe,
- * so it decides which screen opens and nothing else. The screen it opens
- * re-authorizes on its own — GET /sessions/{id} and GET /ledgers/{id} are both
- * membership-checked server-side — so a forged parameter buys a 403, not access.
+ * The parameter is `<kind>-<id>[-<id>]`, written by whichever module messaged the
+ * link: app/services/sessioninvite and ledgerinvite (modules that provision no
+ * group, so a direct message is how their members find them), and
+ * app/services/projectfeed (a project HAS a group, and these are the messages it
+ * posts into it).
+ *
+ * Every segment is validated rather than interpolated: this string arrives from
+ * initDataUnsafe, so it decides which screen opens and nothing else. The screens
+ * it opens re-authorize on their own — GET /sessions/{id}, /ledgers/{id} and
+ * /projects/{id} are all membership-checked server-side — so a forged parameter
+ * buys a 403, not access.
  *
  * Returns null for anything unrecognized, which leaves the app on the home page
  * rather than on an error.
  */
 export function startParamRoute(startParam: string): string | null {
-  const separator = startParam.indexOf('-');
-  if (separator <= 0) return null;
+  const [kind, ...ids] = startParam.split('-');
 
-  const base = START_PARAM_ROUTES.get(startParam.slice(0, separator));
-  const id = startParam.slice(separator + 1);
-  if (!base || !/^\d+$/.test(id)) return null;
+  const route = START_PARAM_ROUTES.get(kind);
+  if (!route || ids.length !== route.ids) return null;
+  if (!ids.every((id) => /^\d+$/.test(id))) return null;
 
-  return `${base}/${id}`;
+  return route.path(ids);
 }
 
 /**

@@ -13,6 +13,7 @@ import (
 	"goravel/app/facades"
 	"goravel/app/http/resources"
 	"goravel/app/models"
+	"goravel/app/services/projectfeed"
 	"goravel/app/services/rasagramadmin"
 )
 
@@ -199,17 +200,30 @@ func (r *ProjectController) Store(ctx http.Context) http.Response {
 		return ctx.Response().Status(500).Json(http.Json{"error": "services.rasagram.bot_token is not configured correctly"})
 	}
 
-	userIdSet := map[int64]bool{botId: true, creatorId: true}
+	// Order matters, and only for the first entry: the admin API's chat/create
+	// makes user_ids[0] the group's OWNER. So the person creating the project
+	// leads the list, then the bot (which only needs to be in the group to run
+	// the topic lifecycle), then everyone they picked. This used to be built from
+	// a map, whose iteration order is randomized — which handed ownership of the
+	// group to whichever member happened to come out first, often the bot.
+	seen := make(map[int64]bool, len(request.Members)+2)
+	userIds := make([]int64, 0, len(request.Members)+2)
+	addUserId := func(id int64) {
+		if seen[id] {
+			return
+		}
+		seen[id] = true
+		userIds = append(userIds, id)
+	}
+
+	addUserId(creatorId)
+	addUserId(botId)
 	for _, member := range request.Members {
 		id, err := strconv.ParseInt(member.Id, 10, 64)
 		if err != nil {
 			return ctx.Response().Status(422).Json(http.Json{"error": "member id \"" + member.Id + "\" is not a valid user id"})
 		}
-		userIdSet[id] = true
-	}
-	userIds := make([]int64, 0, len(userIdSet))
-	for id := range userIdSet {
-		userIds = append(userIds, id)
+		addUserId(id)
 	}
 
 	// The avatar the user picked rides along with the group's creation now, so
@@ -270,6 +284,11 @@ func (r *ProjectController) Store(ctx http.Context) http.Response {
 		return ctx.Response().Status(500).Json(http.Json{"error": err.Error()})
 	}
 	project.Members = members
+
+	// The group has just appeared in every member's chat list, so the first
+	// thing they find in it says what it is and links back into the app.
+	// Best-effort by design — see app/services/projectfeed.
+	projectfeed.AnnounceProject(&project)
 
 	return ctx.Response().Status(201).Json(resources.Project(&project))
 }

@@ -214,6 +214,39 @@ func (c *Client) SendMessage(chatId, text string) error {
 	return nil
 }
 
+// SendGroupMessage sends a plain-text message into a group — optionally into
+// one of its forum topics.
+//
+// Separate from SendMessage because the two take chat ids in different
+// conventions and nothing but the caller knows which it holds: a positive id is
+// a private chat here, so a group's id has to be negated (groupChatId) while a
+// person's must be passed through untouched.
+//
+// topicId is a List's TopicId (the message_thread_id createForumTopic returned).
+// Empty means the group's General topic — omitting message_thread_id entirely is
+// how the Bot API addresses it, and botway maps a zero thread id back to a plain
+// send (its sendMessage handler only builds a reply-to/top-msg-id when the field
+// is non-zero).
+func (c *Client) SendGroupMessage(chatId, topicId, text string) error {
+	groupId, err := groupChatId(chatId)
+	if err != nil {
+		return fmt.Errorf("botapi: sendMessage: %w", err)
+	}
+
+	payload := map[string]any{
+		"chat_id": groupId,
+		"text":    text,
+	}
+	if topicId != "" {
+		payload["message_thread_id"] = topicId
+	}
+
+	if err := c.post("sendMessage", payload, nil); err != nil {
+		return fmt.Errorf("botapi: sendMessage: %w", err)
+	}
+	return nil
+}
+
 // SetChatPhoto sets a group's photo from raw image bytes.
 //
 // Unlike every other call here this one is multipart, not JSON: the Bot API's

@@ -1,7 +1,7 @@
 import { Button, DotLoading, Toast } from 'antd-mobile';
 import { AddOutline, ClockCircleOutline, ExclamationCircleOutline, UnorderedListOutline } from 'antd-mobile-icons';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { useNavigate, useParams } from 'react-router-dom';
+import { useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import { EmptyState } from '../../../shared/ui/EmptyState';
 import { useCreateList, useDeleteList, useJobs, useProject } from '../api';
 import { ListColumn } from '../components/board/ListColumn';
@@ -17,6 +17,7 @@ const ACTIVE_PAGE_RATIO = 0.55;
 
 export function ProjectBoardPage() {
   const { projectId } = useParams<{ projectId: string }>();
+  const [searchParams] = useSearchParams();
   const navigate = useNavigate();
   const { data: project, isLoading, isError } = useProject(projectId);
   const jobs = useJobs();
@@ -29,8 +30,17 @@ export function ProjectBoardPage() {
   const pageRefs = useRef(new Map<string, HTMLElement>());
   /** Live visibility per page — IntersectionObserver only reports what changed. */
   const ratiosRef = useRef(new Map<string, number>());
-  /** Set when a list should be scrolled to once it exists in the DOM. */
-  const pendingScrollRef = useRef<string | null>(null);
+  /**
+   * Set when a list should be scrolled to once it exists in the DOM — by the
+   * create sheet, and by `?list=` on arrival.
+   *
+   * That parameter is what a list's own message in the group links to
+   * (startParamRoute + the backend's projectfeed): a list has no screen of its
+   * own, so opening one means opening this board on that column. Read once, in
+   * the ref's initializer, because it describes how the screen was ENTERED —
+   * re-reading it later would fight a user who has since scrolled away.
+   */
+  const pendingScrollRef = useRef<string | null>(searchParams.get('list'));
 
   const lists = useMemo(() => project?.lists ?? [], [project]);
 

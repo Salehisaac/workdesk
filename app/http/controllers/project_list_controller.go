@@ -9,6 +9,7 @@ import (
 	"goravel/app/http/resources"
 	"goravel/app/models"
 	"goravel/app/services/botapi"
+	"goravel/app/services/projectfeed"
 )
 
 // ProjectListController handles Lists nested under a Project — plan section
@@ -92,6 +93,11 @@ func (r *ProjectListController) Store(ctx http.Context) http.Response {
 	if err := facades.Orm().Query().Create(&list); err != nil {
 		return ctx.Response().Status(500).Json(http.Json{"error": err.Error()})
 	}
+
+	// The topic exists but is empty until something is said in it — this is its
+	// first message, saying which list it is. Best-effort, like every other
+	// announcement (app/services/projectfeed).
+	projectfeed.AnnounceList(project, &list)
 
 	return ctx.Response().Status(201).Json(resources.List(&list))
 }

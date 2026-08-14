@@ -63,6 +63,10 @@ type Photo struct {
 // All-or-nothing: if any step fails, the caller shouldn't persist a Project
 // pointing at a half-provisioned or nonexistent group.
 //
+// userIDs is ORDERED: chat/create makes the first id the group's owner, so
+// callers put the person the group belongs to at the front (see
+// ProjectController.Store — everyone else, the bot included, follows).
+//
 // photo is optional; when non-nil the group is created with that avatar
 // already set, which is why the caller no longer needs the bot to be an
 // administrator with can_change_info just to give a project a picture.

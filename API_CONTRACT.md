@@ -52,6 +52,29 @@ the **backend** creates the group itself now, server-side, via Rasagram's intern
 request at all. See that section below for the exact call sequence
 (login → chat/create → chat/upgradeToSupergroup → chat/enableTopics).
 
+## Group announcements
+
+A project IS a group and each of its lists IS a topic in it, so creating any of the three levels also says so
+in the chat (`app/services/projectfeed`, one Bot API `sendMessage` per create):
+
+| Created | Posted into | Link it carries |
+| ------- | ----------- | --------------- |
+| Project | the group's **General topic** (`sendMessage` with no `message_thread_id`) | `?startapp=project-<id>` → `/projects/:projectId` |
+| List | the **topic just created for it** (`message_thread_id` = the list's `topicId`) | `?startapp=list-<projectId>-<listId>` → `/projects/:projectId?list=:listId` |
+| Job | the **topic of the list it was filed into** | `?startapp=job-<projectId>-<jobId>` → `/projects/:projectId/jobs/:jobId/edit` |
+
+- The link is `RASAGRAM_MINIAPP_URL` + `?startapp=<param>` — the same mechanism session/ledger invites use
+  (`app/services/invite`). The frontend's `startParamRoute()` (`app/router.tsx`) is the other half of the
+  contract; every `<id>` segment must be digits or it lands on the home page instead.
+- With `RASAGRAM_MINIAPP_URL` unset the message is still posted, just without the link.
+- **Nothing here can fail a request.** A send that errors (bot not in the group, topic deleted, Bot API down)
+  is logged and the 201 goes out regardless — the row already exists, and refusing it would throw away
+  something the user made. Note the cost of the extra call: these run inline, so a hanging Bot API adds up
+  to its 15s timeout to a create request.
+- `chat_id` is the project's `chatId` **negated** (`-<chatId>`) — this platform reads a positive id as a
+  private chat. Same conversion `createForumTopic` uses (`botapi.groupChatId`), and the reason
+  `botapi.SendGroupMessage` is separate from `SendMessage` (which sends DMs and must not negate).
+
 ---
 
 ## `GET /api/v1/projects`
@@ -121,8 +144,10 @@ correctly lists projects they created.
 **Backend behavior** (`ProjectController.Store`, `app/services/rasagramadmin`):
 
 1. Resolve the authenticated user from initData.
-2. Build the group's member list: the bot's own user id (parsed from `RASAGRAM_BOT_TOKEN`'s `<id>:<secret>`
-   prefix) + the authenticated user's id + every `members[].id`, de-duplicated.
+2. Build the group's member list, **in this order**: the authenticated user's id, then the bot's own user id
+   (parsed from `RASAGRAM_BOT_TOKEN`'s `<id>:<secret>` prefix), then every `members[].id`, de-duplicated.
+   The order is not cosmetic — `chat/create` makes `user_ids[0]` the group's **owner**, so the person creating
+   the project has to come first; the bot only needs to be a member to run the topic lifecycle.
    If `avatarUrl` points at a file from `POST /uploads`, read its bytes off the public disk to send as the
    group's photo (step 3). A URL that isn't one of ours, or a file that can't be read, is logged and skipped —
    the group is then created without a photo rather than the request failing.
@@ -139,6 +164,9 @@ correctly lists projects they created.
      request fails (502) — no `projects` row gets created for a group that doesn't fully exist.
 4. Create the `projects` row (now including the real `chatId`).
 5. Insert `project_members`: the authenticated user (as owner) + every item in `members`.
+6. Announce the project in the group's **General topic** (`app/services/projectfeed`) — the project's name
+   plus a link that opens it in the mini app (`RASAGRAM_MINIAPP_URL?startapp=project-<id>`). Best-effort:
+   a failed send is logged and the 201 still goes out (see “Group announcements” below).
 
 **Response 201** — `Project` (same shape as one item from `GET /projects`).
 
@@ -219,6 +247,9 @@ authenticated user isn't a member of this project.
    pattern as project creation).
 3. Create the `lists` row (`project_id`, `name`, `icon_color`, `icon_custom_emoji_id`, `icon_emoji`,
    `icon_file_id`, `topic_id` = the returned `message_thread_id`).
+4. Post the topic's first message into that new topic (`app/services/projectfeed`) — the list's name plus a
+   link back into the app (`?startapp=list-<projectId>-<listId>`, which opens the board scrolled to this
+   list). Best-effort, like every announcement (see “Group announcements” below).
 
 **Response 201:**
 
@@ -319,6 +350,10 @@ would be a request per list.
   instant round-trips back to the day the user tapped.
 
 **Response 201** — the created `Job`.
+
+After the job is written it is announced in **its list's topic** (`app/services/projectfeed`): «#۲» + title,
+the deadline in Jalali (Asia/Tehran), the assignees' display names, and a link that opens the job in the app
+(`?startapp=job-<projectId>-<jobId>`). Best-effort — see “Group announcements” below.
 
 > The table is `project_jobs`, not `jobs` — Goravel's queue already owns `jobs`.
 
