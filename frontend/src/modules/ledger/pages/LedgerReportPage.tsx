@@ -135,6 +135,7 @@ export function LedgerReportPage() {
           transactions={scoped}
           tags={ledger.data.tags}
           ledgerId={ledger.data.id}
+          ledgerOwnerRefId={ledger.data.ownerRefId}
           tab={tab}
           onTabChange={setTab}
           // "Nothing in this period" and "nothing that matches the filter" are

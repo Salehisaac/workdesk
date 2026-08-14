@@ -10,6 +10,11 @@ type List struct {
 	orm.Model
 	ProjectId uint `gorm:"column:project_id"`
 	Name      string
+	// Whoever added the list — anyone in the project may, and only they and the
+	// project's creator may remove it again (ProjectListController.Destroy).
+	// Same column, for the same reason, as Job.CreatedBy. Empty on rows that
+	// predate it, which leaves them to the project's creator alone.
+	CreatedBy string  `gorm:"column:created_by"`
 	TopicId   *string `gorm:"column:topic_id"`
 	// One of Telegram's 6 standard forum-topic icon colors (see
 	// app/services/botapi's ForumTopicColors), or nil for the platform's

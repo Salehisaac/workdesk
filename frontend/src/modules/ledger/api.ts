@@ -1,4 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import type { PickedItem } from '../../bridge/types';
 import { apiClient, getCollection } from '../../shared/api/client';
 import type {
   CreateLedgerInput,
@@ -10,6 +11,7 @@ import type {
   LedgerSource,
   LedgerTag,
   LedgerTransaction,
+  UpdateLedgerInput,
 } from './types';
 
 const ledgerKeys = {
@@ -45,6 +47,56 @@ export function useCreateLedger() {
   return useMutation({
     mutationFn: (input: CreateLedgerInput) => apiClient.post<LedgerDetail>('/ledgers', input),
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ledgerKeys.all }),
+  });
+}
+
+/**
+ * Renaming a book — its creator's alone (403 otherwise). Both queries are
+ * invalidated because the name is on the list row as well as the book.
+ */
+export function useUpdateLedger(ledgerId: string) {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (input: UpdateLedgerInput) => apiClient.patch<LedgerDetail>(`/ledgers/${ledgerId}`, input),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ledgerKeys.all });
+      queryClient.invalidateQueries({ queryKey: ledgerKeys.detail(ledgerId) });
+    },
+  });
+}
+
+/**
+ * Adding people to a book — its creator's alone. Like a session's, this messages
+ * each of them a deep link, because nothing else would ever tell them the book
+ * exists.
+ */
+export function useAddLedgerMembers(ledgerId: string) {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (members: PickedItem[]) =>
+      apiClient.post<LedgerDetail>(`/ledgers/${ledgerId}/members`, { members }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ledgerKeys.all });
+      queryClient.invalidateQueries({ queryKey: ledgerKeys.detail(ledgerId) });
+    },
+  });
+}
+
+/**
+ * Deleting a book — its creator's alone, and it takes every line anyone recorded
+ * in it, plus its tags and sources. Callers warn first; there is no undo.
+ *
+ * The book's own cached detail is dropped rather than refetched (it would only
+ * 404 behind a screen being left), while the list is invalidated so the row goes.
+ */
+export function useDeleteLedger(ledgerId: string) {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: () => apiClient.delete<void>(`/ledgers/${ledgerId}`),
+    onSuccess: () => {
+      queryClient.removeQueries({ queryKey: ledgerKeys.detail(ledgerId) });
+      queryClient.invalidateQueries({ queryKey: ledgerKeys.all });
+    },
   });
 }
 

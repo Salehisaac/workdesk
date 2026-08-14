@@ -1,6 +1,7 @@
 import { Dialog, Popup, Toast } from 'antd-mobile';
 import { CloseOutline, DeleteOutline } from 'antd-mobile-icons';
 import type { CSSProperties, ReactNode } from 'react';
+import { useMe } from '../../../shared/api/me';
 import { formatLongDate, formatTime } from '../../../shared/date/jalali';
 import { tagColor } from '../../project/components/job/tagColor';
 import { useDeleteTransaction } from '../api';
@@ -13,6 +14,8 @@ interface TransactionSheetProps {
   transaction: LedgerTransaction | null;
   tags: LedgerTag[];
   ledgerId: string;
+  /** Who keeps the book — one half of who may strike a line out. */
+  ledgerOwnerRefId: string;
   onClose: () => void;
 }
 
@@ -25,8 +28,25 @@ interface TransactionSheetProps {
  * the line and writing it again, which is what the paper version of this book
  * requires too.
  */
-export function TransactionSheet({ transaction, tags, ledgerId, onClose }: TransactionSheetProps) {
+export function TransactionSheet({
+  transaction,
+  tags,
+  ledgerId,
+  ledgerOwnerRefId,
+  onClose,
+}: TransactionSheetProps) {
+  const me = useMe();
   const deleteTransaction = useDeleteTransaction(ledgerId);
+
+  /**
+   * Anyone in a book may write a line in it; only the person who wrote this one
+   * and the person who keeps the book may take it back out — a balance everyone
+   * can silently edit is a balance nobody can rely on. The API says the same
+   * (403); with no identity to compare against, the button stays and the server
+   * answers.
+   */
+  const canDelete =
+    !me.data || !transaction || transaction.ownerRefId === me.data.id || ledgerOwnerRefId === me.data.id;
 
   const income = transaction?.type === 'income';
   const rowTags = transaction ? tags.filter((tag) => transaction.tagIds.includes(tag.id)) : [];
@@ -109,10 +129,17 @@ export function TransactionSheet({ transaction, tags, ledgerId, onClose }: Trans
               {transaction.description && <Row label="شرح">{transaction.description}</Row>}
             </div>
 
-            <button type="button" className={styles.delete} onClick={handleDelete} disabled={deleteTransaction.isPending}>
-              <DeleteOutline />
-              حذف تراکنش
-            </button>
+            {canDelete && (
+              <button
+                type="button"
+                className={styles.delete}
+                onClick={handleDelete}
+                disabled={deleteTransaction.isPending}
+              >
+                <DeleteOutline />
+                حذف تراکنش
+              </button>
+            )}
           </>
         )}
       </div>

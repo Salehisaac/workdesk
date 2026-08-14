@@ -48,6 +48,26 @@
   flex-shrink: 0;
 }
 
+/* Occupies the spacer's width exactly, so the title sits in the same place for
+   the owner as for everyone else. */
+.headerDelete {
+  width: 80px;
+  flex-shrink: 0;
+  border: none;
+  background: none;
+  color: var(--rasagram-theme-destructive-text-color);
+  font-size: 19px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+}
+
+.headerDelete:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
+
 .body {
   flex: 1;
   display: flex;

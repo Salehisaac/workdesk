@@ -1,4 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import type { PickedItem } from '../../bridge/types';
 import { apiClient, getCollection } from '../../shared/api/client';
 import type {
   CreateAgendaInput,
@@ -75,6 +76,50 @@ export function useUpdateSessionStatus(sessionId: string) {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: meetingKeys.sessions });
       queryClient.invalidateQueries({ queryKey: meetingKeys.session(sessionId) });
+    },
+  });
+}
+
+/**
+ * Adding people to a meeting — its owner's alone.
+ *
+ * There is no group to add them to, so this sends each of them the same invite
+ * message creation does; the response carries the whole meeting back, with the
+ * new members' notifiedAt already stamped, so the screen can say who was reached.
+ */
+export function useAddSessionMembers(sessionId: string) {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (members: PickedItem[]) =>
+      apiClient.post<SessionDetail>(`/sessions/${sessionId}/members`, { members }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: meetingKeys.sessions });
+      queryClient.invalidateQueries({ queryKey: meetingKeys.session(sessionId) });
+    },
+  });
+}
+
+/**
+ * Deleting a meeting — its owner's alone (403 otherwise), and final for the
+ * meeting itself: members and the running order go with it.
+ *
+ * Its مصوبات do NOT: a commitment outlives the room that made it, so
+ * `decisions.session_id` is set to null rather than cascading. The decisions
+ * query is invalidated all the same, since those rows just stopped naming a
+ * meeting.
+ *
+ * The cached session detail is removed rather than invalidated — refetching a
+ * session that no longer exists would only 404 behind a screen the user is
+ * already leaving.
+ */
+export function useDeleteSession(sessionId: string) {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: () => apiClient.delete<void>(`/sessions/${sessionId}`),
+    onSuccess: () => {
+      queryClient.removeQueries({ queryKey: meetingKeys.session(sessionId) });
+      queryClient.invalidateQueries({ queryKey: meetingKeys.sessions });
+      queryClient.invalidateQueries({ queryKey: meetingKeys.decisions });
     },
   });
 }

@@ -21,6 +21,12 @@ interface LedgerOverviewProps {
   transactions: LedgerTransaction[];
   tags: LedgerTag[];
   ledgerId: string;
+  /**
+   * Who keeps the book. Passed through to the detail sheet, which offers
+   * «حذف تراکنش» only to the person who wrote the line or to them — writing in a
+   * shared book is everyone's, striking a line out is not.
+   */
+  ledgerOwnerRefId: string;
   tab: OverviewTab;
   onTabChange: (tab: OverviewTab) => void;
   /** What "nothing here" means in the caller's scope — a young book, or a quiet week. */
@@ -45,6 +51,7 @@ export function LedgerOverview({
   transactions,
   tags,
   ledgerId,
+  ledgerOwnerRefId,
   tab,
   onTabChange,
   emptyTitle,
@@ -110,7 +117,13 @@ export function LedgerOverview({
         )}
       </div>
 
-      <TransactionSheet transaction={opened} tags={tags} ledgerId={ledgerId} onClose={() => setOpened(null)} />
+      <TransactionSheet
+        transaction={opened}
+        tags={tags}
+        ledgerId={ledgerId}
+        ledgerOwnerRefId={ledgerOwnerRefId}
+        onClose={() => setOpened(null)}
+      />
     </div>
   );
 }

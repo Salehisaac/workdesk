@@ -47,8 +47,11 @@ func Ledger(l *models.Ledger, totals LedgerTotals) http.Json {
 	}
 
 	return http.Json{
-		"id":               formatId(l.ID),
-		"name":             l.Name,
+		"id":   formatId(l.ID),
+		"name": l.Name,
+		// Who keeps the book — the only one who may rename or delete it. Every
+		// member writes lines in it; see loadLedgerForOwner.
+		"ownerRefId":       l.OwnerRefId,
 		"memberCount":      len(l.Members),
 		"totalIncome":      totals.Income,
 		"totalExpense":     totals.Expense,
@@ -173,8 +176,11 @@ func LedgerTransaction(t *models.LedgerTransaction, sourceNames map[uint]string)
 	}
 
 	return http.Json{
-		"id":           formatId(t.ID),
-		"ledgerId":     formatId(t.LedgerId),
+		"id":       formatId(t.ID),
+		"ledgerId": formatId(t.LedgerId),
+		// Who wrote the line down (not who it is about — that is assigneeId).
+		// They and the book's creator are the two who may strike it out.
+		"ownerRefId":   t.OwnerRefId,
 		"type":         t.Type,
 		"amount":       t.Amount,
 		"accountGroup": t.AccountGroup,

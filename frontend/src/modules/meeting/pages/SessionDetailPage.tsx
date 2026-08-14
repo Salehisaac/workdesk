@@ -1,9 +1,10 @@
-import { Button, DotLoading, Input, Popover, Popup, TextArea, Toast } from 'antd-mobile';
+import { Button, Dialog, DotLoading, Input, Popover, Popup, TextArea, Toast } from 'antd-mobile';
 import {
   AddOutline,
   CalendarOutline,
   CheckCircleOutline,
   ClockCircleOutline,
+  DeleteOutline,
   DownOutline,
   EnvironmentOutline,
   ExclamationCircleOutline,
@@ -17,16 +18,20 @@ import type { CSSProperties } from 'react';
 import { useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { bridge } from '../../../bridge';
+import { useMe } from '../../../shared/api/me';
 import { monogramGradient, monogramInitial, paletteForSeed } from '../../../shared/brand/monogram';
 import { formatLongDate, formatShortDate, formatTime, toLocalIso, toPersianDigits } from '../../../shared/date/jalali';
 import { DateTimeSheet } from '../../../shared/ui/datetime/DateTimeSheet';
 import { EmptyState } from '../../../shared/ui/EmptyState';
 import { HomeButton } from '../../../shared/ui/HomeButton';
 import { DurationSheet, formatDuration } from '../../../shared/ui/time/DurationSheet';
+import { AddMembersSheet } from '../../../shared/ui/people/AddMembersSheet';
 import { useAgendaCalendar } from '../../agenda/api';
 import {
+  useAddSessionMembers,
   useCreateAgenda,
   useCreateDecision,
+  useDeleteSession,
   useSession,
   useUpdateDecisionStatus,
   useUpdateSessionStatus,
@@ -55,10 +60,55 @@ export function SessionDetailPage() {
   const { sessionId } = useParams<{ sessionId: string }>();
   const navigate = useNavigate();
   const { data: session, isLoading, isError } = useSession(sessionId);
+  const me = useMe();
   const updateStatus = useUpdateSessionStatus(sessionId ?? '');
   const updateDecision = useUpdateDecisionStatus(sessionId);
+  const deleteSession = useDeleteSession(sessionId ?? '');
+  const addMembers = useAddSessionMembers(sessionId ?? '');
   const [agendaOpen, setAgendaOpen] = useState(false);
   const [decisionOpen, setDecisionOpen] = useState(false);
+  const [membersOpen, setMembersOpen] = useState(false);
+
+  /**
+   * Whoever called the meeting. Everything that WRITES to it is theirs — the
+   * status, the running order, the resolutions, and deleting it — so for anyone
+   * else this screen is a record to read, and the buttons that would be refused
+   * simply aren't drawn.
+   */
+  const isOwner = !!session && !!me.data && session.ownerRefId === me.data.id;
+
+  /**
+   * Marking a resolution done is the exception: it belongs to the person who
+   * owes it as much as to the person who wrote it down. Anyone else in the room
+   * would be making a claim about someone else's commitment, which is exactly
+   * what the API now refuses.
+   */
+  function canMarkDecision(decision: { ownerRefId: string; assigneeId: string | null }) {
+    if (isOwner) return true;
+    if (!me.data) return false;
+    return decision.ownerRefId === me.data.id || decision.assigneeId === me.data.id;
+  }
+
+  async function handleDelete() {
+    if (!session || deleteSession.isPending) return;
+
+    const confirmed = await Dialog.confirm({
+      title: `«${session.title}» حذف شود؟`,
+      content:
+        'جلسه با شرکت‌کنندگان و دستورهایش حذف می‌شود و برگشتی ندارد. مصوبه‌ها پاک نمی‌شوند — تعهد کسی با تمام‌شدن جلسه از بین نمی‌رود. اگر جلسه برگزار نشد، به‌جای حذف آن را «لغو شده» کنید.',
+      confirmText: 'حذف جلسه',
+      cancelText: 'انصراف',
+    });
+    if (!confirmed) return;
+
+    try {
+      await deleteSession.mutateAsync();
+      Toast.show({ content: 'جلسه حذف شد' });
+      navigate('/sessions', { replace: true });
+    } catch (error) {
+      Toast.show({ content: error instanceof Error ? error.message : 'حذف جلسه با خطا مواجه شد' });
+    }
+  }
 
   if (isLoading) {
     return (
@@ -94,7 +144,12 @@ export function SessionDetailPage() {
 
   return (
     <div className={styles.page}>
-      <Header onBack={() => navigate('/sessions')} title="جلسه" />
+      <Header
+        onBack={() => navigate('/sessions')}
+        title="جلسه"
+        onDelete={isOwner ? handleDelete : undefined}
+        deleting={deleteSession.isPending}
+      />
 
       <div className={styles.body}>
         <section className={styles.hero}>
@@ -135,7 +190,10 @@ export function SessionDetailPage() {
 
           {/* The status row is a segmented control, not a sheet: there are four
               states and the whole point of opening a past meeting is to mark
-              what happened to it. Burying that behind a tap would be perverse. */}
+              what happened to it. Burying that behind a tap would be perverse.
+              For everyone but the owner it stays on screen and stops responding:
+              which state a meeting is in is worth reading even when changing it
+              isn't yours to do. */}
           <div className={styles.statuses} role="group" aria-label="وضعیت جلسه">
             {SESSION_STATUSES.map((status) => (
               <button
@@ -143,7 +201,7 @@ export function SessionDetailPage() {
                 type="button"
                 className={`${styles.statusButton} ${session.status === status ? styles[`statusActive_${status}`] : ''}`}
                 aria-pressed={session.status === status}
-                disabled={updateStatus.isPending}
+                disabled={!isOwner || updateStatus.isPending}
                 onClick={() => {
                   if (session.status === status) return;
                   updateStatus.mutate(status as SessionStatus, {
@@ -164,6 +222,14 @@ export function SessionDetailPage() {
               <TeamOutline aria-hidden="true" /> شرکت‌کنندگان
             </h2>
             <span className={styles.sectionCount}>{toPersianDigits(session.members.length)} نفر</span>
+            {/* Inviting someone to a meeting that already exists is the owner's,
+                like everything else that writes to it — and it sends them the
+                same message the original invitation was. */}
+            {isOwner && (
+              <button type="button" className={styles.addButton} onClick={() => setMembersOpen(true)}>
+                <AddOutline /> افزودن
+              </button>
+            )}
           </div>
 
           <div className={styles.rail}>
@@ -188,9 +254,13 @@ export function SessionDetailPage() {
             <h2 className={styles.sectionTitle}>
               <UnorderedListOutline aria-hidden="true" /> دستورات جلسه
             </h2>
-            <button type="button" className={styles.addButton} onClick={() => setAgendaOpen(true)}>
-              <AddOutline /> افزودن
-            </button>
+            {/* The running order is what the person who called the meeting means
+                to get through, so only they may add to it. */}
+            {isOwner && (
+              <button type="button" className={styles.addButton} onClick={() => setAgendaOpen(true)}>
+                <AddOutline /> افزودن
+              </button>
+            )}
           </div>
 
           {agendas.length === 0 ? (
@@ -207,9 +277,13 @@ export function SessionDetailPage() {
         <section className={styles.section}>
           <div className={styles.sectionHead}>
             <h2 className={styles.sectionTitle}>مصوبات</h2>
-            <button type="button" className={styles.addButton} onClick={() => setDecisionOpen(true)}>
-              <AddOutline /> افزودن
-            </button>
+            {/* Same reasoning: a مصوبه is the record of what the room agreed, and
+                the person who convened it keeps that record. */}
+            {isOwner && (
+              <button type="button" className={styles.addButton} onClick={() => setDecisionOpen(true)}>
+                <AddOutline /> افزودن
+              </button>
+            )}
           </div>
 
           {session.decisions.length === 0 ? (
@@ -226,7 +300,10 @@ export function SessionDetailPage() {
                       type="button"
                       className={`${styles.check} ${decision.status === 'done' ? styles.checkDone : ''}`}
                       aria-label={decision.status === 'done' ? 'بازگرداندن به در انتظار اجرا' : 'انجام شد'}
-                      disabled={updateDecision.isPending}
+                      // Its «مسئول» and whoever recorded it — for everyone else
+                      // the box still shows whether it's done, it just isn't
+                      // theirs to tick.
+                      disabled={updateDecision.isPending || !canMarkDecision(decision)}
                       onClick={() =>
                         updateDecision.mutate({
                           decisionId: decision.id,
@@ -265,6 +342,18 @@ export function SessionDetailPage() {
         </section>
       </div>
 
+      <AddMembersSheet
+        visible={membersOpen}
+        title="افزودن شرکت‌کننده"
+        hint="برای هرکسی که اضافه کنید همان دعوت‌نامه‌ی جلسه فرستاده می‌شود — با زمان، مکان و لینک باز کردن جلسه در اپ."
+        submitting={addMembers.isPending}
+        onClose={() => setMembersOpen(false)}
+        onSubmit={async (members) => {
+          await addMembers.mutateAsync(members);
+          Toast.show({ content: 'به جلسه اضافه شدند' });
+        }}
+      />
+
       <AgendaSheet
         visible={agendaOpen}
         sessionId={session.id}
@@ -283,7 +372,18 @@ export function SessionDetailPage() {
   );
 }
 
-function Header({ onBack, title }: { onBack: () => void; title: string }) {
+function Header({
+  onBack,
+  title,
+  onDelete,
+  deleting,
+}: {
+  onBack: () => void;
+  title: string;
+  /** Undefined for everyone but the meeting's owner — see isOwner. */
+  onDelete?: () => void;
+  deleting?: boolean;
+}) {
   return (
     <header className={styles.header}>
       <button type="button" className={styles.back} onClick={onBack} aria-label="بازگشت">
@@ -294,7 +394,21 @@ function Header({ onBack, title }: { onBack: () => void; title: string }) {
           never seen and home is the only thing that introduces the app. */}
       <HomeButton />
       <h1 className={styles.headerTitle}>{title}</h1>
-      <span className={styles.headerSpacer} aria-hidden="true" />
+      {/* Takes the spacer's place rather than adding to the row, so the title
+          stays centred whether or not this viewer can delete. */}
+      {onDelete ? (
+        <button
+          type="button"
+          className={styles.headerDelete}
+          onClick={onDelete}
+          disabled={deleting}
+          aria-label="حذف جلسه"
+        >
+          <DeleteOutline />
+        </button>
+      ) : (
+        <span className={styles.headerSpacer} aria-hidden="true" />
+      )}
     </header>
   );
 }

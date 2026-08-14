@@ -52,6 +52,27 @@ the **backend** creates the group itself now, server-side, via Rasagram's intern
 request at all. See that section below for the exact call sequence
 (login → chat/create → chat/upgradeToSupergroup → chat/enableTopics).
 
+## Who may do what inside a project
+
+| Action | Who |
+| ------ | --- |
+| Create a list, file a job | **any member** — a project is a shared board, and gating this would make it one person's |
+| Edit or delete a job | the job's **creator** (`createdBy`), or the **project's creator** (`ownerRefId`) |
+| Delete a list | the list's **creator** (`createdBy`), or the **project's creator** |
+| Edit or delete the project, add a member | the **project's creator** alone |
+
+Enforced server-side on every write (`canManage` in `app/http/controllers/project_controller.go`); anything
+else is **403**. `createdBy` and `ownerRefId` are on the wire so the app can avoid offering what would be
+refused — the board hides a list's ⋮ and declines to open a job's edit screen — but that is a courtesy, not
+the check.
+
+`createdBy` is `""` on rows written before the column existed (lists gained it in
+`20260814000002_add_created_by_to_lists_table`; jobs always had it). An empty string matches no caller, so
+those rows fall to the project's creator alone — the safe direction for a permission to fail in.
+
+There is no list *edit* endpoint. Nothing in the app renames a list, and a rename couldn't reach its topic
+anyway (botway's `editForumTopic` is a stub — see below), so the rule above covers deletion only.
+
 ## Group announcements
 
 A project IS a group and each of its lists IS a topic in it, so creating any of the three levels also says so
@@ -214,6 +235,34 @@ authenticated user isn't a member of this project.
 
 ---
 
+## `POST /api/v1/projects/:id/members`
+
+Adds people to a project — **the creator only** (403 otherwise).
+
+```json
+{ "members": [{ "id": "101", "source": "contacts", "displayName": "علی رضایی", "username": "ali", "phone": null, "online": true }] }
+```
+
+**Backend behavior** (`ProjectController.StoreMembers`):
+
+1. Ids already in the project are **dropped, not rejected** — a picker that returned an existing member is a
+   duplicate, and failing the batch over it would make adding two people fail because one was already there.
+   Every remaining id must parse as a numeric user id (422 otherwise), since it is about to be sent to the
+   admin API. Nobody new → **200** with the project unchanged.
+2. `POST /x/internal/channel/addParticipants` (`{"channel_id": <project.chatId>, "user_ids": [...]}`) — the
+   whole batch in one RPC, invoked as the channel's creator server-side (one more reason `user_ids[0]` at
+   creation must be the person creating the project).
+3. Only then the `project_members` rows. **The group comes first and a failure there is fatal (502, nothing
+   written)**: the group *is* the membership — every list is a topic in it — so a row for someone who isn't in
+   the group would name a person who can't see any of the work it is about.
+
+**Response 201** — the full `ProjectDetail`.
+
+> Removing a member is not offered, here or in the app: taking someone out of a Rasagram group is done in the
+> messenger, and doing it quietly behind their back is not this app's to do.
+
+---
+
 ## `PATCH /api/v1/projects/:id`
 
 Edits a project's identity. **Creator only** — the caller must be the member stamped `role: "owner"`
@@ -319,6 +368,7 @@ project with no way back to it.
   "id": "10",
   "projectId": "1",
   "name": "کارهای این هفته",
+  "createdBy": "101",
   "topicId": "42",
   "iconColor": 7322096,
   "iconCustomEmojiId": "5368324170671202286",
@@ -331,10 +381,20 @@ project with no way back to it.
 
 ## `DELETE /api/v1/projects/:id/lists/:listId`
 
-Calls the Bot API's `deleteForumTopic` (`POST /bot<token>/deleteForumTopic`, `{"chat_id": ..., "message_thread_id":
-...}`) for the list's `topicId` inside the project's `chatId`. Unlike creation, a failure here is logged but
-does **not** block deleting the row — an external cleanup call failing shouldn't trap the user with a list they
-can't remove.
+The list's creator or the project's (see “Who may do what” above); anyone else gets **403**.
+
+The list's topic is **closed, not deleted** — `POST /bot<token>/closeForumTopic`, `{"chat_id": ...,
+"message_thread_id": ...}`. A list stops existing in the app; the conversation held in its topic stays in the
+group, readable and locked. Deleting the topic would take those messages with it, which is not what removing a
+list from a board should mean. Unlike creation, a failure here is logged but does **not** block deleting the
+row — an external cleanup call failing shouldn't trap the user with a list they can't remove.
+
+> **Expect that call to fail today.** `closeForumTopic` is not implemented on this platform: botway's handler
+> logs `not impl` and returns `ErrMethodNotImpl` — as do `deleteForumTopic` (what this used to call, equally
+> in vain) and `editForumTopic`. Only `createForumTopic` is real. Until one of them is implemented in botway
+> — or an equivalent is added to the internal admin API, which today has no topic routes at all
+> (`chat/enableTopics` is the only topic-adjacent one) — a deleted list leaves its topic open in the group.
+> The row still goes, and the cost is a stale topic, not a stuck list.
 
 **Response 204** — no body.
 
@@ -376,6 +436,7 @@ would be a request per list.
     "assignees": [ { "id": "101", "source": "users", "displayName": "…", "username": null, "phone": null, "online": true } ],
     "tags": [ { "id": "7", "projectId": "3", "name": "فوری", "color": "#b45309" } ],
     "checklist": [ { "id": "1", "text": "جمع‌آوری بازخوردها", "done": false } ],
+    "createdBy": "101",
     "createdAt": "2026-08-12T09:00:00Z"
   }
 ]
@@ -422,8 +483,9 @@ the deadline in Jalali (Asia/Tehran), the assignees' display names, and a link t
 
 ## `PATCH /api/v1/projects/:id/jobs/:jobId`
 
-Edits one job. Backs the edit screen you reach by tapping a card on the board
-(`/projects/:projectId/jobs/:jobId/edit`).
+Edits one job — **the job's creator or the project's creator only** (403 otherwise). Backs the edit screen you
+reach by tapping a card on the board (`/projects/:projectId/jobs/:jobId/edit`), which the board only opens for
+those two.
 
 Project-scoped rather than a flat `/jobs/:id` so the caller's membership is checked against the same project
 the job must belong to, in one step — the same shape every other write here has. A `jobId` from another
@@ -453,9 +515,22 @@ project reads as **404**, not 403: it does not exist as far as this caller is co
   otherwise **422**. Everything is validated before anything is written, so a request that fails validation
   leaves the job exactly as it was.
 - `number` and `createdBy` are **not** editable: the first is a per-project sequence the backend owns, the
-  second records who filed the job and editing should not rewrite it.
+  second records who filed the job — and now also decides who may edit it, one more reason a request must not
+  be able to rewrite it.
 
 **Response 200** — the updated `Job`.
+
+---
+
+## `DELETE /api/v1/projects/:id/jobs/:jobId`
+
+Deletes one job. Same permission as editing it: the job's creator or the project's creator, **403** otherwise.
+The job's assignees, tags and checklist items go with it through the schema's own `ON DELETE CASCADE`.
+
+Nothing is posted in the project's group about it — a job announces itself when it is filed because that is
+news, and the announcement of a job that no longer exists stays put either way (the app can't unsend it).
+
+**Response 204** — no body.
 
 ---
 
@@ -580,6 +655,27 @@ are still created; their members just get no message. See `app/services/sessioni
 The frontend turns the launch parameter back into a route in `app/router.tsx` (`startParamRoute`), so
 `/sessions/:sessionId` is part of this contract, not just internal routing.
 
+### Who may do what in a meeting
+
+| Action | Who |
+| ------ | --- |
+| Read the meeting, its running order, its resolutions | any member |
+| Add a «دستور جلسه» or a «مصوبه» | the **owner** (`ownerRefId`) alone |
+| Change the session's status, delete the session, add a member | the **owner** alone |
+| Mark a «مصوبه» done / open / canceled | its **«مسئول»** (`assigneeId`), or whoever **recorded** it (`ownerRefId`) |
+
+The record of what one room agreed belongs to whoever called it — that's the whole split. The one exception
+is marking a resolution done, which belongs as much to the person who owes it: they can report their own
+work, and nobody can report it for them. Enforced by `loadSessionForOwner` and `DecisionController.Update`;
+anything else is **403**.
+
+> **This narrowed two endpoints.** Adding agendas and decisions used to be any member's, and any member of
+> the room could mark any resolution done — which made «انجام شد» a claim anybody could make about somebody
+> else's commitment.
+
+`Session.ownerRefId` and `Decision.ownerRefId` are on the wire so the app can stop offering what would be
+refused; the checks that matter are server-side.
+
 ### `GET /api/v1/sessions`
 
 Every session the caller is a member of, **soonest first**. Flat and unfiltered, like `GET /jobs` — the home
@@ -650,8 +746,32 @@ either way and the create screen reports how many of the invited were actually r
 ### `PATCH /api/v1/sessions/:id`
 
 `{ "status": "done" }` — **status only**. Title, time and place are what the invite message already told
-everyone; changing them here would leave every member holding a message that is now wrong. Any member may
-set it. Returns the `Session`.
+everyone; changing them here would leave every member holding a message that is now wrong. **The owner
+only** (403 otherwise). Returns the `Session`.
+
+### `POST /api/v1/sessions/:id/members`
+
+Adds people to a meeting — **the owner only** (403 otherwise). Same body as a project's:
+`{ "members": [ <PickedItem>, ... ] }`.
+
+There is no group to add them to, so this is the whole act: the rows, and **the same invite message creation
+sends** — title, time, place and the `startapp=session-<id>` link. Ids already in the meeting are dropped (no
+second invite about a meeting they were already told about). Sending happens before the insert, so each row is
+written once already carrying whether its invite arrived.
+
+**Response 201** — the full `SessionDetail`, so the screen can show who was reached (`members[].notifiedAt`).
+
+### `DELETE /api/v1/sessions/:id`
+
+Deletes the meeting — **the owner only**. Its members and its running order go with it (`ON DELETE
+CASCADE`).
+
+**Its «مصوبات» do not.** `decisions.session_id` is `ON DELETE SET NULL` by design: a commitment outlives the
+room that made it. Those rows survive with no session to name — which also means they drop out of
+`GET /decisions`, since that query is scoped through session membership. A meeting that simply didn't happen
+is better marked `"canceled"` via `PATCH` than deleted.
+
+**Response 204** — no body.
 
 ### `POST /api/v1/sessions/:id/agendas`
 
@@ -732,8 +852,10 @@ Returns the created `Decision` (201).
 
 ### `PATCH /api/v1/decisions/:id`
 
-`{ "status": "done" }` — status only, same reasoning as a session's. Any member of the decision's session
-may set it. Returns the `Decision`.
+`{ "status": "done" }` — status only, same reasoning as a session's. **Its «مسئول» (`assigneeId`) or whoever
+recorded it (`ownerRefId`, in practice the meeting's owner)**; everyone else in the room gets a 403. The
+owner is also accepted for rows written back when any member could record them, and for a resolution whose
+meeting has since been deleted (`session_id` goes null, not away). Returns the `Decision`.
 
 ---
 
@@ -818,7 +940,7 @@ id DESC` — the id breaks ties so a list of same-minute rows doesn't reshuffle 
 
 ```json
 {
-  "id": "1", "name": "فروشگاه مرکزی", "memberCount": 2,
+  "id": "1", "name": "فروشگاه مرکزی", "ownerRefId": "101", "memberCount": 2,
   "totalIncome": 36000000, "totalExpense": 7200000, "balance": 28800000,
   "transactionCount": 5, "createdAt": "2026-08-13T18:10:00Z",
   "members": [{ "id": "101", "source": "users", "displayName": "علی رضایی", "username": "ali", "phone": null,
@@ -827,7 +949,8 @@ id DESC` — the id breaks ties so a list of same-minute rows doesn't reshuffle 
   "sources": [{ "id": "1", "ledgerId": "1", "name": "صندوق فروشگاه" }],
   "transactions": [
     {
-      "id": "5", "ledgerId": "1", "type": "income", "amount": 24500000, "accountGroup": "sales",
+      "id": "5", "ledgerId": "1", "ownerRefId": "101",
+      "type": "income", "amount": 24500000, "accountGroup": "sales",
       "description": "فروش نقدی روز", "sourceId": "1", "sourceName": "صندوق فروشگاه", "tagIds": ["1"],
       "assigneeId": "101", "assigneeName": "علی رضایی",
       "occurredAt": "2026-08-13T09:18:00+03:30", "createdAt": "2026-08-13T09:20:11+03:30"
@@ -844,6 +967,44 @@ id DESC` — the id breaks ties so a list of same-minute rows doesn't reshuffle 
 - `assigneeId`/`assigneeName` — the «مسئول». Stored verbatim from whatever the picker returned and
   deliberately **not** required to be a member of the ledger: the responsible party on a receipt is a label,
   not an access grant, and the client's own contact picker reaches the whole address book.
+- `ownerRefId` (on both the book and each transaction) — who keeps the book, and who wrote each line. See
+  the permission table below.
+
+### Who may do what in a book
+
+| Action | Who |
+| ------ | --- |
+| Read the book, its totals, its reports | any member |
+| Record a «درآمد» or «هزینه»; add a tag or a «منبع مالی» | **any member** — a shared book people can't write in is a spreadsheet |
+| Delete a transaction | the member who **recorded** it (`ownerRefId`), or the book's **creator** |
+| Rename or delete the book, add a member | the book's **creator** alone |
+
+Writing is open and un-writing is not, deliberately: a balance everyone can silently edit is a balance
+nobody can rely on. Enforced by `loadLedgerForOwner` and `LedgerTransactionController.Destroy`; **403**
+otherwise.
+
+### `PATCH /api/v1/ledgers/{id}`
+
+`{ "name": "..." }` — **the creator only**. The name is all there is to edit: members are fixed at creation
+(they were messaged an invite, like a session's), tags and sources have their own endpoints, and the balance
+is derived from the lines. Blank name is 422. Returns the full `LedgerDetail`.
+
+### `POST /api/v1/ledgers/{id}/members`
+
+Adds people to a book — **the creator only** (403 otherwise). Same body and same mechanics as a session's: no
+group exists, so the rows plus the `startapp=ledger-<id>` invite are all of it, duplicates are dropped, and the
+invite is sent before the insert so `notifiedAt` is written with the row.
+
+Everyone added can immediately record income and expenses — that half of the book is deliberately open to
+every member (see the permission table above).
+
+**Response 201** — the full `LedgerDetail`.
+
+### `DELETE /api/v1/ledgers/{id}`
+
+Deletes the book — **the creator only** — and with it every line anyone ever recorded in it, plus its tags
+and its sources (all `ON DELETE CASCADE`; nothing outside the book points into it). No undo; the app warns
+first. **Response 204** — no body.
 
 ### `POST /api/v1/ledgers/{id}/transactions`
 
@@ -869,8 +1030,9 @@ id DESC` — the id breaks ties so a list of same-minute rows doesn't reshuffle 
 ### `DELETE /api/v1/ledgers/{id}/transactions/{transactionId}`
 
 **Response 204.** The module's only destructive call, and its only editing: correcting a mistyped amount is
-deleting the line and writing it again. Any member may delete any line — the ledger is the unit of
-authorization, exactly as the session is for a مصوبه. A `transactionId` from another book reads as 404.
+deleting the line and writing it again. **The member who recorded the line, or the book's creator** — 403
+for anyone else. (It used to be any member's; see the permission table above for why it isn't.) A
+`transactionId` from another book reads as 404.
 
 ### `POST /api/v1/ledgers/{id}/tags` and `POST /api/v1/ledgers/{id}/sources`
 
@@ -887,19 +1049,21 @@ name it.
 
 ## Not in v1 (deliberately out of scope, see plan)
 
-- Adding members to a project after creation — the admin API's `chat/create` takes an initial member list,
-  but nothing confirmed yet for adding someone to an existing group after the fact. Worth checking whether
-  `rasagram-new-admin` has an equivalent endpoint before assuming this needs a workaround.
-- Editing/deleting a project.
+- ~~Adding members to a project after creation~~ — **shipped**. `rasagram-new-admin` does have the endpoint:
+  `POST /x/internal/channel/addParticipants`. See `POST /projects/:id/members` above. *Removing* a member is
+  still out of scope — that belongs in the messenger.
+- ~~Editing/deleting a project~~ — **shipped**, see `PATCH`/`DELETE /projects/:id` above (creator only;
+  deleting takes the Rasagram group with it).
 - ~~Editing a Job, or toggling a checklist item~~ — **shipped**, see `PATCH /projects/:id/jobs/:jobId` above.
-  *Deleting* a Job is still out of scope.
+  ~~*Deleting* a Job is still out of scope.~~ — also shipped, `DELETE /projects/:id/jobs/:jobId`.
 - ~~Job activity/history («فعالیت‌ها»)~~ — **not built, and no longer needed.** The «فعالیت‌ها» button now
   hands off to the project's group in the Rasagram client, opening the topic of whichever list is on screen
   (`openTelegramLink` with `/c/<chatId>/<topicId>` — see `modules/project/links.ts`). The group already *is*
   the activity feed, so there is nothing here to build or keep in sync.
-- Adding participants to a session after creation, or editing/deleting one. Same reason a project's members
-  are fixed, plus one of its own: the invite message already went out with a time, a place and a link, and
-  nothing can recall it. Only `status` is mutable afterwards.
+- ~~Adding participants to a session after creation, or editing/deleting one~~ — adding and deleting are
+  **shipped** (owner only; adding sends the same invite). *Editing* a session is still `status` only, for the
+  original reason: the invite message already went out with a time, a place and a link, and nothing can recall
+  it.
 - Re-sending a failed session invite. The session screen names who wasn't reached so it can be done by hand;
   a retry button would keep failing for exactly the same reason (they've never started the bot) until they
   do something the app can't make them do.

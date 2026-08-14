@@ -56,6 +56,30 @@ func loadSessionForMember(ctx http.Context, userId string) (*models.Session, htt
 	return nil, ctx.Response().Status(403).Json(http.Json{"error": "not a member of this session"})
 }
 
+// loadSessionForOwner is loadSessionForMember with the stricter check almost
+// everything that WRITES to a meeting needs: only whoever called the meeting may
+// change it, delete it, or add to its running order and its resolutions.
+//
+// The split is the meeting itself. «دستور جلسه» and «مصوبه» are the record of
+// what one room agreed — the person who convened it keeps that record, while
+// everyone else reads it and carries what was assigned to them (which is why
+// marking a resolution done is the one write that isn't gated here — see
+// DecisionController.Update).
+//
+// Membership is checked first, so a stranger can't tell an id that exists from
+// one that doesn't: both get the same 403.
+func loadSessionForOwner(ctx http.Context, userId string) (*models.Session, http.Response) {
+	session, errResp := loadSessionForMember(ctx, userId)
+	if errResp != nil {
+		return nil, errResp
+	}
+
+	if session.OwnerRefId != userId {
+		return nil, ctx.Response().Status(403).Json(http.Json{"error": "only the person who called this meeting can do this"})
+	}
+	return session, nil
+}
+
 // sessionIdsForMember is every session the given user was invited to. Returned
 // as []any so it can go straight into WhereIn.
 func sessionIdsForMember(userId string) ([]any, error) {
@@ -295,7 +319,8 @@ type updateSessionRequest struct {
 	Status string `json:"status"`
 }
 
-// Update — PATCH /api/v1/sessions/{id}. Status only.
+// Update — PATCH /api/v1/sessions/{id}. Status only, and the owner's alone
+// (loadSessionForOwner).
 //
 // Nothing else about a meeting is editable here on purpose: title, time and
 // place are what the invite message already told everyone, and silently changing
@@ -307,7 +332,7 @@ func (r *SessionController) Update(ctx http.Context) http.Response {
 		return errResp
 	}
 
-	session, errResp := loadSessionForMember(ctx, authUser.ID)
+	session, errResp := loadSessionForOwner(ctx, authUser.ID)
 	if errResp != nil {
 		return errResp
 	}
@@ -356,4 +381,121 @@ func parseRouteId(raw string) (uint, bool) {
 		return 0, false
 	}
 	return uint(parsed), true
+}
+
+// Destroy — DELETE /api/v1/sessions/{id}. The meeting's owner alone.
+//
+// The members and the running order go with the row (both ON DELETE CASCADE).
+// The resolutions do NOT: decisions.session_id is ON DELETE SET NULL, because a
+// مصوبه is a commitment somebody owes, and the room disbanding doesn't discharge
+// it — see the Decision model. That is also why nothing here messages anyone: the
+// invite already went out, and a session that is cancelled rather than
+// mis-created should be marked «لغو شده», which is what Update is for.
+func (r *SessionController) Destroy(ctx http.Context) http.Response {
+	authUser, errResp := currentUser(ctx)
+	if errResp != nil {
+		return errResp
+	}
+
+	session, errResp := loadSessionForOwner(ctx, authUser.ID)
+	if errResp != nil {
+		return errResp
+	}
+
+	if _, err := facades.Orm().Query().Delete(session); err != nil {
+		return ctx.Response().Status(500).Json(http.Json{"error": err.Error()})
+	}
+
+	return ctx.Response().NoContent(204)
+}
+
+type storeSessionMembersRequest struct {
+	Members []storePickedItemRequest `json:"members"`
+}
+
+// StoreMembers — POST /api/v1/sessions/{id}/members. The meeting's owner alone.
+//
+// Unlike a project, there is no group to add anyone to — so this is the whole
+// act: the rows, and the same invite message creation sends, carrying the same
+// deep link back into the app. Someone added later gets told the way everyone
+// else was, because nothing else would ever tell them.
+//
+// Sending happens before the insert so each row is written once already carrying
+// whether its invite arrived, exactly as Store does it.
+func (r *SessionController) StoreMembers(ctx http.Context) http.Response {
+	authUser, errResp := currentUser(ctx)
+	if errResp != nil {
+		return errResp
+	}
+
+	session, errResp := loadSessionForOwner(ctx, authUser.ID)
+	if errResp != nil {
+		return errResp
+	}
+
+	var request storeSessionMembersRequest
+	if err := ctx.Request().Bind(&request); err != nil {
+		return ctx.Response().Status(400).Json(http.Json{"error": "invalid request body"})
+	}
+	if len(request.Members) == 0 {
+		return ctx.Response().Status(422).Json(http.Json{"error": "members is required"})
+	}
+
+	existing := make(map[string]bool, len(session.Members))
+	for i := range session.Members {
+		existing[session.Members[i].RefId] = true
+	}
+
+	added := make([]models.SessionMember, 0, len(request.Members))
+	for _, member := range request.Members {
+		// Already in the room — a duplicate pick, not an error, and certainly
+		// not a second invite about a meeting they were already told about.
+		if existing[member.Id] {
+			continue
+		}
+		existing[member.Id] = true
+		added = append(added, models.SessionMember{
+			SessionId:   session.ID,
+			RefId:       member.Id,
+			RefSource:   member.Source,
+			DisplayName: member.DisplayName,
+			Username:    member.Username,
+			Phone:       member.Phone,
+			Online:      member.Online,
+			Role:        models.SessionMemberRoleMember,
+		})
+	}
+
+	if len(added) > 0 {
+		sessioninvite.Send(session, added)
+
+		if err := facades.Orm().Query().Create(&added); err != nil {
+			return ctx.Response().Status(500).Json(http.Json{"error": err.Error()})
+		}
+		session.Members = append(session.Members, added...)
+	}
+
+	// The whole meeting comes back, not just the new rows: the screen that asked
+	// renders the member list, the running order and the resolutions together.
+	projectNames, err := sessionProjectNames([]models.Session{*session})
+	if err != nil {
+		return ctx.Response().Status(500).Json(http.Json{"error": err.Error()})
+	}
+
+	agendas, err := sessionAgendas(session.ID)
+	if err != nil {
+		return ctx.Response().Status(500).Json(http.Json{"error": err.Error()})
+	}
+
+	var decisions []models.Decision
+	if err := facades.Orm().Query().
+		Where("session_id", session.ID).
+		OrderBy("due_at").
+		Find(&decisions); err != nil {
+		return ctx.Response().Status(500).Json(http.Json{"error": err.Error()})
+	}
+
+	return ctx.Response().Status(201).Json(
+		resources.SessionDetail(session, projectNames, agendas, decisions, map[uint]string{session.ID: session.Title}),
+	)
 }

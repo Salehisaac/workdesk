@@ -80,6 +80,65 @@
   margin-inline: auto;
 }
 
+.members {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 16px;
+  border-radius: 18px;
+  background: var(--rasagram-theme-secondary-bg-color);
+}
+
+.membersHead {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.membersTitle {
+  font-size: 13.5px;
+  font-weight: 700;
+  color: var(--rasagram-theme-text-color);
+}
+
+.membersCount {
+  font-size: 12px;
+  color: var(--rasagram-theme-subtitle-text-color);
+}
+
+/* A wrapped row of names rather than a scrolling rail of avatars: this is a
+   reference list, not something to interact with — the only action is below. */
+.membersRail {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.memberChip {
+  padding: 5px 10px;
+  border-radius: 999px;
+  background: var(--rasagram-theme-bg-color);
+  font-size: 12px;
+  color: var(--rasagram-theme-text-color);
+}
+
+.membersAdd {
+  align-self: flex-start;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 14px;
+  border: none;
+  border-radius: 12px;
+  background: var(--rasagram-theme-bg-color);
+  color: var(--rasagram-theme-button-color);
+  font-family: inherit;
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
 /* Below the fold and visually apart from the form: deleting a project is not one
    more field of it. Outlined rather than filled — the destructive action should
    be findable, not the loudest thing on the screen. */

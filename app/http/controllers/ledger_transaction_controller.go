@@ -237,6 +237,14 @@ func (r *LedgerTransactionController) Destroy(ctx http.Context) http.Response {
 		return ctx.Response().Status(404).Json(http.Json{"error": "transaction not found"})
 	}
 
+	// Writing a line is any member's — that is what a shared book is for — but
+	// striking one out is not: a balance everyone can silently edit is a balance
+	// nobody can rely on. So it's the person who wrote it, or the person who
+	// keeps the book, the same pairing the project board uses for its jobs.
+	if transaction.OwnerRefId != authUser.ID && ledger.OwnerRefId != authUser.ID {
+		return ctx.Response().Status(403).Json(http.Json{"error": "only the person who recorded this line, or the ledger's creator, can delete it"})
+	}
+
 	// The pivot rows go first. The schema already cascades them (orm.Model has
 	// no DeletedAt, so this really is a hard delete), but a tag link outliving
 	// its transaction would be a row nothing could ever reach — worth not

@@ -59,6 +59,24 @@ func loadLedgerForMember(ctx http.Context, userId string) (*models.Ledger, http.
 	return nil, ctx.Response().Status(403).Json(http.Json{"error": "not a member of this ledger"})
 }
 
+// loadLedgerForOwner is loadLedgerForMember with the stricter check the book
+// itself needs: everyone in a ledger writes transactions in it — that is what a
+// shared book is for — but renaming it or deleting it (and with it every line
+// anyone ever recorded) belongs to whoever keeps it.
+//
+// Membership first, so a stranger gets the same 403 either way.
+func loadLedgerForOwner(ctx http.Context, userId string) (*models.Ledger, http.Response) {
+	ledger, errResp := loadLedgerForMember(ctx, userId)
+	if errResp != nil {
+		return nil, errResp
+	}
+
+	if ledger.OwnerRefId != userId {
+		return nil, ctx.Response().Status(403).Json(http.Json{"error": "only the ledger's creator can do this"})
+	}
+	return ledger, nil
+}
+
 // ledgerIdsForMember is every ledger the given user may write in. Returned as
 // []any so it can go straight into WhereIn.
 func ledgerIdsForMember(userId string) ([]any, error) {
@@ -346,4 +364,150 @@ func (r *LedgerController) StoreSource(ctx http.Context) http.Response {
 	}
 
 	return ctx.Response().Status(201).Json(resources.LedgerSource(&source))
+}
+
+type updateLedgerRequest struct {
+	Name *string `json:"name"`
+}
+
+// Update — PATCH /api/v1/ledgers/{id}. The book's creator alone
+// (loadLedgerForOwner).
+//
+// A ledger's name is all there is to edit: its members are fixed at creation
+// (like a session's, and for the same reason — they were messaged an invite),
+// its tags and sources are pools with their own endpoints, and its balance is
+// derived from the lines. PATCH-shaped anyway, so the one field can grow to two
+// without the caller's meaning changing.
+func (r *LedgerController) Update(ctx http.Context) http.Response {
+	authUser, errResp := currentUser(ctx)
+	if errResp != nil {
+		return errResp
+	}
+
+	ledger, errResp := loadLedgerForOwner(ctx, authUser.ID)
+	if errResp != nil {
+		return errResp
+	}
+
+	var request updateLedgerRequest
+	if err := ctx.Request().Bind(&request); err != nil {
+		return ctx.Response().Status(400).Json(http.Json{"error": "invalid request body"})
+	}
+
+	if request.Name != nil {
+		name := strings.TrimSpace(*request.Name)
+		if name == "" {
+			return ctx.Response().Status(422).Json(http.Json{"error": "name is required"})
+		}
+		ledger.Name = name
+	}
+
+	if err := facades.Orm().Query().Save(ledger); err != nil {
+		return ctx.Response().Status(500).Json(http.Json{"error": err.Error()})
+	}
+
+	transactions, err := ledgerTransactions([]any{ledger.ID})
+	if err != nil {
+		return ctx.Response().Status(500).Json(http.Json{"error": err.Error()})
+	}
+
+	return ctx.Response().Success().Json(
+		resources.LedgerDetail(ledger, resources.LedgerTotalsFor(transactions), transactions),
+	)
+}
+
+// Destroy — DELETE /api/v1/ledgers/{id}. The book's creator alone, and final:
+// every line anyone recorded in it goes too.
+//
+// One delete, no manual cleanup — ledger_members, ledger_tags, ledger_sources
+// and ledger_transactions are all ON DELETE CASCADE on the book, and the
+// transaction↔tag pivot cascades from the transactions (see
+// 20260813000008/9). Nothing outside the book points into it.
+func (r *LedgerController) Destroy(ctx http.Context) http.Response {
+	authUser, errResp := currentUser(ctx)
+	if errResp != nil {
+		return errResp
+	}
+
+	ledger, errResp := loadLedgerForOwner(ctx, authUser.ID)
+	if errResp != nil {
+		return errResp
+	}
+
+	if _, err := facades.Orm().Query().Delete(ledger); err != nil {
+		return ctx.Response().Status(500).Json(http.Json{"error": err.Error()})
+	}
+
+	return ctx.Response().NoContent(204)
+}
+
+type storeLedgerMembersRequest struct {
+	Members []storePickedItemRequest `json:"members"`
+}
+
+// StoreMembers — POST /api/v1/ledgers/{id}/members. The book's creator alone.
+//
+// Same act as a session's: no group exists to add anyone to, so the rows and the
+// invite message are the whole of it — a member who is never messaged has no way
+// of learning the book is there. Sent before the insert so each row is written
+// once already carrying whether its invite arrived (see Store).
+func (r *LedgerController) StoreMembers(ctx http.Context) http.Response {
+	authUser, errResp := currentUser(ctx)
+	if errResp != nil {
+		return errResp
+	}
+
+	ledger, errResp := loadLedgerForOwner(ctx, authUser.ID)
+	if errResp != nil {
+		return errResp
+	}
+
+	var request storeLedgerMembersRequest
+	if err := ctx.Request().Bind(&request); err != nil {
+		return ctx.Response().Status(400).Json(http.Json{"error": "invalid request body"})
+	}
+	if len(request.Members) == 0 {
+		return ctx.Response().Status(422).Json(http.Json{"error": "members is required"})
+	}
+
+	existing := make(map[string]bool, len(ledger.Members))
+	for i := range ledger.Members {
+		existing[ledger.Members[i].RefId] = true
+	}
+
+	added := make([]models.LedgerMember, 0, len(request.Members))
+	for _, member := range request.Members {
+		if existing[member.Id] {
+			continue
+		}
+		existing[member.Id] = true
+		added = append(added, models.LedgerMember{
+			LedgerId:    ledger.ID,
+			RefId:       member.Id,
+			RefSource:   member.Source,
+			DisplayName: member.DisplayName,
+			Username:    member.Username,
+			Phone:       member.Phone,
+			Online:      member.Online,
+			Role:        models.LedgerMemberRoleMember,
+		})
+	}
+
+	if len(added) > 0 {
+		ledgerinvite.Send(ledger, added)
+
+		if err := facades.Orm().Query().Create(&added); err != nil {
+			return ctx.Response().Status(500).Json(http.Json{"error": err.Error()})
+		}
+		ledger.Members = append(ledger.Members, added...)
+	}
+
+	transactions, err := ledgerTransactions([]any{ledger.ID})
+	if err != nil {
+		return ctx.Response().Status(500).Json(http.Json{"error": err.Error()})
+	}
+
+	return ctx.Response().Status(201).Json(
+		resources.LedgerDetail(ledger, resources.LedgerTotalsFor(transactions), transactions),
+	)
 }

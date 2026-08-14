@@ -31,5 +31,6 @@ func Migrations() []schema.Migration {
 		&migrations.M20260813000008CreateLedgerTables{},
 		&migrations.M20260813000009CreateLedgerTransactionsTables{},
 		&migrations.M20260814000001AddNotifiedAtToLedgerMembersTable{},
+		&migrations.M20260814000002AddCreatedByToListsTable{},
 	}
 }

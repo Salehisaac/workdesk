@@ -180,8 +180,41 @@ func (c *Client) CreateForumTopic(chatId, name string, iconColor int64, iconCust
 	return fmt.Sprintf("%d", result.MessageThreadId), nil
 }
 
+// CloseForumTopic closes a topic: the conversation stays and stays readable,
+// but nobody can post in it again (real Telegram's own semantics, and the
+// reason this — not deleteForumTopic — is what a deleted list does to its
+// topic; a list is removed from the app, its record in the group is not).
+//
+// NOTE: like GetForumTopicIconStickers, this is a method the platform does not
+// implement yet. botway's closeForumTopic handler is a stub that logs
+// "not impl" and returns ErrMethodNotImpl — as is deleteForumTopic, and
+// editForumTopic — so this call fails until someone implements it there
+// (createForumTopic, right above, is the one that is real). Read from
+// teamgram.io/bots' app/interface/botway/internal/core directly, same as every
+// other claim in this file. The caller treats a failure as non-fatal: an
+// external cleanup that can't run must not trap someone with a list they can't
+// remove.
+func (c *Client) CloseForumTopic(chatId, topicId string) error {
+	groupId, err := groupChatId(chatId)
+	if err != nil {
+		return fmt.Errorf("botapi: closeForumTopic: %w", err)
+	}
+
+	if err := c.post("closeForumTopic", map[string]any{
+		"chat_id":           groupId,
+		"message_thread_id": topicId,
+	}, nil); err != nil {
+		return fmt.Errorf("botapi: closeForumTopic: %w", err)
+	}
+	return nil
+}
+
 // DeleteForumTopic deletes a previously created topic. The bot must be an
 // admin in chatId with can_delete_messages rights.
+//
+// Nothing calls this: deleting a list closes its topic instead (see
+// CloseForumTopic). Kept because the two are one method apart and the day the
+// platform implements either, the choice between them is a one-line change.
 func (c *Client) DeleteForumTopic(chatId, topicId string) error {
 	groupId, err := groupChatId(chatId)
 	if err != nil {

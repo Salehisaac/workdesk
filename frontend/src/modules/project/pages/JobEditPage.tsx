@@ -1,9 +1,10 @@
-import { DotLoading, Toast } from 'antd-mobile';
+import { Dialog, DotLoading, Toast } from 'antd-mobile';
 import { ExclamationCircleOutline } from 'antd-mobile-icons';
 import { useNavigate, useParams } from 'react-router-dom';
+import { useMe } from '../../../shared/api/me';
 import { toLocalIso } from '../../../shared/date/jalali';
 import { EmptyState } from '../../../shared/ui/EmptyState';
-import { useJobs, useProject, useUpdateJob } from '../api';
+import { useDeleteJob, useJobs, useProject, useUpdateJob } from '../api';
 import { JobForm } from '../components/job/JobForm';
 import type { JobFormValues } from '../components/job/JobForm';
 import styles from '../components/job/JobForm.module.css';
@@ -17,9 +18,27 @@ export function JobEditPage() {
   // a cache hit rather than a fetch. There is no GET /jobs/{id} to fall back
   // on, which is also why a job id that isn't in that list is treated as gone.
   const jobs = useJobs();
+  const me = useMe();
   const updateJob = useUpdateJob(projectId ?? '', jobId ?? '');
+  const deleteJob = useDeleteJob(projectId ?? '', jobId ?? '');
 
   const job = (jobs.data ?? []).find((candidate) => candidate.id === jobId);
+
+  // The board already declines to open this screen for anyone else, but a screen
+  // has its own URL and this one can be arrived at directly — so it makes the
+  // same check rather than trusting the way in. The API makes it a third time,
+  // which is the one that actually protects anything.
+  //
+  // Phrased as "known to be someone else's", not "known to be mine", for the
+  // same reason ProjectEditPage is: `me` is allowed to fail and never retries
+  // (see useMe), and a failed identity lookup must not lock someone out of their
+  // own job — with nothing to compare, the screen opens and the API decides.
+  const notAllowed =
+    !!job &&
+    !!project.data &&
+    !!me.data &&
+    project.data.ownerRefId !== me.data.id &&
+    job.createdBy !== me.data.id;
 
   async function handleSubmit(values: JobFormValues) {
     try {
@@ -41,6 +60,24 @@ export function JobEditPage() {
       navigate(`/projects/${projectId}`);
     } catch (error) {
       Toast.show({ content: error instanceof Error ? error.message : 'ذخیره کار با خطا مواجه شد' });
+    }
+  }
+
+  async function handleDelete() {
+    const confirmed = await Dialog.confirm({
+      title: 'این کار حذف شود؟',
+      content: 'کار با همه‌ی چک‌لیست، برچسب‌ها و مسئول‌هایش پاک می‌شود و برگشتی ندارد.',
+      confirmText: 'حذف کار',
+      cancelText: 'انصراف',
+    });
+    if (!confirmed) return;
+
+    try {
+      await deleteJob.mutateAsync();
+      Toast.show({ content: 'کار حذف شد' });
+      navigate(`/projects/${projectId}`, { replace: true });
+    } catch (error) {
+      Toast.show({ content: error instanceof Error ? error.message : 'حذف کار با خطا مواجه شد' });
     }
   }
 
@@ -76,6 +113,18 @@ export function JobEditPage() {
     );
   }
 
+  if (notAllowed) {
+    return (
+      <div className={styles.page}>
+        <EmptyState
+          icon={<ExclamationCircleOutline />}
+          title="دسترسی ندارید"
+          description="ویرایش و حذف این کار فقط از سازنده‌اش یا سازنده‌ی پروژه برمی‌آید."
+        />
+      </div>
+    );
+  }
+
   return (
     <JobForm
       projectId={projectId ?? ''}
@@ -94,6 +143,8 @@ export function JobEditPage() {
       }}
       submitting={updateJob.isPending}
       onSubmit={handleSubmit}
+      onDelete={handleDelete}
+      deleting={deleteJob.isPending}
     />
   );
 }

@@ -80,6 +80,29 @@ export function ProjectBoardPage() {
   const isOwner = !!project && !!me.data && project.ownerRefId === me.data.id;
   const openEdit = useCallback(() => navigate(`/projects/${projectId}/edit`), [navigate, projectId]);
 
+  /**
+   * Who may edit or delete one thing on this board: whoever made it, and the
+   * project's creator. Anyone in the project can ADD lists and jobs — that's the
+   * point of a shared board — so this gates the destructive half only, and
+   * mirrors the backend's own canManage exactly.
+   */
+  const canManage = useCallback(
+    (createdBy: string) => isOwner || (!!me.data && !!createdBy && createdBy === me.data.id),
+    [isOwner, me.data],
+  );
+
+  // Tapping a card opens the edit form, which is the only screen a job has — so
+  // for someone who may not edit it, there is nothing to open. Saying why beats
+  // a tap that appears to do nothing, and beats a form that refuses on submit.
+  function handleOpenJob(jobId: string) {
+    const job = projectJobs.find((candidate) => candidate.id === jobId);
+    if (job && !canManage(job.createdBy)) {
+      Toast.show({ content: 'ویرایش این کار فقط از سازنده‌اش یا سازنده‌ی پروژه برمی‌آید' });
+      return;
+    }
+    navigate(`/projects/${projectId}/jobs/${jobId}/edit`);
+  }
+
   const registerPage = useCallback((listId: string, node: HTMLElement | null) => {
     if (node) pageRefs.current.set(listId, node);
     else pageRefs.current.delete(listId);
@@ -227,8 +250,9 @@ export function ProjectBoardPage() {
               jobs={jobsByList.get(list.id) ?? []}
               isActive={list.id === activeListId}
               loading={jobs.isLoading}
+              canDelete={canManage(list.createdBy)}
               onDelete={() => handleDeleteList(list.id)}
-              onOpenJob={(jobId) => navigate(`/projects/${projectId}/jobs/${jobId}/edit`)}
+              onOpenJob={handleOpenJob}
             />
           ))}
         </div>

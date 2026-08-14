@@ -77,6 +77,11 @@ export interface LedgerSource {
 export interface Ledger {
   id: string;
   name: string;
+  /**
+   * Who keeps the book — the only one who may rename or delete it. Every member
+   * writes lines in it; that half is deliberately open (see the API contract).
+   */
+  ownerRefId: string;
   memberCount: number;
   /** Tomans, summed server-side so the list can show a balance it never loaded rows for. */
   totalIncome: number;
@@ -90,6 +95,11 @@ export interface Ledger {
 export interface LedgerTransaction {
   id: string;
   ledgerId: string;
+  /**
+   * Who wrote the line down — not who it is about (that is `assigneeId`). They
+   * and the book's creator are the two who may strike it out again.
+   */
+  ownerRefId: string;
   type: TransactionType;
   /** Tomans, whole units, always positive — see the note at the top of this file. */
   amount: number;
@@ -128,6 +138,15 @@ export interface CreateLedgerInput {
   name: string;
   /** Everyone who may write in it. The creator is added as owner server-side. */
   members: PickedItem[];
+}
+
+/**
+ * PATCH body. The name is all there is to edit: members are fixed at creation
+ * (they were messaged an invite), tags and sources have their own endpoints, and
+ * the balance is derived from the lines.
+ */
+export interface UpdateLedgerInput {
+  name?: string;
 }
 
 export interface CreateTransactionInput {

@@ -4,6 +4,7 @@ import {
   CalendarOutline,
   CheckOutline,
   CloseOutline,
+  DeleteOutline,
   DownOutline,
   RightOutline,
   TagOutline,
@@ -61,6 +62,13 @@ interface JobFormProps {
   initialValues: JobFormValues;
   submitting: boolean;
   onSubmit: (values: JobFormValues) => void;
+  /**
+   * Deletes the job. Only the edit screen passes it, and only when the viewer is
+   * allowed to (the job's filer or the project's creator) — creating a job has
+   * nothing to delete, and a viewer who may not is refused by the API anyway.
+   */
+  onDelete?: () => void;
+  deleting?: boolean;
 }
 
 /**
@@ -71,7 +79,17 @@ interface JobFormProps {
  * starting values and decide what submitting means. That split is what keeps
  * a change to, say, the checklist row from having to be made twice.
  */
-export function JobForm({ projectId, lists, members, title, initialValues, submitting, onSubmit }: JobFormProps) {
+export function JobForm({
+  projectId,
+  lists,
+  members,
+  title,
+  initialValues,
+  submitting,
+  onSubmit,
+  onDelete,
+  deleting,
+}: JobFormProps) {
   const navigate = useNavigate();
   const { markers, dayCounts } = useAgendaCalendar();
 
@@ -321,6 +339,22 @@ export function JobForm({ projectId, lists, members, title, initialValues, submi
       </div>
 
       <footer className={styles.footer}>
+        {/* Opposite end from the status pill, and quiet: deleting is reachable
+            from where the job is worked on, without competing with the thing
+            this screen is actually for. */}
+        {onDelete && (
+          <button
+            type="button"
+            className={styles.delete}
+            onClick={onDelete}
+            disabled={deleting || submitting}
+            aria-label="حذف کار"
+          >
+            <DeleteOutline />
+            حذف
+          </button>
+        )}
+
         <button type="button" className={styles.statusButton} data-status={status} onClick={() => setSheet('status')}>
           {JOB_STATUS_LABEL[status]}
         </button>

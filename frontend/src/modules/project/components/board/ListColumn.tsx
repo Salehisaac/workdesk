@@ -12,6 +12,12 @@ interface ListColumnProps {
   jobs: Job[];
   isActive: boolean;
   loading: boolean;
+  /**
+   * Whether this viewer may remove the list — its creator, or the project's.
+   * False hides the ⋮ entirely rather than showing a menu whose only item is
+   * refused: the menu has nothing else in it.
+   */
+  canDelete: boolean;
   onDelete: () => void;
   onOpenJob: (jobId: string) => void;
 }
@@ -22,7 +28,7 @@ interface ListColumnProps {
  * visible that the board pages sideways.
  */
 export const ListColumn = forwardRef<HTMLElement, ListColumnProps>(function ListColumn(
-  { list, jobs, isActive, loading, onDelete, onOpenJob },
+  { list, jobs, isActive, loading, canDelete, onDelete, onOpenJob },
   ref,
 ) {
   const [menuOpen, setMenuOpen] = useState(false);
@@ -54,27 +60,31 @@ export const ListColumn = forwardRef<HTMLElement, ListColumnProps>(function List
             scrolled board, where popper anchors itself to the wrong edge under
             RTL. A bottom sheet has nothing to anchor to, and it's the pattern
             the rest of the app already uses for actions. */}
-        <button
-          type="button"
-          className={styles.menu}
-          aria-label={`گزینه‌های لیست ${list.name}`}
-          onClick={() => setMenuOpen(true)}
-        >
-          <MoreOutline />
-        </button>
+        {canDelete && (
+          <button
+            type="button"
+            className={styles.menu}
+            aria-label={`گزینه‌های لیست ${list.name}`}
+            onClick={() => setMenuOpen(true)}
+          >
+            <MoreOutline />
+          </button>
+        )}
       </header>
 
-      <ActionSheet
-        visible={menuOpen}
-        actions={[{ key: 'delete', text: 'حذف لیست', danger: true }]}
-        cancelText="انصراف"
-        onClose={() => setMenuOpen(false)}
-        onMaskClick={() => setMenuOpen(false)}
-        onAction={() => {
-          setMenuOpen(false);
-          onDelete();
-        }}
-      />
+      {canDelete && (
+        <ActionSheet
+          visible={menuOpen}
+          actions={[{ key: 'delete', text: 'حذف لیست', danger: true }]}
+          cancelText="انصراف"
+          onClose={() => setMenuOpen(false)}
+          onMaskClick={() => setMenuOpen(false)}
+          onAction={() => {
+            setMenuOpen(false);
+            onDelete();
+          }}
+        />
+      )}
 
       {/* Accent only on the page you're on — the one cue that says which of the
           side-by-side lists is the active one. */}

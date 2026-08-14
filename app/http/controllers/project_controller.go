@@ -53,6 +53,35 @@ func loadProjectForMember(ctx http.Context, userId string) (*models.Project, htt
 	return nil, ctx.Response().Status(403).Json(http.Json{"error": "not a member of this project"})
 }
 
+// isProjectOwner reports whether userId is the member who created the project —
+// the role stamped at creation, and the only one that outranks anyone else here.
+func isProjectOwner(project *models.Project, userId string) bool {
+	for _, member := range project.Members {
+		if member.RefId == userId && member.RefSource == "users" && member.Role == models.ProjectMemberRoleOwner {
+			return true
+		}
+	}
+	return false
+}
+
+// canManage answers who may edit or delete one thing INSIDE a project — a list,
+// a job: the person who made it, and the project's creator.
+//
+// The asymmetry with creation is deliberate. Anyone in a project can add a list
+// or file a job, because a project is a shared workspace and gating that would
+// make it one person's. Removing or rewriting what someone else put there is a
+// different act, so it stays with them — and with the project's creator, who
+// needs some way to clean up after members who have moved on.
+//
+// createdBy is empty on rows written before the column existed, which matches no
+// caller and so leaves those to the project's creator alone.
+func canManage(project *models.Project, userId, createdBy string) bool {
+	if createdBy != "" && createdBy == userId {
+		return true
+	}
+	return isProjectOwner(project, userId)
+}
+
 // loadProjectForOwner is loadProjectForMember with the stricter check the two
 // destructive endpoints need: renaming a project and deleting it (with its
 // Rasagram group, and every list and job in it) are the creator's alone.
@@ -65,12 +94,10 @@ func loadProjectForOwner(ctx http.Context, userId string) (*models.Project, http
 		return nil, errResp
 	}
 
-	for _, member := range project.Members {
-		if member.RefId == userId && member.RefSource == "users" && member.Role == models.ProjectMemberRoleOwner {
-			return project, nil
-		}
+	if !isProjectOwner(project, userId) {
+		return nil, ctx.Response().Status(403).Json(http.Json{"error": "only the project's creator can do this"})
 	}
-	return nil, ctx.Response().Status(403).Json(http.Json{"error": "only the project's creator can do this"})
+	return project, nil
 }
 
 // Index — GET /api/v1/projects.
@@ -444,4 +471,99 @@ func (r *ProjectController) Destroy(ctx http.Context) http.Response {
 	}
 
 	return ctx.Response().NoContent(204)
+}
+
+type storeProjectMembersRequest struct {
+	Members []storePickedItemRequest `json:"members"`
+}
+
+// StoreMembers — POST /api/v1/projects/{id}/members. The creator's alone.
+//
+// Adding someone to a project means adding them to its Rasagram group, and that
+// half comes FIRST: the group is what a project's membership actually is — every
+// list is a topic in it — so a project_members row for someone who isn't in the
+// group would name a person who can't see any of the work it's about. If the
+// invite fails, nothing is written and the caller gets a 502, the same
+// all-or-nothing stance creation takes.
+//
+// Ids already in the project are dropped rather than rejected: a picker that
+// returned an existing member is a duplicate, not an error, and answering 422
+// would make adding two people fail because one of them was already there.
+func (r *ProjectController) StoreMembers(ctx http.Context) http.Response {
+	authUser, errResp := currentUser(ctx)
+	if errResp != nil {
+		return errResp
+	}
+
+	project, errResp := loadProjectForOwner(ctx, authUser.ID)
+	if errResp != nil {
+		return errResp
+	}
+
+	var request storeProjectMembersRequest
+	if err := ctx.Request().Bind(&request); err != nil {
+		return ctx.Response().Status(400).Json(http.Json{"error": "invalid request body"})
+	}
+	if len(request.Members) == 0 {
+		return ctx.Response().Status(422).Json(http.Json{"error": "members is required"})
+	}
+
+	existing := make(map[string]bool, len(project.Members))
+	for _, member := range project.Members {
+		existing[member.RefId] = true
+	}
+
+	userIds := make([]int64, 0, len(request.Members))
+	members := make([]models.ProjectMember, 0, len(request.Members))
+	for _, member := range request.Members {
+		if existing[member.Id] {
+			continue
+		}
+		// Same reason Store parses these: the id is about to be sent to the
+		// admin API as a user id, so anything that isn't one has to be refused
+		// here rather than half-applied there.
+		id, err := strconv.ParseInt(member.Id, 10, 64)
+		if err != nil {
+			return ctx.Response().Status(422).Json(http.Json{"error": "member id \"" + member.Id + "\" is not a valid user id"})
+		}
+
+		existing[member.Id] = true
+		userIds = append(userIds, id)
+		members = append(members, models.ProjectMember{
+			ProjectId:   project.ID,
+			RefId:       member.Id,
+			RefSource:   member.Source,
+			DisplayName: member.DisplayName,
+			Username:    member.Username,
+			Phone:       member.Phone,
+			Online:      member.Online,
+			Role:        models.ProjectMemberRoleMember,
+		})
+	}
+
+	// Everyone asked for is already here — nothing to do, and the project as it
+	// stands is the honest answer.
+	if len(members) == 0 {
+		return ctx.Response().Success().Json(resources.ProjectDetail(project))
+	}
+
+	if project.ChatId == nil || strings.TrimSpace(*project.ChatId) == "" {
+		return ctx.Response().Status(500).Json(http.Json{"error": "project has no group to add anyone to"})
+	}
+	channelId, err := strconv.ParseInt(strings.TrimSpace(*project.ChatId), 10, 64)
+	if err != nil {
+		return ctx.Response().Status(500).Json(http.Json{"error": "project's chat id is not numeric"})
+	}
+
+	if err := rasagramadmin.New().AddChannelParticipants(channelId, userIds); err != nil {
+		facades.Log().Error("workdesk: AddChannelParticipants failed: " + err.Error())
+		return ctx.Response().Status(502).Json(http.Json{"error": "could not add them to the project's group: " + err.Error()})
+	}
+
+	if err := facades.Orm().Query().Create(&members); err != nil {
+		return ctx.Response().Status(500).Json(http.Json{"error": err.Error()})
+	}
+	project.Members = append(project.Members, members...)
+
+	return ctx.Response().Status(201).Json(resources.ProjectDetail(project))
 }

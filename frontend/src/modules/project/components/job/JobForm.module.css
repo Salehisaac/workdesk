@@ -313,6 +313,29 @@ button.checklistBox {
   border-top: 1px solid var(--rasagram-theme-secondary-bg-color);
 }
 
+/* Pushed to the far end of the footer, away from the status pill it shares the
+   row with. */
+.delete {
+  margin-inline-end: auto;
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  padding: 8px 14px;
+  border: none;
+  border-radius: 999px;
+  background: none;
+  color: var(--rasagram-theme-destructive-text-color);
+  font-family: inherit;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.delete:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
+
 .statusButton {
   padding: 8px 16px;
   border-radius: 999px;

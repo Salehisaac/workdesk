@@ -15,6 +15,7 @@ import { useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { formatShortDate, formatTime, toPersianDigits } from '../../../shared/date/jalali';
 import { EmptyState } from '../../../shared/ui/EmptyState';
+import { useMe } from '../../../shared/api/me';
 import { useDecisions, useSessions, useUpdateDecisionStatus } from '../api';
 import { MeetingGuideSheet } from '../components/MeetingGuideSheet';
 import {
@@ -346,6 +347,21 @@ function DecisionsTab({
   // One mutation for the whole tab: which decision it targets travels in the
   // payload, so toggling a row doesn't need a hook per row.
   const updateStatus = useUpdateDecisionStatus();
+  const me = useMe();
+
+  /**
+   * «انجام شد» belongs to the person who owes the commitment and to the person
+   * who wrote it down — the same rule the session screen and the API apply.
+   * Everyone else in the room reads the row; ticking someone else's box would be
+   * a claim about their work.
+   *
+   * With no identity to compare (the /me lookup is allowed to fail), the box
+   * stays live and the API answers.
+   */
+  function canMark(decision: Decision) {
+    if (!me.data) return true;
+    return decision.ownerRefId === me.data.id || decision.assigneeId === me.data.id;
+  }
 
   if (decisions.length === 0) {
     return filtered ? (
@@ -375,7 +391,7 @@ function DecisionsTab({
               type="button"
               className={`${styles.check} ${decision.status === 'done' ? styles.checkDone : ''}`}
               aria-label={decision.status === 'done' ? 'بازگرداندن به در انتظار اجرا' : 'انجام شد'}
-              disabled={updateStatus.isPending}
+              disabled={updateStatus.isPending || !canMark(decision)}
               onClick={() =>
                 updateStatus.mutate({
                   decisionId: decision.id,

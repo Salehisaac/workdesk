@@ -88,6 +88,36 @@ func (c *Client) CreateTopicGroup(title string, userIDs []int64, photo *Photo) (
 	return channelID, nil
 }
 
+// AddChannelParticipants invites users into an existing supergroup — what a
+// project needs when someone is added to it after creation, since the group IS
+// the membership: a project_members row for someone who isn't in the group
+// would name a person who can't see any of the topics it's about.
+//
+// channelID is Project.ChatId, raw and positive (admin API convention, not the
+// Bot API's negated one). The whole batch goes over one RPC, and like every
+// other write here it is invoked as the channel's creator server-side — one more
+// reason ProjectController.Store puts the project's creator first in user_ids.
+//
+// Already-a-member is not an error worth guarding against here: the caller
+// filters ids it already has rows for, and the platform tolerates the rest.
+func (c *Client) AddChannelParticipants(channelID int64, userIDs []int64) error {
+	if len(userIDs) == 0 {
+		return nil
+	}
+
+	var result envelope[json.RawMessage]
+	if err := c.post("/x/internal/channel/addParticipants", map[string]any{
+		"channel_id": channelID,
+		"user_ids":   userIDs,
+	}, &result); err != nil {
+		return fmt.Errorf("rasagramadmin: add participants: %w", err)
+	}
+	if !result.Ok {
+		return fmt.Errorf("rasagramadmin: add participants: response ok=false")
+	}
+	return nil
+}
+
 // DeleteChannel deletes a whole supergroup — the mirror of CreateTopicGroup,
 // used when a project is deleted and its group has nothing left to be about.
 //

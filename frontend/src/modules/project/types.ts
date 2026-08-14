@@ -8,6 +8,12 @@ export interface ProjectListItem {
   id: string;
   projectId: string;
   name: string;
+  /**
+   * Who added the list. Anyone in the project can; only this person and the
+   * project's creator (`Project.ownerRefId`) can remove it — see `canManage` on
+   * the board. Empty on rows that predate the column.
+   */
+  createdBy: string;
   /** Forum topic id inside the project's chat — null until the backend created it. Plan section 8. */
   topicId: string | null;
   /** One of FORUM_TOPIC_COLORS (see api.ts), or null for the platform's default icon. */
@@ -155,6 +161,12 @@ export interface Job {
   tags: JobTag[];
   checklist: JobChecklistItem[];
   status: JobStatus;
+  /**
+   * Who filed the job. Anyone in the project can file one; only this person and
+   * the project's creator can edit or delete it (the API enforces it, the board
+   * only avoids offering what would be refused).
+   */
+  createdBy: string;
   createdAt: string;
 }
 

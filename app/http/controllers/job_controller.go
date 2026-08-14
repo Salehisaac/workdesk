@@ -374,7 +374,9 @@ type updateJobRequest struct {
 	Status      *string                       `json:"status"`
 }
 
-// Update — PATCH /api/v1/projects/{id}/jobs/{jobId}.
+// Update — PATCH /api/v1/projects/{id}/jobs/{jobId}. The job's creator or the
+// project's (canManage) — anyone in the project can file a job, but rewriting
+// someone else's is not the same act as writing your own.
 //
 // Project-scoped rather than a flat /jobs/{id} so the caller's membership is
 // checked against the same project the job must belong to, in one step, the
@@ -382,7 +384,8 @@ type updateJobRequest struct {
 //
 // `number` and `createdBy` are deliberately not editable: the first is a
 // per-project sequence the backend owns, the second is a record of who filed
-// the job, which editing it should not rewrite.
+// the job — and now also what decides who may edit it, which is one more reason
+// a request must not be able to rewrite it.
 func (r *JobController) Update(ctx http.Context) http.Response {
 	authUser, errResp := currentUser(ctx)
 	if errResp != nil {
@@ -407,6 +410,10 @@ func (r *JobController) Update(ctx http.Context) http.Response {
 	}
 	if job.ID == 0 {
 		return ctx.Response().Status(404).Json(http.Json{"error": "job not found"})
+	}
+
+	if !canManage(project, authUser.ID, job.CreatedBy) {
+		return ctx.Response().Status(403).Json(http.Json{"error": "only the job's creator or the project's creator can edit this job"})
 	}
 
 	var request updateJobRequest
@@ -542,4 +549,49 @@ func (r *JobController) Update(ctx http.Context) http.Response {
 	}
 
 	return ctx.Response().Success().Json(resources.Job(&job, contexts[project.ID]))
+}
+
+// Destroy — DELETE /api/v1/projects/{id}/jobs/{jobId}. Same permission as
+// editing one (canManage): the job's creator, or the project's.
+//
+// Nothing is said in the project's group about it. A job announces itself when
+// it is filed (app/services/projectfeed) because that is news; a deletion that
+// posted a second message would leave the topic reading as a log of edits rather
+// than as the list's conversation — and the announcement of a job that no longer
+// exists stays put either way, since the app can't unsend it.
+//
+// The job's assignees, tags and checklist go with the row through the schema's
+// own ON DELETE CASCADE (see 20260812000003_create_job_relations_tables).
+func (r *JobController) Destroy(ctx http.Context) http.Response {
+	authUser, errResp := currentUser(ctx)
+	if errResp != nil {
+		return errResp
+	}
+
+	project, errResp := loadProjectForMember(ctx, authUser.ID)
+	if errResp != nil {
+		return errResp
+	}
+
+	// Scoped to the project, so a job id from another project reads as "not
+	// found" here rather than being deleted across the boundary.
+	var job models.Job
+	if err := facades.Orm().Query().
+		Where("project_id", project.ID).
+		Find(&job, ctx.Request().Route("jobId")); err != nil {
+		return ctx.Response().Status(500).Json(http.Json{"error": err.Error()})
+	}
+	if job.ID == 0 {
+		return ctx.Response().Status(404).Json(http.Json{"error": "job not found"})
+	}
+
+	if !canManage(project, authUser.ID, job.CreatedBy) {
+		return ctx.Response().Status(403).Json(http.Json{"error": "only the job's creator or the project's creator can delete this job"})
+	}
+
+	if _, err := facades.Orm().Query().Delete(&job); err != nil {
+		return ctx.Response().Status(500).Json(http.Json{"error": err.Error()})
+	}
+
+	return ctx.Response().NoContent(204)
 }

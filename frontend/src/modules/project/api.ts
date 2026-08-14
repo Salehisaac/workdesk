@@ -1,5 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useMemo } from 'react';
+import type { PickedItem } from '../../bridge/types';
 import { apiClient, getCollection } from '../../shared/api/client';
 import { buildProjectReport } from './report';
 import type { ProjectReport } from './report';
@@ -139,6 +140,23 @@ export function useUpdateJob(projectId: string, jobId: string) {
 }
 
 /**
+ * Deleting a job invalidates the same two queries editing one does — the flat
+ * job list the board and the home calendar both read, and the project detail.
+ * Allowed for the job's own filer and the project's creator; anyone else is
+ * refused server-side (403), which is why the board only offers it to those two.
+ */
+export function useDeleteJob(projectId: string, jobId: string) {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: () => apiClient.delete<void>(`/projects/${projectId}/jobs/${jobId}`),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: projectKeys.jobs });
+      queryClient.invalidateQueries({ queryKey: projectKeys.detail(projectId) });
+    },
+  });
+}
+
+/**
  * Tags are project-scoped, so this is the pool every list's jobs choose from —
  * see JobTag. Fetched on demand (the tag sheet has to be opened first).
  */
@@ -202,6 +220,25 @@ export function useDeleteProject(projectId: string) {
       queryClient.removeQueries({ queryKey: projectKeys.detail(projectId) });
       queryClient.invalidateQueries({ queryKey: projectKeys.all });
       queryClient.invalidateQueries({ queryKey: projectKeys.jobs });
+    },
+  });
+}
+
+/**
+ * Adding people to a project — its creator's alone (403 otherwise).
+ *
+ * Server-side this puts them in the project's Rasagram group first and only then
+ * writes the rows, so a 502 here means nobody was added anywhere: the group IS
+ * the membership, and a member who isn't in it can't see a single topic.
+ */
+export function useAddProjectMembers(projectId: string) {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (members: PickedItem[]) =>
+      apiClient.post<ProjectDetail>(`/projects/${projectId}/members`, { members }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: projectKeys.all });
+      queryClient.invalidateQueries({ queryKey: projectKeys.detail(projectId) });
     },
   });
 }

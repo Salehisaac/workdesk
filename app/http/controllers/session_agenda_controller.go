@@ -61,18 +61,20 @@ type storeAgendaRequest struct {
 	AssigneeId string `json:"assigneeId"`
 }
 
-// Store — POST /api/v1/sessions/{id}/agendas.
+// Store — POST /api/v1/sessions/{id}/agendas. The meeting's owner alone
+// (loadSessionForOwner), as with مصوبات.
 //
-// Any member may add to the running order, matching how any member may record
-// what the room decided. The meeting is the unit of authorization here; there is
-// no separate notion of who "owns" the agenda.
+// It used to be any member's, on the reasoning that the meeting was the unit of
+// authorization. It isn't: the running order is what the person who called the
+// meeting intends to get through, so it is theirs to write. Everyone else reads
+// it — and carries whatever was assigned to them.
 func (r *SessionAgendaController) Store(ctx http.Context) http.Response {
 	authUser, errResp := currentUser(ctx)
 	if errResp != nil {
 		return errResp
 	}
 
-	session, errResp := loadSessionForMember(ctx, authUser.ID)
+	session, errResp := loadSessionForOwner(ctx, authUser.ID)
 	if errResp != nil {
 		return errResp
 	}

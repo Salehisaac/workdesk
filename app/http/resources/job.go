@@ -91,6 +91,10 @@ func Job(j *models.Job, ctx JobContext) http.Json {
 		"tags":        tags,
 		"checklist":   JobChecklistItems(j.Checklist),
 		"status":      j.Status,
-		"createdAt":   createdAt,
+		// Who filed it — with the project's ownerRefId, this is what lets the
+		// board offer editing and deleting to the two people the API accepts
+		// them from (JobController.Update/Destroy) and nobody else.
+		"createdBy": j.CreatedBy,
+		"createdAt": createdAt,
 	}
 }

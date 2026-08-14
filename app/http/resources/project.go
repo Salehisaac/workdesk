@@ -97,9 +97,13 @@ func ProjectMembers(members []models.ProjectMember) []http.Json {
 // List matches the `ProjectListItem` shape in API_CONTRACT.md.
 func List(l *models.List) http.Json {
 	return http.Json{
-		"id":                formatId(l.ID),
-		"projectId":         formatId(l.ProjectId),
-		"name":              l.Name,
+		"id":        formatId(l.ID),
+		"projectId": formatId(l.ProjectId),
+		"name":      l.Name,
+		// Who added it — the frontend compares it against the caller (and the
+		// project's ownerRefId) to decide whether to offer «حذف لیست». The check
+		// that matters is server-side, in ProjectListController.Destroy.
+		"createdBy":         l.CreatedBy,
 		"topicId":           l.TopicId,
 		"iconColor":         l.IconColor,
 		"iconCustomEmojiId": l.IconCustomEmojiId,

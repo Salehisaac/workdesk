@@ -133,7 +133,9 @@ type storeDecisionRequest struct {
 	AssigneeId string `json:"assigneeId"`
 }
 
-// Store — POST /api/v1/sessions/{id}/decisions.
+// Store — POST /api/v1/sessions/{id}/decisions. The meeting's owner alone
+// (loadSessionForOwner): a مصوبه is the record of what the room agreed, and the
+// person who convened it keeps that record.
 //
 // The assignee must be someone who was in the meeting. That isn't bureaucracy:
 // the name is denormalized from the member row, so accepting an arbitrary id
@@ -144,7 +146,7 @@ func (r *DecisionController) Store(ctx http.Context) http.Response {
 		return errResp
 	}
 
-	session, errResp := loadSessionForMember(ctx, authUser.ID)
+	session, errResp := loadSessionForOwner(ctx, authUser.ID)
 	if errResp != nil {
 		return errResp
 	}
@@ -243,23 +245,28 @@ func (r *DecisionController) Update(ctx http.Context) http.Response {
 		return ctx.Response().Status(404).Json(http.Json{"error": "decision not found"})
 	}
 
-	// Authorized through the meeting, matching Index: anyone who was in the room
-	// may mark what the room decided as done. A decision whose session is gone
-	// falls back to its author.
-	if decision.SessionId != nil {
-		var membership models.SessionMember
-		if err := facades.Orm().Query().
-			Where("session_id", *decision.SessionId).
-			Where("ref_id", authUser.ID).
-			Where("ref_source", "users").
-			First(&membership); err != nil {
+	// The two people a resolution is actually about: whoever is to carry it out
+	// («مسئول»), and whoever recorded it — which, since only a meeting's owner
+	// may record one, is that owner.
+	//
+	// Narrower than it was. Any member of the room could mark any resolution
+	// done, which made «انجام شد» a claim anybody could make about somebody
+	// else's commitment. The owner is still checked separately, for rows written
+	// back when any member could record them, and for a resolution whose meeting
+	// has since been deleted (session_id goes null, not away).
+	allowed := decision.OwnerRefId == authUser.ID ||
+		(decision.AssigneeRefId != nil && *decision.AssigneeRefId == authUser.ID)
+
+	if !allowed && decision.SessionId != nil {
+		var session models.Session
+		if err := facades.Orm().Query().Where("id", *decision.SessionId).First(&session); err != nil {
 			return ctx.Response().Status(500).Json(http.Json{"error": err.Error()})
 		}
-		if membership.ID == 0 {
-			return ctx.Response().Status(403).Json(http.Json{"error": "not a member of this session"})
-		}
-	} else if decision.OwnerRefId != authUser.ID {
-		return ctx.Response().Status(403).Json(http.Json{"error": "not yours to change"})
+		allowed = session.ID != 0 && session.OwnerRefId == authUser.ID
+	}
+
+	if !allowed {
+		return ctx.Response().Status(403).Json(http.Json{"error": "only the person responsible for this decision, or the meeting's owner, can change it"})
 	}
 
 	var request updateDecisionRequest

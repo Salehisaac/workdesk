@@ -1,11 +1,13 @@
 import { Button, Dialog, DotLoading, Toast } from 'antd-mobile';
-import { DeleteOutline, ExclamationCircleOutline, RightOutline } from 'antd-mobile-icons';
+import { AddOutline, DeleteOutline, ExclamationCircleOutline, RightOutline } from 'antd-mobile-icons';
 import { useEffect, useRef, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { useMe } from '../../../shared/api/me';
 import { DEFAULT_PALETTE, paletteByKey, renderMonogramFile } from '../../../shared/brand/monogram';
+import { toPersianDigits } from '../../../shared/date/jalali';
 import { EmptyState } from '../../../shared/ui/EmptyState';
-import { useDeleteProject, useProject, useUpdateProject, useUploadAvatar } from '../api';
+import { AddMembersSheet } from '../../../shared/ui/people/AddMembersSheet';
+import { useAddProjectMembers, useDeleteProject, useProject, useUpdateProject, useUploadAvatar } from '../api';
 import { ProjectIdentityCard } from '../components/create/ProjectIdentityCard';
 import type { UpdateProjectInput } from '../types';
 import styles from './ProjectEditPage.module.css';
@@ -29,6 +31,7 @@ export function ProjectEditPage() {
   const { data: project, isLoading, isError } = useProject(projectId);
   const updateProject = useUpdateProject(projectId ?? '');
   const deleteProject = useDeleteProject(projectId ?? '');
+  const addMembers = useAddProjectMembers(projectId ?? '');
   const uploadAvatar = useUploadAvatar();
 
   const [name, setName] = useState('');
@@ -38,6 +41,7 @@ export function ProjectEditPage() {
   const [nameInvalid, setNameInvalid] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [deleting, setDeleting] = useState(false);
+  const [membersOpen, setMembersOpen] = useState(false);
 
   // The form is filled from the project once, when it arrives. A ref rather than
   // a dependency on `project`, because the query refetches (creating a list from
@@ -213,6 +217,26 @@ export function ProjectEditPage() {
           onPhotoCleared={() => setPhotoUrl(null)}
         />
 
+        {/* Adding is all this offers — a project's people are also its group's
+            members, and removing someone from a Rasagram group is not something
+            this app can do (nor should quietly do behind their back). */}
+        <section className={styles.members}>
+          <div className={styles.membersHead}>
+            <span className={styles.membersTitle}>هم‌تیمی‌ها</span>
+            <span className={styles.membersCount}>{toPersianDigits(project.members.length)} نفر</span>
+          </div>
+          <div className={styles.membersRail}>
+            {project.members.map((member) => (
+              <span key={`${member.source}-${member.id}`} className={styles.memberChip}>
+                {member.displayName}
+              </span>
+            ))}
+          </div>
+          <button type="button" className={styles.membersAdd} onClick={() => setMembersOpen(true)}>
+            <AddOutline /> افزودن هم‌تیمی
+          </button>
+        </section>
+
         <section className={styles.danger}>
           <span className={styles.dangerTitle}>حذف پروژه</span>
           <span className={styles.dangerBody}>
@@ -225,6 +249,18 @@ export function ProjectEditPage() {
           </button>
         </section>
       </div>
+
+      <AddMembersSheet
+        visible={membersOpen}
+        title="افزودن هم‌تیمی"
+        hint="هرکسی که اضافه کنید به گروه رساگرامِ این پروژه هم اضافه می‌شود و از آن‌جا همه‌ی لیست‌ها و کارها را می‌بیند."
+        submitting={addMembers.isPending}
+        onClose={() => setMembersOpen(false)}
+        onSubmit={async (members) => {
+          await addMembers.mutateAsync(members);
+          Toast.show({ content: 'به پروژه و گروهش اضافه شدند' });
+        }}
+      />
 
       <div className={styles.footer}>
         <Button

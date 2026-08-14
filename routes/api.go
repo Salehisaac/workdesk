@@ -26,6 +26,9 @@ func Api() {
 		// group — so the frontend warns before calling it.
 		router.Patch("/projects/{id}", projectController.Update)
 		router.Delete("/projects/{id}", projectController.Destroy)
+		// Adding someone puts them in the project's Rasagram group too — the
+		// group IS the membership. Creator only, like the two above.
+		router.Post("/projects/{id}/members", projectController.StoreMembers)
 
 		listController := controllers.NewProjectListController()
 		router.Post("/projects/{id}/lists", listController.Store)
@@ -44,7 +47,10 @@ func Api() {
 		jobController := controllers.NewJobController()
 		router.Get("/jobs", jobController.Index)
 		router.Post("/projects/{id}/jobs", jobController.Store)
+		// Filing a job is any member's; editing or deleting one is its own
+		// filer's and the project creator's (canManage).
 		router.Patch("/projects/{id}/jobs/{jobId}", jobController.Update)
+		router.Delete("/projects/{id}/jobs/{jobId}", jobController.Destroy)
 
 		// «مخزن جلسه». A session is shaped like a project and provisions no
 		// group — creating one DMs every member a deep link back into the mini
@@ -53,7 +59,13 @@ func Api() {
 		router.Get("/sessions", sessionController.Index)
 		router.Post("/sessions", sessionController.Store)
 		router.Get("/sessions/{id}", sessionController.Show)
+		// Both the owner's alone (loadSessionForOwner) — as are the two writes
+		// below, «دستور جلسه» and «مصوبه»: the record of what a room agreed
+		// belongs to whoever called it.
 		router.Patch("/sessions/{id}", sessionController.Update)
+		router.Delete("/sessions/{id}", sessionController.Destroy)
+		// No group to add anyone to, so this sends the same invite creation does.
+		router.Post("/sessions/{id}/members", sessionController.StoreMembers)
 
 		// «دستور جلسه» — the meeting's running order. Write-only here: it is read
 		// as part of GET /sessions/{id}, which carries `agendas`.
@@ -77,6 +89,12 @@ func Api() {
 		router.Get("/ledgers", ledgerController.Index)
 		router.Post("/ledgers", ledgerController.Store)
 		router.Get("/ledgers/{id}", ledgerController.Show)
+		// The book itself is its creator's; everything written IN it (below) is
+		// every member's. See loadLedgerForOwner.
+		router.Patch("/ledgers/{id}", ledgerController.Update)
+		router.Delete("/ledgers/{id}", ledgerController.Destroy)
+		// Same as a session's: rows plus the invite that tells them it exists.
+		router.Post("/ledgers/{id}/members", ledgerController.StoreMembers)
 		// The two pools a transaction draws from. Write-only here, like session
 		// agendas: both are read as part of the ledger they belong to.
 		router.Post("/ledgers/{id}/tags", ledgerController.StoreTag)

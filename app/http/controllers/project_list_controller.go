@@ -77,7 +77,9 @@ func (r *ProjectListController) Store(ctx http.Context) http.Response {
 		return ctx.Response().Status(502).Json(http.Json{"error": "could not create the list's topic: " + err.Error()})
 	}
 
-	list := models.List{ProjectId: project.ID, Name: request.Name, TopicId: &topicId}
+	// Anyone in the project may add a list; who added it is recorded because it
+	// decides who may remove it again (canManage).
+	list := models.List{ProjectId: project.ID, Name: request.Name, CreatedBy: authUser.ID, TopicId: &topicId}
 	if request.IconColor != 0 {
 		list.IconColor = &request.IconColor
 	}
@@ -102,7 +104,13 @@ func (r *ProjectListController) Store(ctx http.Context) http.Response {
 	return ctx.Response().Status(201).Json(resources.List(&list))
 }
 
-// Destroy — DELETE /api/v1/projects/{id}/lists/{listId}.
+// Destroy — DELETE /api/v1/projects/{id}/lists/{listId}. The list's creator or
+// the project's (canManage); every other member gets a 403.
+//
+// The topic is CLOSED, not deleted: the list stops existing in the app, but the
+// conversation held in it stays in the group, readable and locked. Deleting the
+// topic would take the messages with it, which is not what removing a list from
+// a board should mean.
 func (r *ProjectListController) Destroy(ctx http.Context) http.Response {
 	authUser, errResp := currentUser(ctx)
 	if errResp != nil {
@@ -124,9 +132,17 @@ func (r *ProjectListController) Destroy(ctx http.Context) http.Response {
 		return ctx.Response().Status(404).Json(http.Json{"error": "list not found"})
 	}
 
+	if !canManage(project, authUser.ID, list.CreatedBy) {
+		return ctx.Response().Status(403).Json(http.Json{"error": "only the list's creator or the project's creator can delete this list"})
+	}
+
+	// Logged, never fatal — same stance the whole module takes on external
+	// cleanup. It is currently expected to fail: the platform's closeForumTopic
+	// is not implemented yet (see botapi.CloseForumTopic), which costs the topic
+	// staying open, not the list staying undeletable.
 	if project.ChatId != nil && list.TopicId != nil && strings.TrimSpace(*list.TopicId) != "" {
-		if err := botapi.New().DeleteForumTopic(*project.ChatId, *list.TopicId); err != nil {
-			facades.Log().Error("workdesk: DeleteForumTopic failed: " + err.Error())
+		if err := botapi.New().CloseForumTopic(*project.ChatId, *list.TopicId); err != nil {
+			facades.Log().Error("workdesk: CloseForumTopic failed: " + err.Error())
 		}
 	}
 

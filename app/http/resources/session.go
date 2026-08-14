@@ -36,8 +36,12 @@ func Session(s *models.Session, projectNames map[uint]string) http.Json {
 	}
 
 	return http.Json{
-		"id":          formatId(s.ID),
-		"title":       s.Title,
+		"id":    formatId(s.ID),
+		"title": s.Title,
+		// Who called the meeting — the only one who may change or delete it, or
+		// add to its running order and its resolutions (loadSessionForOwner).
+		// On the wire so the screen can stop offering what it would be refused.
+		"ownerRefId":  s.OwnerRefId,
 		"projectId":   projectId,
 		"projectName": projectName,
 		"startsAt":    startsAt,
@@ -174,9 +178,12 @@ func Decision(d *models.Decision, sessionTitles map[uint]string, agendaTitles ma
 	}
 
 	return http.Json{
-		"id":           formatId(d.ID),
-		"title":        d.Title,
-		"description":  d.Description,
+		"id":          formatId(d.ID),
+		"title":       d.Title,
+		"description": d.Description,
+		// Who recorded it. With assigneeId, this is the pair allowed to mark it
+		// done (DecisionController.Update) — everyone else in the room reads it.
+		"ownerRefId":   d.OwnerRefId,
 		"sessionId":    sessionId,
 		"sessionTitle": sessionTitle,
 		"agendaId":     agendaId,

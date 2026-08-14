@@ -10,6 +10,13 @@ interface PeoplePickerProps {
   members: PickedItem[];
   /** The signed-in user, who always leads the rail. Empty while /me is in flight. */
   ownerName: string;
+  /**
+   * Whether to show the signed-in user's own chip. True on a create screen,
+   * where they are about to become the owner of the thing being made; false when
+   * adding people to something that already has one (AddMembersSheet), where the
+   * rail holds exactly what is about to be sent and nothing else.
+   */
+  showOwner?: boolean;
   onChange: (members: PickedItem[]) => void;
   /** Section heading — «هم‌تیمی‌ها» for a project, «شرکت‌کنندگان» for a session. */
   title: string;
@@ -42,7 +49,14 @@ function sameItem(a: PickedItem, b: PickedItem) {
  * It carries no explanatory line of its own: what can and can't be changed after
  * creation is the guide's subject, not this component's.
  */
-export function PeoplePicker({ members, ownerName, onChange, title, ownerRoleLabel }: PeoplePickerProps) {
+export function PeoplePicker({
+  members,
+  ownerName,
+  showOwner = true,
+  onChange,
+  title,
+  ownerRoleLabel,
+}: PeoplePickerProps) {
   // Whether the client is holding an unanswered pick request. Tracked only so
   // the button can say so: bridge.pick() now waits up to 45s for a reply, and
   // a button that looks tappable but does nothing for that long reads as a
@@ -82,7 +96,7 @@ export function PeoplePicker({ members, ownerName, onChange, title, ownerRoleLab
     <section className={styles.section}>
       <div className={styles.head}>
         <h2 className={styles.title}>{title}</h2>
-        <span className={styles.count}>{members.length + 1} نفر</span>
+        <span className={styles.count}>{members.length + (showOwner ? 1 : 0)} نفر</span>
       </div>
 
       <div className={styles.rail}>
@@ -93,17 +107,19 @@ export function PeoplePicker({ members, ownerName, onChange, title, ownerRoleLab
           <span className={styles.addLabel}>{picking ? 'در انتظار رساگرام…' : 'افزودن'}</span>
         </button>
 
-        <div className={styles.chip}>
-          <span
-            className={styles.chipAvatar}
-            style={{ background: monogramGradient(paletteForSeed('owner')) } as CSSProperties}
-            aria-hidden="true"
-          >
-            {monogramInitial(ownerLabel) || '؟'}
-          </span>
-          <span className={styles.chipName}>{ownerLabel}</span>
-          <span className={styles.chipRole}>{ownerRoleLabel}</span>
-        </div>
+        {showOwner && (
+          <div className={styles.chip}>
+            <span
+              className={styles.chipAvatar}
+              style={{ background: monogramGradient(paletteForSeed('owner')) } as CSSProperties}
+              aria-hidden="true"
+            >
+              {monogramInitial(ownerLabel) || '؟'}
+            </span>
+            <span className={styles.chipName}>{ownerLabel}</span>
+            <span className={styles.chipRole}>{ownerRoleLabel}</span>
+          </div>
+        )}
 
         {members.map((member) => (
           <div key={`${member.source}-${member.id}`} className={styles.chip}>

@@ -24,6 +24,13 @@ export const SESSION_STATUSES: SessionStatus[] = ['notStarted', 'inProgress', 'd
 export interface Session {
   id: string;
   title: string;
+  /**
+   * Who called the meeting. The only one who may change its status, delete it,
+   * or add to «دستورات جلسه» and «مصوبات» — the API refuses everyone else, and
+   * the screen stops offering it. Everyone else reads the record and carries
+   * whatever was assigned to them.
+   */
+  ownerRefId: string;
   /** The project this session belongs to, when it belongs to one. */
   projectId: string | null;
   /** Denormalized for display, so the agenda doesn't have to join client-side. */
@@ -122,6 +129,12 @@ export interface Decision {
   id: string;
   title: string;
   description: string | null;
+  /**
+   * Who recorded it — in practice the meeting's owner, since only they may. With
+   * `assigneeId`, this is the pair allowed to mark it done: the person who owes
+   * the commitment and the person who wrote it down.
+   */
+  ownerRefId: string;
   /** The session it was decided in, when it came out of one. */
   sessionId: string | null;
   sessionTitle: string | null;

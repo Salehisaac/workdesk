@@ -1,0 +1,26 @@
+.sheet {
+  border-top-left-radius: 16px;
+  border-top-right-radius: 16px;
+  background: var(--rasagram-theme-bg-color);
+}
+
+.body {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  padding: 18px 16px calc(18px + var(--wd-safe-bottom));
+}
+
+.title {
+  margin: 0;
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--rasagram-theme-text-color);
+}
+
+.hint {
+  margin: -6px 0 0;
+  font-size: 12px;
+  line-height: 1.9;
+  color: var(--rasagram-theme-subtitle-text-color);
+}
