@@ -8,6 +8,7 @@ import {
 import { useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { EmptyState } from '../../../shared/ui/EmptyState';
+import { HomeButton } from '../../../shared/ui/HomeButton';
 import { useLedger } from '../api';
 import { LedgerOverview } from '../components/LedgerOverview';
 import type { OverviewTab } from '../components/LedgerOverview';
@@ -43,7 +44,14 @@ export function LedgerBookPage() {
         <button type="button" className={styles.back} onClick={() => navigate('/ledgers')} aria-label="بازگشت">
           <RightOutline />
         </button>
+        {/* This screen is an invite's landing page (startapp=ledger-<id>), so
+            whoever is reading it may never have been anywhere else in the app —
+            back offers them a list they were never on. */}
+        <HomeButton />
         <h1 className={styles.headerTitle}>{ledger.data?.name ?? 'دفتر مالی'}</h1>
+        {/* Balances the home button on the other side, so the book's name stays
+            in the middle of the bar rather than drifting off it. */}
+        <span className={styles.headerSpacer} aria-hidden="true" />
         <button
           type="button"
           className={styles.reportButton}

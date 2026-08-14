@@ -1,0 +1,31 @@
+/* Sized and toned like the back button it stands next to (36px, no chrome), not
+   like the action buttons on the other side of the header — the pair reads as
+   one navigation cluster rather than as a button someone dropped in. */
+.button {
+  width: 36px;
+  height: 36px;
+  flex-shrink: 0;
+  border: none;
+  border-radius: 10px;
+  background: none;
+  color: var(--rasagram-theme-text-color);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.button:active {
+  background: color-mix(in srgb, var(--rasagram-theme-hint-color) 16%, transparent);
+}
+
+.icon {
+  width: 20px;
+  height: 20px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.7;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}

@@ -52,10 +52,10 @@
   margin-inline: auto;
   height: var(--wd-dock-height);
   display: grid;
-  /* Five columns at every width — the old grid dropped to four and wrapped,
-     which is free in a scrolling page and doubles a fixed bar's height. At the
-     narrowest supported viewport this is still ~64px per tool. */
-  grid-template-columns: repeat(5, 1fr);
+  /* One column per tool at every width, never wrapping: a second row is free in
+     a scrolling page but doubles a fixed bar's height. At the narrowest
+     supported viewport four columns is ~80px per tool. */
+  grid-template-columns: repeat(4, 1fr);
   align-items: center;
   gap: 2px;
   padding-inline: 6px;

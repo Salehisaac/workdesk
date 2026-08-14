@@ -112,7 +112,7 @@
   border: 1px solid color-mix(in srgb, var(--tone) 22%, transparent);
   border-radius: 18px;
   /* A wash of the module's own tone, not a grey card — the colour is what tells
-     the six tools apart before any label is read. */
+     the five tools apart before any label is read. */
   background: color-mix(in srgb, var(--tone) 8%, var(--rasagram-theme-bg-color));
   font-family: inherit;
   text-align: start;

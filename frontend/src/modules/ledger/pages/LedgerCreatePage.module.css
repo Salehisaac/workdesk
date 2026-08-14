@@ -93,3 +93,44 @@
   width: 100%;
   margin-inline: auto;
 }
+
+/* Covers the screen while the invites go out, one Bot API round trip per
+   member — the same overlay SessionCreatePage uses, for the same reason: a
+   button that just spins doesn't say why it's taking a moment. */
+.creating {
+  position: fixed;
+  inset: 0;
+  z-index: 1000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+  background: color-mix(in srgb, var(--rasagram-theme-bg-color) 82%, transparent);
+  backdrop-filter: blur(3px);
+}
+
+.creatingCard {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  max-width: 300px;
+  padding: 24px 22px;
+  border-radius: 22px;
+  text-align: center;
+  background: var(--rasagram-theme-secondary-bg-color);
+  box-shadow: var(--rasagram-card-shadow);
+}
+
+.creatingTitle {
+  margin-top: 4px;
+  font-size: 14.5px;
+  font-weight: 700;
+  color: var(--rasagram-theme-text-color);
+}
+
+.creatingBody {
+  font-size: 12px;
+  line-height: 1.9;
+  color: var(--rasagram-theme-subtitle-text-color);
+}

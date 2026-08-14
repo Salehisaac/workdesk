@@ -56,11 +56,10 @@
   --wd-kind-reminder: #e11d48;
 
   /* One tone per WorkDesk module (see shared/workdesk/modules.tsx). The create
-     menu tints each module's icon tile with its own, so the six entries are
+     menu tints each module's icon tile with its own, so the five entries are
      told apart by colour before the label is read — the tool grid on the home
      page stays monochrome accent on purpose, since there the icons are the
-     only thing on screen and six hues would fight the calendar above them. */
-  --wd-module-form: #7c3aed;
+     only thing on screen and five hues would fight the calendar above them. */
   --wd-module-ledger: #d97706;
   --wd-module-project: #0891b2;
   --wd-module-meeting-repo: #2563eb;
@@ -151,7 +150,6 @@
   --rasagram-card-shadow: 0 1px 3px rgba(0, 0, 0, 0.4);
 
   /* Same hues, lifted for contrast against the dark background. */
-  --wd-module-form: #a78bfa;
   --wd-module-ledger: #fbbf24;
   --wd-module-project: #22d3ee;
   --wd-module-meeting-repo: #60a5fa;

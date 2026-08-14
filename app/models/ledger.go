@@ -2,15 +2,17 @@ package models
 
 import (
 	"github.com/goravel/framework/database/orm"
+	"github.com/goravel/framework/support/carbon"
 )
 
 // Ledger — «دفتر مالی», the unit of the money module.
 //
-// The third thing in WorkDesk that gathers people without provisioning a group.
-// A project creates a Rasagram supergroup, a session messages everyone a link,
-// and a ledger does neither: its members simply see it in their own list of
-// books. That is the whole difference, and it is why there is no ChatId and no
-// invite service here.
+// The third thing in WorkDesk that gathers people without provisioning a group,
+// and the second that invites them by message: a project creates a Rasagram
+// supergroup whose appearance in the chat list is the invitation, while a
+// session and a ledger have no group to appear anywhere, so each messages its
+// members a deep link instead (app/services/ledgerinvite). That is why there is
+// no ChatId here and no topics — but there is an invite.
 //
 // What a ledger owns is a set of transactions and the two small pools they draw
 // from — its tags and its «منابع مالی». The account groups are NOT one of those
@@ -32,8 +34,9 @@ func (Ledger) TableName() string {
 }
 
 // LedgerMember stores a picked bridge item verbatim, exactly as ProjectMember
-// and SessionMember do. No NotifiedAt counterpart: nothing is sent when a ledger
-// is created, so there is no delivery to report on.
+// and SessionMember do — including SessionMember's NotifiedAt, for the same
+// reason it has one: with no group to add anyone to, the invite message is the
+// only thing that told them the book exists.
 type LedgerMember struct {
 	orm.Model
 	LedgerId    uint   `gorm:"column:ledger_id"`
@@ -44,6 +47,10 @@ type LedgerMember struct {
 	Phone       *string
 	Online      bool
 	Role        string
+	// When the invite DM actually reached them; null when it didn't. The bot can
+	// only open a chat with someone who has already started it, so this being
+	// null is an ordinary outcome, not necessarily an error.
+	NotifiedAt *carbon.DateTime `gorm:"column:notified_at"`
 }
 
 func (LedgerMember) TableName() string {

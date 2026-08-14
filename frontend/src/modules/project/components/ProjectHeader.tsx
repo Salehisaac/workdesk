@@ -41,6 +41,13 @@ export function ProjectHeader({ project, stats, onBack, onOpenReport }: ProjectH
           <LeftOutline />
         </button>
 
+        {/* No home button here, unlike the other screens this deep (see
+            shared/ui/HomeButton). It was tried and measured: it costs 46px of
+            the title, which drops «بازطراحی فروشگاه» — an ordinary-length name —
+            into an ellipsis. The board is also the one deep screen nobody can
+            arrive at cold, since a project announces itself through its Rasagram
+            group rather than through a link into the app, so whoever is here
+            walked down from «پروژه‌ها» and back retraces a path they took. */}
         {project?.avatarUrl ? (
           <img className={styles.avatar} src={project.avatarUrl} alt="" />
         ) : (

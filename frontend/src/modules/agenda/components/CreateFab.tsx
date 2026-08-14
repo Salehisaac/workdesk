@@ -10,12 +10,12 @@ import styles from './CreateFab.module.css';
  * The one create entry point.
  *
  * The menu is split by what it can actually do: the modules with a flow behind
- * them get real cards, and the four that don't get a single «به‌زودی» strip of
- * labels underneath. That split is the point — the previous version listed all
- * six identically and put a lock badge on the ones that only showed a toast,
- * which spends four of six rows' worth of attention teaching people which
- * buttons don't work. A roadmap strip says the same thing without pretending to
- * be tappable.
+ * them get real cards, and any that don't get a single «به‌زودی» strip of labels
+ * underneath. That split is the point — an earlier version listed every module
+ * identically and put a lock badge on the ones that only showed a toast, which
+ * spends most of the menu's attention teaching people which buttons don't work.
+ * A roadmap strip says the same thing without pretending to be tappable, and it
+ * is absent entirely when nothing is pending, which is the case today.
  *
  * Built on Popup rather than ActionSheet: there's no cancel button, so the two
  * ways out are tapping the app behind it and swiping the sheet down — and
@@ -73,19 +73,25 @@ export function CreateFab() {
             ))}
           </div>
 
-          <div className={styles.planned}>
-            <span className={styles.plannedLabel}>به‌زودی</span>
-            <span className={styles.plannedItems}>
-              {PLANNED_MODULES.map((module) => (
-                <span key={module.key} className={styles.plannedItem} style={{ '--tone': module.tone } as CSSProperties}>
-                  <span className={styles.plannedIcon} aria-hidden="true">
-                    {module.icon}
+          {PLANNED_MODULES.length > 0 && (
+            <div className={styles.planned}>
+              <span className={styles.plannedLabel}>به‌زودی</span>
+              <span className={styles.plannedItems}>
+                {PLANNED_MODULES.map((module) => (
+                  <span
+                    key={module.key}
+                    className={styles.plannedItem}
+                    style={{ '--tone': module.tone } as CSSProperties}
+                  >
+                    <span className={styles.plannedIcon} aria-hidden="true">
+                      {module.icon}
+                    </span>
+                    {module.label}
                   </span>
-                  {module.label}
-                </span>
-              ))}
-            </span>
-          </div>
+                ))}
+              </span>
+            </div>
+          )}
         </div>
       </Popup>
     </>

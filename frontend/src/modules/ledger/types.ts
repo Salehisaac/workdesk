@@ -39,9 +39,19 @@ export const ACCOUNT_GROUP_LABEL: Record<AccountGroup, string> = {
 
 export const ACCOUNT_GROUPS: AccountGroup[] = ['other', 'salary', 'bonus', 'sales', 'transfer'];
 
-/** A member of a ledger — a picked item plus what they may do with the book. */
+/**
+ * A member of a ledger — a picked item, what they may do with the book, and
+ * whether they were told it exists.
+ *
+ * `notifiedAt` is null when the invite DM didn't reach them, which is an
+ * ordinary outcome rather than an error: the bot can only message someone who
+ * has already started it. It matters here for the same reason it does on a
+ * session member — a ledger provisions no group, so that message is the only
+ * thing that told them.
+ */
 export interface LedgerMember extends PickedItem {
   role: 'owner' | 'member';
+  notifiedAt: string | null;
 }
 
 /** The ledger-scoped tag pool, the exact counterpart of a project's `JobTag`. */

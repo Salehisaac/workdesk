@@ -648,9 +648,20 @@ The money module. Ground truth for the shapes is `frontend/src/modules/ledger/ty
 **How a ledger differs from a project and from a session, and why that's the module.** Creating a project
 provisions a Rasagram supergroup and the group appearing in everyone's chat list *is* the invitation.
 Creating a session provisions nothing but messages every member a deep link, because a meeting nobody was
-told about is not a meeting. A ledger does **neither**: no `chatId`, no topics, and no invite message. It
-is not an event, so there is no moment to summon anyone to — its members simply find the book in their own
-`GET /ledgers`. Nothing here talks to the Bot API or the admin API at all.
+told about is not a meeting. A ledger is the session's case: **no `chatId` and no topics, but an invite** —
+
+```
+<services.rasagram.miniapp_url>?startapp=ledger-<id>
+```
+
+with nothing appearing in anyone's chat list, a member who is never messaged has no way of learning the book
+exists. Same transport as a session's, and the same consequences: `RASAGRAM_MINIAPP_URL` left blank means
+books are still created and their members just get no message, delivery is recorded per member in
+`notifiedAt`, and `/ledgers/:ledgerId` is part of this contract rather than internal routing because
+`startParamRoute` in `app/router.tsx` is what turns the launch parameter back into it. What a ledger's
+invite does *not* carry is a time or a place: it is not an event, so there is no moment to summon anyone to.
+See `app/services/ledgerinvite`, and `app/services/invite` for the half it shares with sessions. The admin
+API is never involved — that one is only for provisioning a project's group.
 
 **Two rules worth reading before the endpoints:**
 
@@ -684,15 +695,30 @@ per row without loading a single transaction.
 ```
 
 `members` is the same `PickedItem` shape `POST /projects` and `POST /sessions` take, stored verbatim. The
-caller is added as `role: "owner"` server-side and is **not** repeated if the picker also returned them.
+caller is added as `role: "owner"` server-side, is **not** repeated if the picker also returned them, and is
+**not** messaged — they are looking at the screen that made the book.
+
+Everyone else is messaged the `startapp=ledger-<id>` link above before the member rows are written, so each
+row is stored already carrying whether its invite arrived.
 
 **Response 201** — `LedgerDetail`, i.e. the summary above plus `members`, `tags`, `sources` and
 `transactions` (the last three empty by construction — all are written from the screen this redirects to).
+Each member carries `role` and `notifiedAt`, exactly as a session's does:
+
+```json
+{ "id": "101", "source": "users", "displayName": "علی رضایی", "username": "ali", "phone": null, "online": true,
+  "role": "member", "notifiedAt": "2026-08-13T18:10:02+03:30" }
+```
+
+`notifiedAt` is null when the bot couldn't reach them — normally because they have never started it, since a
+bot can't open a chat first. **That is not an error and does not fail the request**: the book is created
+either way and the create screen reports how many of the invited were actually reached.
 
 ### `GET /api/v1/ledgers/{id}`
 
-`LedgerDetail`. 403 for a non-member. Transactions come back newest first (`occurred_at DESC, id DESC` —
-the id breaks ties so a list of same-minute rows doesn't reshuffle between loads).
+`LedgerDetail`. 403 for a non-member, which is what makes the invite link safe to hand out: a forged
+`startapp=ledger-<id>` buys a 403, not a book. Transactions come back newest first (`occurred_at DESC,
+id DESC` — the id breaks ties so a list of same-minute rows doesn't reshuffle between loads).
 
 ```json
 {
@@ -700,7 +726,7 @@ the id breaks ties so a list of same-minute rows doesn't reshuffle between loads
   "totalIncome": 36000000, "totalExpense": 7200000, "balance": 28800000,
   "transactionCount": 5, "createdAt": "2026-08-13T18:10:00Z",
   "members": [{ "id": "101", "source": "users", "displayName": "علی رضایی", "username": "ali", "phone": null,
-                "online": true, "role": "member" }],
+                "online": true, "role": "member", "notifiedAt": "2026-08-13T18:10:02+03:30" }],
   "tags": [{ "id": "1", "ledgerId": "1", "name": "شعبه ۲", "color": null }],
   "sources": [{ "id": "1", "ledgerId": "1", "name": "صندوق فروشگاه" }],
   "transactions": [
@@ -792,6 +818,9 @@ name it.
   changed without a trace of what it used to be, which a book people share is exactly the wrong place for.
 - Adding someone to a ledger after it is created, for the same reason a project's and a session's members
   are fixed.
+- **Naming who a ledger's invite didn't reach.** The response carries `members[].notifiedAt` and the create
+  screen reports the count once, but the book screen has no member list to show it on afterwards — unlike
+  the session screen, which names them. Re-sending is not built here either, for the reason above.
 - A balance *per «منبع مالی»*. Sources are labels on transactions today, not accounts with their own
   running totals — the schema is ready for it (`ledger_transactions.source_id`), nothing computes it.
 - Recurring transactions, attachments (a photo of a receipt), and any export. All three are the obvious next

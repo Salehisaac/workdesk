@@ -8,17 +8,18 @@ import (
 	"goravel/app/facades"
 	"goravel/app/http/resources"
 	"goravel/app/models"
+	"goravel/app/services/ledgerinvite"
 )
 
 // LedgerController handles «دفتر مالی» — the money module's book.
 //
-// Read Store beside SessionController.Store: a ledger is created exactly the
-// way a session is (a name, a picked member list, the creator as owner) and
-// differs in the one step after that. A session messages every member a deep
-// link, because a meeting that nobody was told about is not a meeting. A ledger
-// sends nothing: it isn't an event, there is no moment to be summoned to, and
-// its members find it in their own «دفترهای مالی» list whenever they need it.
-// No group, no topics, no invites — see the module's section in API_CONTRACT.md.
+// Read Store beside SessionController.Store: a ledger is created exactly the way
+// a session is (a name, a picked member list, the creator as owner, then a deep
+// link messaged to everyone else) and differs from a project in the same way both
+// do — no supergroup is provisioned, so there is no ChatId here and no topics.
+// The invite is what stands in for that group: with nothing appearing in anyone's
+// chat list, a member who was never messaged has no way of learning the book
+// exists. See the module's section in API_CONTRACT.md.
 type LedgerController struct{}
 
 func NewLedgerController() *LedgerController {
@@ -187,9 +188,16 @@ type storeLedgerRequest struct {
 
 // Store — POST /api/v1/ledgers.
 //
-// Creates the book and records who may write in it. Nothing else happens: no
-// group is provisioned and no message is sent, which is the whole difference
-// between this and the two modules it is otherwise a copy of.
+// Creates the book, records who may write in it, then messages each of them a
+// link that opens the mini app on this ledger. No group is provisioned, which is
+// the difference from a project; the invite is the same one a session sends, for
+// the same reason — nothing else would ever tell these people the book is there.
+//
+// Sending is best-effort by design: a member who has never started the bot has
+// no chat to receive it, and refusing to create the book over that would make
+// the module unusable for exactly the people it most needs to reach. Who was
+// actually notified comes back in the response (members[].notifiedAt), so the
+// screen can say so.
 func (r *LedgerController) Store(ctx http.Context) http.Response {
 	authUser, errResp := currentUser(ctx)
 	if errResp != nil {
@@ -217,7 +225,7 @@ func (r *LedgerController) Store(ctx http.Context) http.Response {
 	}
 	for _, member := range request.Members {
 		// The creator is added as owner above; a picker that also returned them
-		// must not produce a second row.
+		// must not produce a second row (and a second invite).
 		if member.Id == authUser.ID && member.Source == "users" {
 			continue
 		}
@@ -232,6 +240,11 @@ func (r *LedgerController) Store(ctx http.Context) http.Response {
 			Role:        models.LedgerMemberRoleMember,
 		})
 	}
+
+	// Sent before the insert so each row is written once, already carrying
+	// whether its invite arrived — rather than inserted, messaged, and updated.
+	ledgerinvite.Send(&ledger, members)
+
 	if err := facades.Orm().Query().Create(&members); err != nil {
 		return ctx.Response().Status(500).Json(http.Json{"error": err.Error()})
 	}

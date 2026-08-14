@@ -13,6 +13,7 @@ import { useMemo, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { toPersianDigits } from '../../../shared/date/jalali';
 import { EmptyState } from '../../../shared/ui/EmptyState';
+import { HomeButton } from '../../../shared/ui/HomeButton';
 import { useProjectReport } from '../api';
 import { describeDue, describeGap } from '../components/report/copy';
 import { GroupRow } from '../components/report/GroupRow';
@@ -41,7 +42,7 @@ export function ProjectReportPage() {
   if (isError) {
     return (
       <div className={styles.page}>
-        <NavBar onBack={back}>گزارش پروژه</NavBar>
+        <NavBar onBack={back} left={<HomeButton />}>گزارش پروژه</NavBar>
         <div className={styles.fill}>
           <EmptyState
             icon={<ExclamationCircleOutline />}
@@ -56,7 +57,7 @@ export function ProjectReportPage() {
   if (isLoading || !report || !project) {
     return (
       <div className={styles.page}>
-        <NavBar onBack={back}>گزارش پروژه</NavBar>
+        <NavBar onBack={back} left={<HomeButton />}>گزارش پروژه</NavBar>
         <div className={styles.fill}>
           <EmptyState icon={<DotLoading />} title="در حال بارگذاری…" />
         </div>
@@ -71,7 +72,7 @@ export function ProjectReportPage() {
   if (overall.total === 0) {
     return (
       <div className={styles.page}>
-        <NavBar onBack={back}>گزارش {project.name}</NavBar>
+        <NavBar onBack={back} left={<HomeButton />}>گزارش {project.name}</NavBar>
         <div className={styles.fill}>
           <EmptyState
             icon={<PieOutline />}
@@ -85,7 +86,7 @@ export function ProjectReportPage() {
 
   return (
     <div className={styles.page}>
-      <NavBar onBack={back}>گزارش {project.name}</NavBar>
+      <NavBar onBack={back} left={<HomeButton />}>گزارش {project.name}</NavBar>
 
       <div className={styles.body}>
         <section className={styles.hero} aria-label="پیشرفت کلی پروژه">

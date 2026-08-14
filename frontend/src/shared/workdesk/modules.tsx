@@ -1,18 +1,19 @@
-import { BellOutline, BillOutline, ContentOutline, FileOutline, FolderOutline, UnorderedListOutline } from 'antd-mobile-icons';
+import { BellOutline, BillOutline, FileOutline, FolderOutline, UnorderedListOutline } from 'antd-mobile-icons';
 import type { ReactNode } from 'react';
 
 /**
  * WorkDesk's modules, in one place.
  *
- * Six tools, of which Project, Meeting-repo and Reminder are built; the rest are
- * declared here anyway so the home page's tool grid and the create menu describe
- * the product's real shape instead of only the finished parts. Both surfaces read
- * this list, so they can't drift apart — they're two views of the same set.
+ * Five tools, all of them built. The home page's tool grid and the create menu
+ * both read this list, so they can't drift apart — they're two views of the same
+ * set. `to` and `createTo` stay optional because a module declared before it is
+ * finished still belongs here: the grid locks its tile and the create menu lists
+ * it under «به‌زودی» rather than pretending it doesn't exist.
  *
  * `action` is the imperative the create menu puts on each card («پروژه‌ای
  * بسازید»), and it is deliberately per-module rather than a "«<label>» جدید"
- * template: what you do with a ledger is not what you do with a form, and a
- * menu that says so is worth more than one that repeats the same word six
+ * template: what you do with a ledger is not what you do with a reminder, and a
+ * menu that says so is worth more than one that repeats the same word five
  * times.
  */
 export interface WorkdeskModule {
@@ -35,18 +36,9 @@ export interface WorkdeskModule {
 }
 
 export const WORKDESK_MODULES: WorkdeskModule[] = [
-  {
-    key: 'form',
-    label: 'فرم',
-    description: 'ساخت فرم و جمع‌آوری پاسخ‌ها',
-    action: 'پرسش‌ها را بچینید و پاسخ‌ها را جمع کنید',
-    icon: <ContentOutline />,
-    tone: 'var(--wd-module-form)',
-    inToolGrid: true,
-  },
-  // The third module that gathers people without provisioning anything: no
-  // group like a project, and unlike a session no invite either — its members
-  // find the book waiting in their own list.
+  // Gathers people without provisioning a group, so — like a session — it has
+  // to message each of them a link: a book that appears in nobody's chat list
+  // is a book nobody knows exists.
   {
     key: 'ledger',
     label: 'دفترمالی',
@@ -69,8 +61,8 @@ export const WORKDESK_MODULES: WorkdeskModule[] = [
     createTo: '/projects/new',
     inToolGrid: true,
   },
-  // The second module that messages people directly rather than posting into a
-  // group: creating a session DMs every participant a link back into the app.
+  // The other module that messages its people directly rather than posting into
+  // a group: creating a session DMs every participant a link back into the app.
   {
     key: 'meeting-repo',
     label: 'مخزن‌جلسه',
@@ -95,7 +87,7 @@ export const WORKDESK_MODULES: WorkdeskModule[] = [
     createTo: '/reminders/new',
     inToolGrid: true,
   },
-  // Not a tile — the grid holds the five team-facing tools — but it is
+  // Not a tile — the grid holds the four team-facing tools — but it is
   // creatable, and the day dashboard has a یادداشت‌ها section to put one in.
   {
     key: 'note',
@@ -116,5 +108,9 @@ export const TOOL_GRID_MODULES = WORKDESK_MODULES.filter((module) => module.inTo
 /** What the create menu can actually open, in the order it offers them. */
 export const CREATABLE_MODULES = WORKDESK_MODULES.filter((module) => module.createTo);
 
-/** Declared, not built — the create menu lists these as a roadmap strip, not as buttons. */
+/**
+ * Declared, not built — the create menu lists these as a roadmap strip, not as
+ * buttons. Empty while every declared module is finished; the strip disappears
+ * with it rather than rendering an empty «به‌زودی» label.
+ */
 export const PLANNED_MODULES = WORKDESK_MODULES.filter((module) => !module.createTo);

@@ -27,6 +27,13 @@
   cursor: pointer;
 }
 
+/* The home button's width, so the two sides of the bar weigh the same and the
+   title sits in the true centre. */
+.headerSpacer {
+  width: 36px;
+  flex-shrink: 0;
+}
+
 .headerTitle {
   flex: 1;
   min-width: 0;

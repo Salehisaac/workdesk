@@ -21,15 +21,28 @@ import { ReminderListPage } from '../modules/reminder/pages/ReminderListPage';
 import { HomePage } from './pages/HomePage';
 
 /**
+ * The two things an invite message can point at, by the `<kind>` prefix the
+ * backend writes — sessioninvite.StartParamPrefix and
+ * ledgerinvite.StartParamPrefix are the other half of this pair. A Map rather
+ * than an object literal so a `<kind>` of `constructor` or `toString` looks up
+ * to nothing instead of to something inherited.
+ */
+const START_PARAM_ROUTES = new Map<string, string>([
+  ['session', '/sessions'],
+  ['ledger', '/ledgers'],
+]);
+
+/**
  * Where a `?startapp=` launch parameter should land.
  *
- * The parameter is `<kind>-<id>` — currently only `session-<id>`, written by the
- * backend's app/services/sessioninvite (StartParam there is the other half of
- * this). Split on the FIRST hyphen only, so an id containing one wouldn't be
- * truncated, and validated rather than interpolated: this string arrives from
- * initDataUnsafe, so it decides which screen opens and nothing else. The screen
- * it opens re-authorizes on its own — GET /sessions/{id} is membership-checked
- * server-side — so a forged parameter buys a 403, not access.
+ * The parameter is `<kind>-<id>`, written by whichever module messaged the link
+ * (app/services/sessioninvite, app/services/ledgerinvite — both are modules that
+ * provision no group, so the message is how their members find them). Split on
+ * the FIRST hyphen only, so an id containing one wouldn't be truncated, and
+ * validated rather than interpolated: this string arrives from initDataUnsafe,
+ * so it decides which screen opens and nothing else. The screen it opens
+ * re-authorizes on its own — GET /sessions/{id} and GET /ledgers/{id} are both
+ * membership-checked server-side — so a forged parameter buys a 403, not access.
  *
  * Returns null for anything unrecognized, which leaves the app on the home page
  * rather than on an error.
@@ -38,11 +51,11 @@ export function startParamRoute(startParam: string): string | null {
   const separator = startParam.indexOf('-');
   if (separator <= 0) return null;
 
-  const kind = startParam.slice(0, separator);
+  const base = START_PARAM_ROUTES.get(startParam.slice(0, separator));
   const id = startParam.slice(separator + 1);
-  if (kind !== 'session' || !/^\d+$/.test(id)) return null;
+  if (!base || !/^\d+$/.test(id)) return null;
 
-  return `/sessions/${id}`;
+  return `${base}/${id}`;
 }
 
 /**
@@ -109,7 +122,9 @@ export function AppRouter() {
         <Route path="/sessions/:sessionId" element={<SessionDetailPage />} />
         {/* «دفتر مالی». The book is the screen; the report is the same book cut
             to a period, so it hangs off the book's own path rather than living
-            somewhere else. */}
+            somewhere else. /ledgers/:ledgerId is also what a ledger invite opens
+            (see startParamRoute), so like /sessions/:sessionId its path is part
+            of the wire contract with the backend, not just internal routing. */}
         <Route path="/ledgers" element={<LedgerListPage />} />
         <Route path="/ledgers/new" element={<LedgerCreatePage />} />
         <Route path="/ledgers/:ledgerId" element={<LedgerBookPage />} />

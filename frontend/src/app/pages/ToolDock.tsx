@@ -6,7 +6,7 @@ import { TOOL_GRID_MODULES } from '../../shared/workdesk/modules';
 import styles from './ToolDock.module.css';
 
 /**
- * The five tools, docked to the bottom of the screen instead of parked at the
+ * The four tools, docked to the bottom of the screen instead of parked at the
  * end of the day's list.
  *
  * As the last block in the scroll flow the grid was reachable in inverse
@@ -16,8 +16,13 @@ import styles from './ToolDock.module.css';
  * on scroll-down (see useHideOnScroll) so that strip isn't spent while reading.
  *
  * Icon-first and label-small, unlike the 52px cards it replaces: a permanent
- * bar has to earn its height back, and these are five destinations the reader
+ * bar has to earn its height back, and these are four destinations the reader
  * learns by position within a day of use.
+ *
+ * The locked state below is for a module declared before it is built (no `to`):
+ * nothing is in that state today, but the alternative — hiding it until it
+ * ships — is a grid that silently changes shape under people who have learned
+ * its positions.
  */
 
 interface ToolDockProps {

@@ -21,6 +21,7 @@ import { monogramGradient, monogramInitial, paletteForSeed } from '../../../shar
 import { formatLongDate, formatShortDate, formatTime, toLocalIso, toPersianDigits } from '../../../shared/date/jalali';
 import { DateTimeSheet } from '../../../shared/ui/datetime/DateTimeSheet';
 import { EmptyState } from '../../../shared/ui/EmptyState';
+import { HomeButton } from '../../../shared/ui/HomeButton';
 import { DurationSheet, formatDuration } from '../../../shared/ui/time/DurationSheet';
 import { useAgendaCalendar } from '../../agenda/api';
 import {
@@ -288,6 +289,10 @@ function Header({ onBack, title }: { onBack: () => void; title: string }) {
       <button type="button" className={styles.back} onClick={onBack} aria-label="بازگشت">
         <RightOutline />
       </button>
+      {/* Like the ledger book, this is where an invite link lands (startapp=
+          session-<id>) — for that reader, back leads to a repository they have
+          never seen and home is the only thing that introduces the app. */}
+      <HomeButton />
       <h1 className={styles.headerTitle}>{title}</h1>
       <span className={styles.headerSpacer} aria-hidden="true" />
     </header>

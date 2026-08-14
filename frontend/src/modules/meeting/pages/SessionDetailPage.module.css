@@ -41,8 +41,10 @@
   color: var(--rasagram-theme-text-color);
 }
 
+/* Balances the start edge so the title sits in the true centre — back (36) plus
+   the home button (36) plus the row's 8px gap. */
 .headerSpacer {
-  width: 36px;
+  width: 80px;
   flex-shrink: 0;
 }
 

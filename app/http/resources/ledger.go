@@ -66,10 +66,16 @@ func Ledgers(ledgers []models.Ledger, totals map[uint]LedgerTotals) []http.Json 
 	return result
 }
 
-// LedgerMember is the same `PickedItem` + role shape a project member has. No
-// notifiedAt counterpart: creating a ledger messages nobody, so there is no
-// delivery to report.
+// LedgerMember is the same `PickedItem` + role + notifiedAt shape a session
+// member has, and carries notifiedAt for the same reason: a ledger has no group
+// to add anyone to, so the invite message is the only thing that told them the
+// book exists, and whether it arrived is worth reporting.
 func LedgerMember(m *models.LedgerMember) http.Json {
+	var notifiedAt any
+	if m.NotifiedAt != nil {
+		notifiedAt = m.NotifiedAt.ToRfc3339String()
+	}
+
 	return http.Json{
 		"id":          m.RefId,
 		"source":      m.RefSource,
@@ -78,6 +84,7 @@ func LedgerMember(m *models.LedgerMember) http.Json {
 		"phone":       m.Phone,
 		"online":      m.Online,
 		"role":        m.Role,
+		"notifiedAt":  notifiedAt,
 	}
 }
 

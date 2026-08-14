@@ -1,23 +1,28 @@
-import { Button, Input, Toast } from 'antd-mobile';
+import { Button, DotLoading, Input, Toast } from 'antd-mobile';
 import { InformationCircleOutline, RightOutline } from 'antd-mobile-icons';
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import type { PickedItem } from '../../../bridge/types';
 import { meDisplayName, useMe } from '../../../shared/api/me';
+import { toPersianDigits } from '../../../shared/date/jalali';
 import { PeoplePicker } from '../../../shared/ui/people/PeoplePicker';
 import { useCreateLedger } from '../api';
 import styles from './LedgerCreatePage.module.css';
 
 /**
- * Creating a «دفتر مالی» — the same screen a session gets, minus the one thing
- * a session has.
+ * Creating a «دفتر مالی» — the same screen a session gets, and now the same
+ * ending too.
  *
- * A name and the people, and that is the whole flow: no group is provisioned
- * (unlike a project) and no invite goes out (unlike a session). A ledger is not
- * an event, so there is no moment anyone needs summoning to — the people picked
- * here simply find the book waiting in their own «دفتر مالی» list. The note at
- * the bottom says so, because two of the three modules that open this screen do
- * send something, and silence would otherwise read as a failure.
+ * A name and the people, and that is the whole flow: no group is provisioned,
+ * unlike a project. What that leaves is the session's problem — with nothing
+ * appearing in anyone's chat list, a member who isn't messaged has no way of
+ * learning the book exists — so the backend sends each of them a link that opens
+ * the mini app on this ledger.
+ *
+ * Which is why this screen is honest about delivery instead of showing a flat
+ * "done": the bot can only DM someone who has already started it, so an invite
+ * legitimately fails for a member who never has, and the toast says how many
+ * were reached rather than implying all of them were.
  */
 export function LedgerCreatePage() {
   const navigate = useNavigate();
@@ -43,7 +48,20 @@ export function LedgerCreatePage() {
     setSubmitting(true);
     try {
       const ledger = await createLedger.mutateAsync({ name: trimmed, members });
-      Toast.show({ content: 'دفتر ساخته شد' });
+
+      // members[] comes back stamped with who the bot actually reached — the
+      // owner is in there too and was never messaged, so they're excluded from
+      // the count rather than inflating it.
+      const invited = ledger.members.filter((member) => member.role !== 'owner');
+      const notified = invited.filter((member) => member.notifiedAt).length;
+      Toast.show({
+        content:
+          invited.length === 0
+            ? 'دفتر ساخته شد'
+            : notified === invited.length
+              ? `دفتر ساخته شد و دعوت‌نامه برای ${toPersianDigits(notified)} نفر فرستاده شد`
+              : `دفتر ساخته شد؛ دعوت‌نامه برای ${toPersianDigits(notified)} نفر از ${toPersianDigits(invited.length)} نفر فرستاده شد`,
+      });
       navigate(`/ledgers/${ledger.id}`, { replace: true });
     } catch (error) {
       Toast.show({ content: error instanceof Error ? error.message : 'ساخت دفتر با خطا مواجه شد' });
@@ -84,8 +102,8 @@ export function LedgerCreatePage() {
 
         <p className={styles.note}>
           <InformationCircleOutline className={styles.noteIcon} aria-hidden="true" />
-          برای دفتر مالی نه گروهی ساخته می‌شود و نه پیامی فرستاده می‌شود؛ افراد انتخاب‌شده این دفتر را در فهرست دفترهای
-          خودشان می‌بینند و می‌توانند در آن تراکنش ثبت کنند.
+          برخلاف پروژه، برای دفتر مالی گروهی ساخته نمی‌شود. به‌جایش برای هر نفر پیامی با نشانی دفتر فرستاده می‌شود که با
+          زدنش همین دفتر باز می‌شود و می‌توانند در آن تراکنش ثبت کنند.
         </p>
       </div>
 
@@ -94,6 +112,18 @@ export function LedgerCreatePage() {
           ساخت دفتر
         </Button>
       </div>
+
+      {/* One message per member, each a round trip to the Bot API — honest about
+          taking a moment, the same way session creation is. */}
+      {submitting && (
+        <div className={styles.creating} role="status" aria-live="polite">
+          <div className={styles.creatingCard}>
+            <DotLoading color="primary" />
+            <div className={styles.creatingTitle}>در حال ساخت دفتر…</div>
+            <div className={styles.creatingBody}>دعوت‌نامه‌ها برای افراد دفتر فرستاده می‌شود.</div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

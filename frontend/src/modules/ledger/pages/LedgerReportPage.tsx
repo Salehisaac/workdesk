@@ -5,6 +5,7 @@ import { useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import { formatNumericDate, today } from '../../../shared/date/jalali';
 import { DateTimeSheet } from '../../../shared/ui/datetime/DateTimeSheet';
 import { EmptyState } from '../../../shared/ui/EmptyState';
+import { HomeButton } from '../../../shared/ui/HomeButton';
 import { useLedger } from '../api';
 import { LedgerOverview } from '../components/LedgerOverview';
 import type { OverviewTab } from '../components/LedgerOverview';
@@ -73,7 +74,10 @@ export function LedgerReportPage() {
         <button type="button" className={styles.back} onClick={back} aria-label="بازگشت">
           <RightOutline />
         </button>
+        <HomeButton />
         <h1 className={styles.headerTitle}>{REPORT_PERIOD_LABEL[period]}</h1>
+        {/* Balances the home button on the other side — see LedgerBookPage. */}
+        <span className={styles.headerSpacer} aria-hidden="true" />
         <button
           type="button"
           className={styles.filterButton}

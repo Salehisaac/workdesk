@@ -114,8 +114,8 @@ function mockInitData(): string {
   return sessionStorage.getItem(INIT_DATA_STORAGE_KEY) ?? 'mock.init.data';
 }
 
-// ?startapp=session-3 in dev does what tapping a session invite does in the
-// client — read once at module load for the same reason initData is: the app
+// ?startapp=session-3 (or ledger-3) in dev does what tapping an invite does in
+// the client — read once at module load for the same reason initData is: the app
 // navigates away from '/' before anything gets around to looking at the URL.
 const startParamFromUrl = new URLSearchParams(window.location.search).get('startapp') ?? '';
 
