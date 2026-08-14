@@ -150,24 +150,6 @@
   color: var(--rasagram-theme-hint-color);
 }
 
-.note {
-  display: flex;
-  align-items: flex-start;
-  gap: 8px;
-  margin: 0;
-  padding-inline: 2px;
-  font-size: 12px;
-  line-height: 1.9;
-  color: var(--rasagram-theme-hint-color);
-}
-
-.noteIcon {
-  flex-shrink: 0;
-  margin-top: 4px;
-  font-size: 14px;
-  color: var(--rasagram-theme-accent-text-color);
-}
-
 .footer {
   position: sticky;
   bottom: 0;

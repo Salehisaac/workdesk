@@ -1,5 +1,5 @@
 import { Button, Dialog, DotLoading, Toast } from 'antd-mobile';
-import { InformationCircleOutline, RightOutline } from 'antd-mobile-icons';
+import { RightOutline } from 'antd-mobile-icons';
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import type { PickedItem } from '../../../bridge/types';
@@ -147,14 +147,7 @@ export function ProjectCreatePage() {
           onChange={setMembers}
           title="هم‌تیمی‌ها"
           ownerRoleLabel="مالک"
-          hint="اعضا فقط همین حالا انتخاب می‌شوند؛ پس از ساخت پروژه، عضو تازه‌ای به آن اضافه نمی‌شود."
         />
-
-        <p className={styles.note}>
-          <InformationCircleOutline className={styles.noteIcon} aria-hidden="true" />
-          با ساخت پروژه، گروهی به همین نام در رساگرام ساخته می‌شود و هم‌تیمی‌های بالا به آن دعوت می‌شوند. هر لیستی که
-          بعداً بسازید، یک موضوع در همان گروه است.
-        </p>
       </div>
 
       <div className={styles.footer}>

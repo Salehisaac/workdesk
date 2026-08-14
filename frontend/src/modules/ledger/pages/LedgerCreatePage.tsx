@@ -1,5 +1,5 @@
 import { Button, DotLoading, Input, Toast } from 'antd-mobile';
-import { InformationCircleOutline, RightOutline } from 'antd-mobile-icons';
+import { RightOutline } from 'antd-mobile-icons';
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import type { PickedItem } from '../../../bridge/types';
@@ -84,7 +84,7 @@ export function LedgerCreatePage() {
         <section className={styles.card}>
           <Input
             className={styles.nameInput}
-            placeholder="نام دفتر (مثلاً: فروشگاه مرکزی)"
+            placeholder="نام دفتر"
             value={name}
             onChange={setName}
             maxLength={120}
@@ -97,14 +97,7 @@ export function LedgerCreatePage() {
           onChange={setMembers}
           title="افراد دفتر"
           ownerRoleLabel="سازنده"
-          hint="افراد دفتر فقط همین حالا انتخاب می‌شوند؛ پس از ساخت، کسی به آن اضافه نمی‌شود."
         />
-
-        <p className={styles.note}>
-          <InformationCircleOutline className={styles.noteIcon} aria-hidden="true" />
-          برخلاف پروژه، برای دفتر مالی گروهی ساخته نمی‌شود. به‌جایش برای هر نفر پیامی با نشانی دفتر فرستاده می‌شود که با
-          زدنش همین دفتر باز می‌شود و می‌توانند در آن تراکنش ثبت کنند.
-        </p>
       </div>
 
       <div className={styles.footer}>

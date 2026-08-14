@@ -15,25 +15,11 @@ interface PeoplePickerProps {
   title: string;
   /** What the owner's chip says under their name. */
   ownerRoleLabel: string;
-  /** The one thing about this member list that can't be fixed afterwards. */
-  hint: string;
 }
 
 function sameItem(a: PickedItem, b: PickedItem) {
   return a.id === b.id && a.source === b.source;
 }
-
-// Stand-in for bridge.pick() while it's unreliable on real devices (working
-// on Android, not confirmed elsewhere — see conversation). Real account,
-// not fixture data, so it's a valid member end-to-end, not just UI filler.
-// Remove once pick() is dependable enough not to need a bypass.
-const SAMPLE_USER: PickedItem = {
-  id: '1271266967',
-  source: 'users',
-  displayName: 'دکتر آل اسحاق',
-  username: 'doctor_al',
-  phone: '989944993236',
-};
 
 /**
  * Who is in the thing being created.
@@ -47,12 +33,16 @@ const SAMPLE_USER: PickedItem = {
  * as owner regardless of what this sends (project_controller.go,
  * session_controller.go), so showing them is the honest count, not a courtesy.
  *
- * Shared by the project and session create screens because the interaction is
- * identical; only the copy differs, which is what the label props are for. What
- * the two flows *do* with the list is where they diverge — a project adds these
- * people to a group, a session messages each of them a link.
+ * Shared by the project, session and ledger create screens because the
+ * interaction is identical; only the copy differs, which is what the label props
+ * are for. What the three flows *do* with the list is where they diverge — a
+ * project adds these people to a group, while a session and a ledger message
+ * each of them a link.
+ *
+ * It carries no explanatory line of its own: what can and can't be changed after
+ * creation is the guide's subject, not this component's.
  */
-export function PeoplePicker({ members, ownerName, onChange, title, ownerRoleLabel, hint }: PeoplePickerProps) {
+export function PeoplePicker({ members, ownerName, onChange, title, ownerRoleLabel }: PeoplePickerProps) {
   // Whether the client is holding an unanswered pick request. Tracked only so
   // the button can say so: bridge.pick() now waits up to 45s for a reply, and
   // a button that looks tappable but does nothing for that long reads as a
@@ -84,11 +74,6 @@ export function PeoplePicker({ members, ownerName, onChange, title, ownerRoleLab
     } finally {
       setPicking(false);
     }
-  }
-
-  function handleAddSampleUser() {
-    if (members.some((existing) => sameItem(existing, SAMPLE_USER))) return;
-    onChange([...members, SAMPLE_USER]);
   }
 
   const ownerLabel = ownerName || 'شما';
@@ -143,15 +128,6 @@ export function PeoplePicker({ members, ownerName, onChange, title, ownerRoleLab
           </div>
         ))}
       </div>
-
-      {/* The one limit that can't be fixed after the fact — said here, where it
-          can still change what someone does, instead of in the guide they read
-          afterwards. */}
-      <p className={styles.hint}>{hint}</p>
-
-      <button type="button" className={styles.sampleUser} onClick={handleAddSampleUser}>
-        افزودن کاربر نمونه (برای آزمایش)
-      </button>
     </section>
   );
 }

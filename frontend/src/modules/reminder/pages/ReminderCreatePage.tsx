@@ -115,8 +115,6 @@ export function ReminderCreatePage() {
             )}
           </div>
         </div>
-
-        <p className={styles.hint}>یادآور به پیام‌های خصوصی شما فرستاده می‌شود.</p>
       </div>
 
       <DateTimeSheet

@@ -146,8 +146,6 @@ export function NoteCreatePage() {
             )}
           </div>
         </div>
-
-        <p className={styles.hint}>یادداشت فقط برای امروز ثبت می‌شود و روز آن بعداً تغییر نمی‌کند.</p>
       </div>
 
       <ActionSheet

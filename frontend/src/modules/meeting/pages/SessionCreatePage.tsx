@@ -1,11 +1,5 @@
 import { Button, Dialog, DotLoading, Input, Switch, Toast } from 'antd-mobile';
-import {
-  ClockCircleOutline,
-  EnvironmentOutline,
-  InformationCircleOutline,
-  LinkOutline,
-  RightOutline,
-} from 'antd-mobile-icons';
+import { ClockCircleOutline, EnvironmentOutline, LinkOutline, RightOutline } from 'antd-mobile-icons';
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import type { PickedItem } from '../../../bridge/types';
@@ -191,14 +185,7 @@ export function SessionCreatePage() {
           onChange={setMembers}
           title="شرکت‌کنندگان"
           ownerRoleLabel="برگزارکننده"
-          hint="شرکت‌کنندگان فقط همین حالا انتخاب می‌شوند؛ پس از ساخت جلسه، کسی به آن اضافه نمی‌شود."
         />
-
-        <p className={styles.note}>
-          <InformationCircleOutline className={styles.noteIcon} aria-hidden="true" />
-          برخلاف پروژه، برای جلسه گروهی ساخته نمی‌شود. به‌جایش برای هر شرکت‌کننده پیامی با نشانی جلسه فرستاده می‌شود که با
-          زدنش همین صفحه‌ی جلسه باز می‌شود.
-        </p>
       </div>
 
       <div className={styles.footer}>

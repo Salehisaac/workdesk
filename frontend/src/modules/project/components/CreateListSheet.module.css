@@ -97,3 +97,10 @@
 .emojiOption:active {
   background: var(--rasagram-theme-secondary-bg-color);
 }
+
+/* Matches the 26px box AnimatedTopicIcon used to occupy here, so the grid's
+   rhythm is unchanged by the switch to static glyphs. */
+.emojiGlyph {
+  font-size: 22px;
+  line-height: 1;
+}

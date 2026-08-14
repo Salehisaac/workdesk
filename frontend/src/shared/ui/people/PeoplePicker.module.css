@@ -122,27 +122,3 @@
   cursor: pointer;
   -webkit-tap-highlight-color: transparent;
 }
-
-.hint {
-  margin: 2px 0 0;
-  padding-inline: 2px;
-  font-size: 11.5px;
-  line-height: 1.8;
-  color: var(--rasagram-theme-hint-color);
-}
-
-/* A dev bypass, dressed as one: it used to be a full-width outlined button
-   sitting level with «انتخاب مخاطب», which reads as a product feature. */
-.sampleUser {
-  align-self: flex-start;
-  padding: 4px 2px;
-  border: none;
-  background: none;
-  font-family: inherit;
-  font-size: 11.5px;
-  color: var(--rasagram-theme-link-color);
-  text-decoration: underline;
-  text-underline-offset: 3px;
-  cursor: pointer;
-  -webkit-tap-highlight-color: transparent;
-}

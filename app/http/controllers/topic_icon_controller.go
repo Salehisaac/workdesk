@@ -5,11 +5,26 @@ import (
 	"compress/gzip"
 	"io"
 	"strings"
+	"time"
 
 	"github.com/goravel/framework/contracts/http"
 
+	"goravel/app/facades"
 	"goravel/app/services/botapi"
 )
+
+// animationCacheTtl is how long a decompressed icon is kept in memory.
+//
+// Long, because the thing being cached cannot change: a Bot API file_id names
+// one immutable file, which is the same reason the response carries
+// `immutable` to the browser. This is the server-side half of that — the
+// browser's copy only helps the device that already fetched it, while this
+// helps the first request from every other one.
+const animationCacheTtl = 7 * 24 * time.Hour
+
+func animationCacheKey(fileId string) string {
+	return "topic-icon-animation:" + fileId
+}
 
 // TopicIconController exposes the Bot API's forum-topic icon stickers to
 // the frontend — proxied through our own backend since the bot token can
@@ -58,6 +73,14 @@ func (r *TopicIconController) Animation(ctx http.Context) http.Response {
 		return ctx.Response().Status(422).Json(http.Json{"error": "fileId is required"})
 	}
 
+	// Two upstream round trips (getFile, then the download) per icon is a lot to
+	// spend on a file that is defined to never change, and they used to be spent
+	// again on every request — see the cache TTL above.
+	if cached, ok := facades.Cache().Get(animationCacheKey(fileId)).([]byte); ok && len(cached) > 0 {
+		ctx.Response().Header("Cache-Control", "public, max-age=604800, immutable")
+		return ctx.Response().Data(200, "application/json", cached)
+	}
+
 	client := botapi.New()
 	filePath, err := client.GetFile(fileId)
 	if err != nil {
@@ -78,6 +101,12 @@ func (r *TopicIconController) Animation(ctx http.Context) http.Response {
 	lottieJson, err := io.ReadAll(gz)
 	if err != nil {
 		return ctx.Response().Status(502).Json(http.Json{"error": "could not decompress icon file: " + err.Error()})
+	}
+
+	// Best-effort: a cache that refuses the write costs the next request a
+	// re-fetch, which is exactly what used to happen every time anyway.
+	if err := facades.Cache().Put(animationCacheKey(fileId), lottieJson, animationCacheTtl); err != nil {
+		facades.Log().Warning("workdesk: caching topic icon " + fileId + " failed: " + err.Error())
 	}
 
 	ctx.Response().Header("Cache-Control", "public, max-age=604800, immutable")

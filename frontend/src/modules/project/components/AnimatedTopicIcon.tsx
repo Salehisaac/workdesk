@@ -12,12 +12,20 @@ interface AnimatedTopicIconProps {
 }
 
 // Real Telegram renders topic icons as animated Lottie stickers (.tgs) —
-// confirmed against a real one from this platform's own getForumTopicIconStickers.
-// With 100+ icons in the picker grid (see CreateListSheet), eagerly fetching
-// and animating every single one at once would be a real perf hit on
-// low/mid-end Android WebViews (the plan's binding constraint) — this only
-// fetches/renders once its container is actually scrolled into view, then
-// leaves the player running (no repeated mount/unmount thrashing on scroll).
+// confirmed against a real one from this platform's own
+// getForumTopicIconStickers.
+//
+// One of these is not cheap: a request, a Lottie parse, an SVG tree, and a
+// requestAnimationFrame loop that runs for as long as it is mounted. So it is
+// used only where a *chosen* icon is shown — a list's header on the board, and
+// the trigger in CreateListSheet — never for a gridful of candidates. The
+// picker's grid renders plain emoji instead, and CreateListSheet says why: a
+// screenful of these at once froze the app on the low/mid-end Android WebViews
+// that are the plan's binding constraint.
+//
+// The observer is what keeps even those few honest: nothing is fetched or
+// rendered until it is actually scrolled into view, and the player is left
+// running afterwards rather than thrashed on every scroll.
 export function AnimatedTopicIcon({ fileId, fallbackEmoji, size = 28 }: AnimatedTopicIconProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const [inView, setInView] = useState(false);

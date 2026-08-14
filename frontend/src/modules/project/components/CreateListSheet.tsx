@@ -70,6 +70,22 @@ export function CreateListSheet({ visible, submitting, onClose, onSubmit }: Crea
             )}
             {topicIcons.data && topicIcons.data.length > 0 && (
               <div className={styles.emojiGrid}>
+                {/* Plain emoji, not AnimatedTopicIcon — deliberately.
+
+                    Every animated icon costs a request (which the backend turns
+                    into two Bot API round trips), a Lottie parse, an SVG tree and
+                    a requestAnimationFrame loop that never stops. Opening this
+                    grid started all of that for every icon on screen at once —
+                    ~35 at seven columns — and more with every scroll, which is
+                    exactly the freeze this picker had; closing it, and killing
+                    35 render loops, is why the app recovered the moment an icon
+                    was chosen.
+
+                    Nothing is lost: you come here to *identify* an icon, and the
+                    static glyph is what identifies it — the animation is a
+                    property of the icon you picked, so it plays where that one
+                    is shown (the trigger below, and the list's own header on the
+                    board). */}
                 {topicIcons.data.map((option) => (
                   <button
                     key={option.customEmojiId}
@@ -80,7 +96,9 @@ export function CreateListSheet({ visible, submitting, onClose, onSubmit }: Crea
                       setPickerOpen(false);
                     }}
                   >
-                    <AnimatedTopicIcon fileId={option.fileId} fallbackEmoji={option.emoji} size={26} />
+                    <span className={styles.emojiGlyph} aria-hidden="true">
+                      {option.emoji}
+                    </span>
                   </button>
                 ))}
               </div>
