@@ -121,10 +121,6 @@ export function ProjectIdentityCard({
           ))}
         </div>
       )}
-
-      <p className={styles.caption}>
-        {photoUrl ? 'همین عکس، عکس گروه پروژه هم می‌شود.' : 'اگر عکسی انتخاب نکنید، همین نگاره‌ی رنگی عکس گروه پروژه می‌شود.'}
-      </p>
     </section>
   );
 }

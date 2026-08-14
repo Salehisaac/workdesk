@@ -56,7 +56,7 @@ export function HomeHeader() {
         </span>
         <span className={styles.brandText}>
           <span className={styles.brandTitle}>همکار</span>
-          <span className={styles.brandSubtitle}>ابزارهای کاری در دل مسنجر</span>
+          <span className={styles.brandSubtitle}>ابزارهای کاری در دل پیامرسان</span>
         </span>
       </div>
 

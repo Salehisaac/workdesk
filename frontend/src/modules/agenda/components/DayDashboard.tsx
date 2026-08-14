@@ -124,7 +124,7 @@ export function DayDashboard({ selectedDate, items, overdue, isLoading, isError 
 
       {isError && (
         <div className={styles.notice} role="alert">
-          بارگذاری موارد این روز با خطا مواجه شد. اتصال خود را بررسی کنید.
+          جهت اهراز هویت برنامه را داخل پیامرسان باز کنید.
         </div>
       )}
 
