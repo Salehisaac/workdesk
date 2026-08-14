@@ -15,6 +15,7 @@ import type {
   ProjectListItem,
   TopicIcon,
   UpdateJobInput,
+  UpdateProjectInput,
 } from './types';
 
 // Telegram's 6 standard forum-topic icon colors — the exact preset dots real
@@ -163,6 +164,45 @@ export function useCreateProject() {
   return useMutation({
     mutationFn: (input: CreateProjectInput) => apiClient.post<Project>('/projects', input),
     onSuccess: () => queryClient.invalidateQueries({ queryKey: projectKeys.all }),
+  });
+}
+
+/**
+ * Renaming (or re-picturing) a project touches both the list and the board, so
+ * both are invalidated — a project renamed from its board must not still read
+ * with its old name on «پروژه‌ها».
+ */
+export function useUpdateProject(projectId: string) {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (input: UpdateProjectInput) => apiClient.patch<ProjectDetail>(`/projects/${projectId}`, input),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: projectKeys.all });
+      queryClient.invalidateQueries({ queryKey: projectKeys.detail(projectId) });
+    },
+  });
+}
+
+/**
+ * Deleting a project deletes its Rasagram group with it, server-side — every
+ * list is a topic in that group, and every job is in a list. Callers must warn
+ * first (see ProjectEditPage): nothing about this is undoable.
+ *
+ * The board's own cached detail is removed rather than invalidated: refetching
+ * `/projects/:id` for a project that no longer exists would only produce a 404
+ * behind a screen the user is already navigating away from. `jobs` IS
+ * invalidated, since the deleted project's jobs are still sitting in the flat
+ * list the home calendar draws from.
+ */
+export function useDeleteProject(projectId: string) {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: () => apiClient.delete<void>(`/projects/${projectId}`),
+    onSuccess: () => {
+      queryClient.removeQueries({ queryKey: projectKeys.detail(projectId) });
+      queryClient.invalidateQueries({ queryKey: projectKeys.all });
+      queryClient.invalidateQueries({ queryKey: projectKeys.jobs });
+    },
   });
 }
 

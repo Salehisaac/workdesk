@@ -2,6 +2,7 @@ import { Button, DotLoading, Toast } from 'antd-mobile';
 import { AddOutline, ClockCircleOutline, ExclamationCircleOutline, UnorderedListOutline } from 'antd-mobile-icons';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate, useParams, useSearchParams } from 'react-router-dom';
+import { useMe } from '../../../shared/api/me';
 import { EmptyState } from '../../../shared/ui/EmptyState';
 import { useCreateList, useDeleteList, useJobs, useProject } from '../api';
 import { ListColumn } from '../components/board/ListColumn';
@@ -20,6 +21,7 @@ export function ProjectBoardPage() {
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
   const { data: project, isLoading, isError } = useProject(projectId);
+  const me = useMe();
   const jobs = useJobs();
   const createList = useCreateList(projectId ?? '');
   const deleteList = useDeleteList(projectId ?? '');
@@ -71,6 +73,12 @@ export function ProjectBoardPage() {
   const headerStats = useMemo(() => (jobs.data ? summarize(projectJobs) : null), [jobs.data, projectJobs]);
 
   const openReport = useCallback(() => navigate(`/projects/${projectId}/report`), [navigate, projectId]);
+
+  // Editing (and deleting) a project is its creator's alone — the API refuses
+  // everyone else — so the header is only handed the action when it's theirs.
+  // `me` failing leaves the button hidden rather than shown-and-refused.
+  const isOwner = !!project && !!me.data && project.ownerRefId === me.data.id;
+  const openEdit = useCallback(() => navigate(`/projects/${projectId}/edit`), [navigate, projectId]);
 
   const registerPage = useCallback((listId: string, node: HTMLElement | null) => {
     if (node) pageRefs.current.set(listId, node);
@@ -193,6 +201,7 @@ export function ProjectBoardPage() {
         stats={headerStats}
         onBack={() => navigate('/projects')}
         onOpenReport={openReport}
+        onEdit={isOwner ? openEdit : undefined}
       />
 
       {lists.length === 0 ? (

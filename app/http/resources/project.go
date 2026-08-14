@@ -38,9 +38,31 @@ func Project(p *models.Project) http.Json {
 		"visibility":  p.Visibility,
 		"joinSlug":    p.JoinSlug,
 		"chatId":      p.ChatId,
+		"ownerRefId":  ownerRefId(p),
 		"memberCount": len(p.Members),
 		"createdAt":   createdAt,
 	}
+}
+
+// ownerRefId is who the project belongs to — the member stamped "owner" when it
+// was created, and the only one the API lets rename or delete it (see
+// ProjectController.Update/Destroy).
+//
+// On the wire so the frontend can hide what it would only be refused anyway:
+// showing everyone an edit button that answers 403 is worse than showing it to
+// the one person it works for. It stays an authorization hint, never the
+// authorization itself — the check that matters runs server-side on every write.
+//
+// Derived from the loaded members rather than stored a second time on the
+// project. Empty for an old row with no owner-stamped member, which reads as "no
+// one may edit this" — the safe direction to fail in.
+func ownerRefId(p *models.Project) string {
+	for i := range p.Members {
+		if p.Members[i].Role == models.ProjectMemberRoleOwner {
+			return p.Members[i].RefId
+		}
+	}
+	return ""
 }
 
 func Projects(projects []models.Project) []http.Json {

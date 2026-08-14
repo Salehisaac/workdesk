@@ -1,4 +1,4 @@
-import { ExclamationCircleOutline, LeftOutline, PieOutline, QuestionCircleOutline } from 'antd-mobile-icons';
+import { ExclamationCircleOutline, LeftOutline, PieOutline, QuestionCircleOutline, SetOutline } from 'antd-mobile-icons';
 import { useState } from 'react';
 import { toPersianDigits } from '../../../shared/date/jalali';
 import type { ReportStats } from '../report';
@@ -13,6 +13,12 @@ interface ProjectHeaderProps {
   stats: ReportStats | null;
   onBack: () => void;
   onOpenReport: () => void;
+  /**
+   * Opens the edit screen. Undefined for everyone but the project's creator —
+   * the only one the API lets rename or delete it — so the button simply isn't
+   * there rather than being there and refused.
+   */
+  onEdit?: () => void;
 }
 
 /**
@@ -30,7 +36,7 @@ interface ProjectHeaderProps {
  * before the project's name starts getting squeezed. The guide it opens is
  * about the *service*, not this project, so it takes nothing from here.
  */
-export function ProjectHeader({ project, stats, onBack, onOpenReport }: ProjectHeaderProps) {
+export function ProjectHeader({ project, stats, onBack, onOpenReport, onEdit }: ProjectHeaderProps) {
   const [guideOpen, setGuideOpen] = useState(false);
   const showProgress = !!stats && stats.total > 0;
 
@@ -63,6 +69,22 @@ export function ProjectHeader({ project, stats, onBack, onOpenReport }: ProjectH
             {stats && ` · ${toPersianDigits(stats.total)} کار`}
           </span>
         </span>
+
+        {/* Only the creator gets this, so for everyone else the row is exactly
+            what it was — no icon spending the title's width on something they
+            can't use. An icon and not a labelled pill for the same reason the
+            guide is one: «گزارش» is the only word this row can afford. */}
+        {onEdit && (
+          <button
+            type="button"
+            className={styles.info}
+            onClick={onEdit}
+            disabled={!project}
+            aria-label="ویرایش پروژه"
+          >
+            <SetOutline />
+          </button>
+        )}
 
         {/* Not disabled while the project loads, unlike the other two: the guide
             explains the service and needs no project to be ready. */}

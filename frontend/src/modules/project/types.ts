@@ -46,6 +46,12 @@ export interface Project {
   joinSlug: string | null;
   /** The project's dedicated topic-group chat id — plan section 8. */
   chatId: string | null;
+  /**
+   * The member who created it — the only one the API lets edit or delete it.
+   * Compare against `useMe()`'s id to decide whether to *offer* either; the
+   * backend enforces it regardless (403), so this only ever hides a dead end.
+   */
+  ownerRefId: string;
   memberCount: number;
   createdAt: string;
 }
@@ -61,6 +67,26 @@ export interface CreateProjectInput {
   visibility: ProjectVisibility;
   joinSlug?: string;
   members: PickedItem[];
+}
+
+/**
+ * PATCH body — every field optional, only the ones present are changed (the same
+ * shape UpdateJobInput has). `avatarUrl: ''` clears the picture; `undefined`
+ * leaves it alone.
+ *
+ * No `members`: a project's people are its Rasagram group's members, and that
+ * group is where they're added or removed — not here.
+ *
+ * Renaming changes the project inside WorkDesk only. The group keeps the title
+ * and photo it was created with: the platform's Bot API has no working
+ * setChatTitle/setChatPhoto (both are stubs) and the admin API has no rename at
+ * all, so there is nothing to propagate to yet.
+ */
+export interface UpdateProjectInput {
+  name?: string;
+  avatarUrl?: string;
+  visibility?: ProjectVisibility;
+  joinSlug?: string;
 }
 
 /** The six states a job moves through — the set the status sheet offers. */

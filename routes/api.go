@@ -21,6 +21,11 @@ func Api() {
 		router.Get("/projects", projectController.Index)
 		router.Post("/projects", projectController.Store)
 		router.Get("/projects/{id}", projectController.Show)
+		// Both are the creator's alone (loadProjectForOwner). DELETE takes the
+		// project's Rasagram group with it — every list is a topic in that
+		// group — so the frontend warns before calling it.
+		router.Patch("/projects/{id}", projectController.Update)
+		router.Delete("/projects/{id}", projectController.Destroy)
 
 		listController := controllers.NewProjectListController()
 		router.Post("/projects/{id}/lists", listController.Store)

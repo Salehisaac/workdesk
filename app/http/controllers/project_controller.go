@@ -53,6 +53,26 @@ func loadProjectForMember(ctx http.Context, userId string) (*models.Project, htt
 	return nil, ctx.Response().Status(403).Json(http.Json{"error": "not a member of this project"})
 }
 
+// loadProjectForOwner is loadProjectForMember with the stricter check the two
+// destructive endpoints need: renaming a project and deleting it (with its
+// Rasagram group, and every list and job in it) are the creator's alone.
+//
+// Membership is checked first so someone outside the project can't tell an id
+// that exists from one that doesn't — a non-member gets the same 403 either way.
+func loadProjectForOwner(ctx http.Context, userId string) (*models.Project, http.Response) {
+	project, errResp := loadProjectForMember(ctx, userId)
+	if errResp != nil {
+		return nil, errResp
+	}
+
+	for _, member := range project.Members {
+		if member.RefId == userId && member.RefSource == "users" && member.Role == models.ProjectMemberRoleOwner {
+			return project, nil
+		}
+	}
+	return nil, ctx.Response().Status(403).Json(http.Json{"error": "only the project's creator can do this"})
+}
+
 // Index — GET /api/v1/projects.
 func (r *ProjectController) Index(ctx http.Context) http.Response {
 	authUser, errResp := currentUser(ctx)
@@ -291,4 +311,137 @@ func (r *ProjectController) Store(ctx http.Context) http.Response {
 	projectfeed.AnnounceProject(&project)
 
 	return ctx.Response().Status(201).Json(resources.Project(&project))
+}
+
+// updateProjectRequest is PATCH-shaped, the same way updateJobRequest is: every
+// field is a pointer and only the ones actually PRESENT in the body are touched,
+// so a screen that only renames a project doesn't have to resend (and risk
+// clobbering) the rest of it.
+//
+// Members are deliberately absent. A project's members are the members of its
+// Rasagram group, and that group is the source of truth for them — adding or
+// removing people happens in the messenger, not here (the create screen says as
+// much: «پس از ساخت پروژه نمی‌توانید عضو تازه‌ای اضافه کنید»).
+type updateProjectRequest struct {
+	Name       *string `json:"name"`
+	AvatarUrl  *string `json:"avatarUrl"`
+	Visibility *string `json:"visibility"`
+	JoinSlug   *string `json:"joinSlug"`
+}
+
+// Update — PATCH /api/v1/projects/{id}. The creator's alone (loadProjectForOwner).
+//
+// This changes WorkDesk's own record and nothing else. The Rasagram group keeps
+// the title and photo it was created with, because the platform's Bot API can't
+// change either: botway's setChatTitle and setChatPhoto handlers are both stubs
+// that return "not impl" (read directly, same as every other claim in
+// app/services/botapi), and the admin API has no rename route at all. Worth
+// stating rather than leaving as a surprise — a renamed project keeps the old
+// name on its group until one of those exists.
+func (r *ProjectController) Update(ctx http.Context) http.Response {
+	authUser, errResp := currentUser(ctx)
+	if errResp != nil {
+		return errResp
+	}
+
+	project, errResp := loadProjectForOwner(ctx, authUser.ID)
+	if errResp != nil {
+		return errResp
+	}
+
+	var request updateProjectRequest
+	if err := ctx.Request().Bind(&request); err != nil {
+		return ctx.Response().Status(400).Json(http.Json{"error": "invalid request body"})
+	}
+
+	if request.Name != nil {
+		name := strings.TrimSpace(*request.Name)
+		if name == "" {
+			return ctx.Response().Status(422).Json(http.Json{"error": "name is required"})
+		}
+		project.Name = name
+	}
+
+	if request.Visibility != nil {
+		if *request.Visibility != models.ProjectVisibilityPrivate && *request.Visibility != models.ProjectVisibilityPublic {
+			return ctx.Response().Status(422).Json(http.Json{"error": "visibility must be \"private\" or \"public\""})
+		}
+		project.Visibility = *request.Visibility
+	}
+
+	if request.AvatarUrl != nil {
+		// Present-but-empty clears the picture, the same way an empty dueAt
+		// clears a job's deadline. The bytes aren't re-uploaded anywhere: the
+		// group's photo was set when it was created and can't be changed from
+		// here (see the note above), so this is the app's own avatar only.
+		if avatarUrl := strings.TrimSpace(*request.AvatarUrl); avatarUrl != "" {
+			project.AvatarUrl = &avatarUrl
+		} else {
+			project.AvatarUrl = nil
+		}
+	}
+
+	if request.JoinSlug != nil {
+		if joinSlug := strings.TrimSpace(*request.JoinSlug); joinSlug != "" {
+			project.JoinSlug = &joinSlug
+		} else {
+			project.JoinSlug = nil
+		}
+	}
+	// A private project has no join link, whichever order the two fields arrived
+	// in — same rule Store applies when it only sets JoinSlug for a public one.
+	if project.Visibility == models.ProjectVisibilityPrivate {
+		project.JoinSlug = nil
+	}
+
+	if err := facades.Orm().Query().Save(project); err != nil {
+		return ctx.Response().Status(500).Json(http.Json{"error": err.Error()})
+	}
+
+	return ctx.Response().Success().Json(resources.ProjectDetail(project))
+}
+
+// Destroy — DELETE /api/v1/projects/{id}. The creator's alone, and final: the
+// project's Rasagram group is deleted with it, taking every list (topic) and
+// every message in them. The frontend warns before calling this; there is no
+// undo on either side.
+//
+// Everything the project owns goes with the row, without a single delete here:
+// project_members, lists, project_jobs and the job pivots all carry
+// ON DELETE CASCADE, and sessions/notes filed under the project carry
+// ON DELETE SET NULL, so a meeting or a note survives and simply stops naming a
+// project that no longer exists (see the migrations).
+//
+// The group is deleted BEFORE the row, and only its failure is tolerated — the
+// asymmetry is deliberate. A group that's gone while the project remains is
+// recoverable: deleting again logs a failure for a channel that has already gone
+// and finishes the job. The other order isn't — once the row is gone nothing
+// remembers the chat id, and the group would outlive its project with no way
+// back to it. Same stance list deletion takes: an external cleanup call failing
+// must not trap the user with something they can't remove.
+func (r *ProjectController) Destroy(ctx http.Context) http.Response {
+	authUser, errResp := currentUser(ctx)
+	if errResp != nil {
+		return errResp
+	}
+
+	project, errResp := loadProjectForOwner(ctx, authUser.ID)
+	if errResp != nil {
+		return errResp
+	}
+
+	if project.ChatId != nil && strings.TrimSpace(*project.ChatId) != "" {
+		chatId := strings.TrimSpace(*project.ChatId)
+		if channelId, err := strconv.ParseInt(chatId, 10, 64); err != nil {
+			facades.Log().Error("workdesk: project «" + project.Name + "» has a non-numeric chat id (" + chatId + "), its group was left standing: " + err.Error())
+		} else if err := rasagramadmin.New().DeleteChannel(channelId); err != nil {
+			facades.Log().Error("workdesk: deleting project «" + project.Name + "»'s group (" + chatId + ") failed: " + err.Error())
+		}
+	}
+
+	if _, err := facades.Orm().Query().Delete(project); err != nil {
+		return ctx.Response().Status(500).Json(http.Json{"error": err.Error()})
+	}
+
+	return ctx.Response().NoContent(204)
 }

@@ -14,6 +14,7 @@ import { JobCreatePage } from '../modules/project/pages/JobCreatePage';
 import { JobEditPage } from '../modules/project/pages/JobEditPage';
 import { ProjectBoardPage } from '../modules/project/pages/ProjectBoardPage';
 import { ProjectCreatePage } from '../modules/project/pages/ProjectCreatePage';
+import { ProjectEditPage } from '../modules/project/pages/ProjectEditPage';
 import { ProjectListPage } from '../modules/project/pages/ProjectListPage';
 import { ProjectReportPage } from '../modules/project/pages/ProjectReportPage';
 import { ReminderCreatePage } from '../modules/reminder/pages/ReminderCreatePage';
@@ -115,6 +116,11 @@ export function AppRouter() {
         <Route path="/projects" element={<ProjectListPage />} />
         <Route path="/projects/new" element={<ProjectCreatePage />} />
         <Route path="/projects/:projectId" element={<ProjectBoardPage />} />
+        {/* Its own screen rather than a sheet over the board, like the report:
+            it is a form plus a delete, and it needs a path the back button can
+            pop. Reachable only by the project's creator — the board offers it to
+            nobody else, and the API refuses everyone else. */}
+        <Route path="/projects/:projectId/edit" element={<ProjectEditPage />} />
         {/* A route, not a sheet over the board: the report is a screen's worth of
             content, and its own URL is what gives the client's back button
             something to pop instead of closing the mini app. */}

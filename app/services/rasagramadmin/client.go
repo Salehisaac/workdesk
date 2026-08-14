@@ -88,6 +88,33 @@ func (c *Client) CreateTopicGroup(title string, userIDs []int64, photo *Photo) (
 	return channelID, nil
 }
 
+// DeleteChannel deletes a whole supergroup — the mirror of CreateTopicGroup,
+// used when a project is deleted and its group has nothing left to be about.
+//
+// channelID is Project.ChatId (the channel id CreateTopicGroup returned), passed
+// raw and positive: this is the admin API, which speaks the platform's own ids,
+// not the Bot API's negated convention.
+//
+// The delete is invoked as the channel's CREATOR server-side (the panel resolves
+// the actor itself and the platform rejects anyone else with
+// ErrChatAdminRequired), which is the other reason ProjectController.Store puts
+// the person creating the project first in user_ids — the group belongs to them,
+// so a delete on their behalf is one the platform will accept. It fans out from
+// there: the channel row goes, and every member loses the dialog. There is no
+// undelete.
+func (c *Client) DeleteChannel(channelID int64) error {
+	var result envelope[json.RawMessage]
+	if err := c.post("/x/internal/channel/delete", map[string]any{
+		"channel_id": channelID,
+	}, &result); err != nil {
+		return fmt.Errorf("rasagramadmin: delete channel: %w", err)
+	}
+	if !result.Ok {
+		return fmt.Errorf("rasagramadmin: delete channel: response ok=false")
+	}
+	return nil
+}
+
 type createChatResult struct {
 	ChatID int64 `json:"chat_id"`
 }

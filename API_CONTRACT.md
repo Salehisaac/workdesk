@@ -92,12 +92,16 @@ List projects the authenticated user is a member of (as owner or invited member)
     "visibility": "private",
     "joinSlug": null,
     "chatId": "-1001234567890",
+    "ownerRefId": "101",
     "memberCount": 3,
     "createdAt": "2026-08-07T10:00:00Z"
   }
 ]
 ```
 
+- `ownerRefId` — the `ref_id` of the member stamped `role: "owner"` (the creator). The only identity
+  `PATCH`/`DELETE /projects/:id` accept; on the wire so the frontend can hide an edit button that would only
+  answer 403. `""` for a legacy row with no owner-stamped member, which reads as "nobody may edit this".
 - There is deliberately **no online count**. There used to be one, derived from each member's `online` flag,
   but that flag is a snapshot captured when the member was *picked* — it never tracked who was actually
   online, it just aged. The UI shows the member count alone rather than a number that looks live and isn't.
@@ -184,6 +188,7 @@ correctly lists projects they created.
   "visibility": "private",
   "joinSlug": null,
   "chatId": "-1001234567890",
+  "ownerRefId": "101",
   "memberCount": 3,
   "createdAt": "2026-08-07T10:00:00Z",
   "members": [
@@ -206,6 +211,62 @@ correctly lists projects they created.
 
 Return 403 or 404 (either is fine — the frontend just treats any non-2xx as an error state) if the
 authenticated user isn't a member of this project.
+
+---
+
+## `PATCH /api/v1/projects/:id`
+
+Edits a project's identity. **Creator only** — the caller must be the member stamped `role: "owner"`
+(`ownerRefId` above); anyone else gets 403, a non-member gets the same 403 as for `GET`.
+
+**Request body** — `UpdateProjectInput`, PATCH-shaped: every field optional, only the ones **present** are
+changed (same convention as `PATCH .../jobs/:jobId`).
+
+```json
+{ "name": "پروژه تست", "avatarUrl": "/storage/uploads/abc.png" }
+```
+
+- `name` — present-but-blank is **422**, not a way to clear it.
+- `avatarUrl` — `""` clears the picture. The app's own screen never sends that: clearing the photo there
+  repaints a monogram and uploads it, so a project always has one.
+- `visibility` / `joinSlug` — accepted for parity with `POST`; the app doesn't send them. Setting
+  `visibility: "private"` drops any `joinSlug`, whichever order the two arrive in.
+- **No `members`.** A project's people are its Rasagram group's members, and that group is where they're
+  added or removed.
+
+**This changes WorkDesk's record only — the Rasagram group keeps the title and photo it was created with.**
+Not an oversight: botway's `setChatTitle` and `setChatPhoto` handlers are both stubs returning "not impl"
+(read directly, like every other claim about this platform in `app/services/botapi`), and the admin API has
+no rename route at all. A renamed project therefore keeps the old name on its group until one of those exists.
+
+**Response 200** — `ProjectDetail`, the same shape `GET /projects/:id` returns.
+
+---
+
+## `DELETE /api/v1/projects/:id`
+
+Deletes a project **and its Rasagram group**. Creator only, same check as `PATCH`. There is no undo on
+either side, so the frontend warns explicitly before calling this (`ProjectEditPage` — the dialog names what
+goes: the group, its topics, the lists, the jobs, and the conversations in them, for every member).
+
+**Backend behavior** (`ProjectController.Destroy`):
+
+1. The group first — `POST /x/internal/channel/delete` (`{"channel_id": <project.chatId as a number>}`) via
+   the internal admin API. Raw and positive: this is the admin API, which speaks the platform's own ids, not
+   the Bot API's negated convention. The platform invokes it as the channel's **creator** and rejects anyone
+   else, which is why `user_ids[0]` at creation has to be the person creating the project.
+   **A failure here is logged, not fatal** — same stance list deletion takes.
+2. Then the `projects` row. Everything the project owns goes with it through the schema's own foreign keys:
+   `project_members`, `lists`, `project_jobs` and the job pivots are `ON DELETE CASCADE`; `sessions` and
+   `notes` filed under the project are `ON DELETE SET NULL`, so a meeting or a note survives and simply
+   stops naming a project that no longer exists.
+
+The order is deliberate and not interchangeable. Group-then-row is recoverable — if the row delete fails, the
+user deletes again, the second group delete logs a failure for something already gone, and the row goes.
+Row-then-group isn't: once the row is gone nothing remembers the `chatId`, and the group would outlive its
+project with no way back to it.
+
+**Response 204** — no body.
 
 ---
 
