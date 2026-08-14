@@ -2,8 +2,6 @@ services:
   app:
     build:
       context: .
-      args:
-        VITE_DEBUG_USER_IDS: ${VITE_DEBUG_USER_IDS:-}
     restart: always
     ports:
       - "3000:3000"

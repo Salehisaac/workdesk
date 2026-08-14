@@ -8,9 +8,6 @@ RUN npm ci
 
 COPY frontend/ .
 
-# Optional: comma-separated user ids the on-device dev console starts for.
-# Vite inlines it at build time, so it has to be here rather than a runtime env.
-ARG VITE_DEBUG_USER_IDS
 RUN npm run build
 
 FROM docker-mirror.rso-co.ir/golang:alpine AS backend
