@@ -11,6 +11,7 @@ import { LedgerReportPage } from '../modules/ledger/pages/LedgerReportPage';
 import { TransactionCreatePage } from '../modules/ledger/pages/TransactionCreatePage';
 import { NoteCreatePage } from '../modules/note/pages/NoteCreatePage';
 import { JobCreatePage } from '../modules/project/pages/JobCreatePage';
+import { JobDetailPage } from '../modules/project/pages/JobDetailPage';
 import { JobEditPage } from '../modules/project/pages/JobEditPage';
 import { ProjectBoardPage } from '../modules/project/pages/ProjectBoardPage';
 import { ProjectCreatePage } from '../modules/project/pages/ProjectCreatePage';
@@ -40,7 +41,11 @@ const START_PARAM_ROUTES = new Map<string, { ids: number; path: (ids: string[]) 
   // its link opens that board and asks it to scroll to the column (?list=, read
   // by ProjectBoardPage).
   ['list', { ids: 2, path: ([projectId, listId]) => `/projects/${projectId}?list=${listId}` }],
-  ['job', { ids: 2, path: ([projectId, jobId]) => `/projects/${projectId}/jobs/${jobId}/edit` }],
+  // The job's own screen, not its edit form: this link is posted into the list's
+  // forum topic, which the whole project reads, whereas editing a job is its
+  // creator's and the project owner's alone — so /edit sent everyone else to
+  // «دسترسی ندارید» instead of to the job the message was about.
+  ['job', { ids: 2, path: ([projectId, jobId]) => `/projects/${projectId}/jobs/${jobId}` }],
 ]);
 
 /**
@@ -128,6 +133,11 @@ export function AppRouter() {
         {/* The list is part of the path so the form opens with it preselected;
             the form's own selector can still move the job to another list. */}
         <Route path="/projects/:projectId/lists/:listId/jobs/new" element={<JobCreatePage />} />
+        {/* The job as anyone in the project may read it, and what a job's
+            announcement in the group opens (see startParamRoute) — so like
+            /sessions/:sessionId its path is part of the wire contract with the
+            backend's projectfeed package, not just internal routing. */}
+        <Route path="/projects/:projectId/jobs/:jobId" element={<JobDetailPage />} />
         {/* No list segment when editing: which list a job is in is the job's own
             state, read off the job itself rather than repeated in the URL — where
             it would go stale the moment the form moves it. */}

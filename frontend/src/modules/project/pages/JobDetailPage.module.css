@@ -1,0 +1,349 @@
+/* The screen a job's chat announcement opens, and the board's tap target. Laid
+   out like SessionDetailPage — the app's other "one record, read it" screen —
+   so arriving from a message feels the same whichever module sent it. */
+.page {
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+  background: var(--rasagram-theme-bg-color);
+}
+
+.header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: calc(12px + var(--wd-safe-top)) 12px 10px;
+  position: sticky;
+  top: 0;
+  z-index: 10;
+  background: var(--rasagram-theme-bg-color);
+}
+
+.back {
+  width: 36px;
+  height: 36px;
+  flex-shrink: 0;
+  border: none;
+  border-radius: 10px;
+  background: none;
+  color: var(--rasagram-theme-text-color);
+  font-size: 20px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+}
+
+.headerTitle {
+  flex: 1;
+  min-width: 0;
+  margin: 0;
+  text-align: center;
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--rasagram-theme-text-color);
+}
+
+/* Balances the start edge so the title sits in the true centre — back (36) plus
+   the home button (36) plus the row's 8px gap. */
+.headerSpacer {
+  width: 80px;
+  flex-shrink: 0;
+}
+
+/* Occupies the spacer's width exactly, so the title sits in the same place for
+   the job's owner as for everyone else. */
+.headerEdit {
+  width: 80px;
+  flex-shrink: 0;
+  border: none;
+  background: none;
+  color: var(--wd-module-project);
+  font-size: 19px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+}
+
+.body {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  padding: 4px 16px calc(24px + var(--wd-safe-bottom));
+  overflow-y: auto;
+  max-width: 560px;
+  width: 100%;
+  margin-inline: auto;
+}
+
+.hero {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 16px;
+  border-radius: 20px;
+  background: var(--rasagram-theme-secondary-bg-color);
+}
+
+/* «#۲ · در لیست بررسی · بازطراحی» — where this job sits, for a reader who
+   arrived from a chat message and has never seen the board. */
+.breadcrumb {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+  color: var(--rasagram-theme-hint-color);
+}
+
+.number {
+  font-weight: 700;
+  color: var(--wd-module-project);
+}
+
+.title {
+  margin: 0;
+  font-size: 18px;
+  font-weight: 700;
+  line-height: 1.6;
+  color: var(--rasagram-theme-text-color);
+  overflow-wrap: anywhere;
+}
+
+/* The same chip the status sheet draws, minus the tap: colour, glyph and label
+   together, because roughly one reader in twelve can't separate the six
+   --wd-status-* colours on their own. */
+.status {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  padding: 6px 14px;
+  border-radius: 999px;
+  font-size: 13px;
+  font-weight: 600;
+  border: 1px solid currentColor;
+  color: var(--wd-status-notStarted);
+  background: var(--rasagram-theme-bg-color);
+}
+
+.statusIcon {
+  display: inline-flex;
+  font-size: 14px;
+}
+
+.status[data-status='notStarted'] {
+  color: var(--wd-status-notStarted);
+  border-color: transparent;
+}
+
+.status[data-status='inProgress'] {
+  color: var(--wd-status-inProgress);
+}
+
+.status[data-status='paused'] {
+  color: var(--wd-status-paused);
+}
+
+.status[data-status='canceled'] {
+  color: var(--wd-status-canceled);
+}
+
+.status[data-status='done'] {
+  color: var(--wd-status-done);
+}
+
+.status[data-status='rejected'] {
+  color: var(--wd-status-rejected);
+}
+
+.tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.tag {
+  padding: 3px 10px;
+  border-radius: 999px;
+  font-size: 11.5px;
+  font-weight: 600;
+  color: #ffffff;
+  overflow-wrap: anywhere;
+}
+
+.fact {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+  color: var(--rasagram-theme-subtitle-text-color);
+}
+
+.fact svg {
+  flex-shrink: 0;
+  font-size: 16px;
+  color: var(--wd-module-project);
+}
+
+/* The deadline is the one fact that changes meaning over time — same two tones
+   the board's card wears, so a job doesn't look less urgent once opened. */
+.fact[data-tone='today'] {
+  color: var(--wd-status-paused);
+  font-weight: 600;
+}
+
+.fact[data-tone='today'] svg,
+.fact[data-tone='overdue'] svg {
+  color: currentColor;
+}
+
+.fact[data-tone='overdue'] {
+  color: var(--rasagram-theme-destructive-text-color);
+  font-weight: 600;
+}
+
+.section {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.sectionHead {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.sectionTitle {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  margin: 0;
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--rasagram-theme-text-color);
+}
+
+.sectionTitle svg {
+  font-size: 16px;
+  color: var(--wd-module-project);
+}
+
+.sectionCount {
+  margin-inline-start: auto;
+  font-size: 12px;
+  color: var(--rasagram-theme-hint-color);
+}
+
+/* pre-wrap: a description is typed with its own line breaks, and they are part
+   of what the person wrote. */
+.description {
+  margin: 0;
+  padding: 14px;
+  border-radius: 16px;
+  background: var(--rasagram-theme-secondary-bg-color);
+  font-size: 13.5px;
+  line-height: 1.9;
+  color: var(--rasagram-theme-text-color);
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
+.rail {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.chip {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 12px 6px 6px;
+  border-radius: 999px;
+  background: var(--rasagram-theme-secondary-bg-color);
+}
+
+.chipAvatar {
+  width: 26px;
+  height: 26px;
+  flex-shrink: 0;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 12px;
+  font-weight: 700;
+  color: #ffffff;
+}
+
+.chipName {
+  font-size: 12.5px;
+  color: var(--rasagram-theme-text-color);
+}
+
+.checklist {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  margin: 0;
+  padding: 6px;
+  border-radius: 16px;
+  background: var(--rasagram-theme-secondary-bg-color);
+  list-style: none;
+}
+
+.checkItem {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  padding: 8px 10px;
+  font-size: 13.5px;
+  line-height: 1.7;
+  color: var(--rasagram-theme-text-color);
+}
+
+.checkIcon {
+  flex-shrink: 0;
+  font-size: 17px;
+  color: var(--rasagram-theme-hint-color);
+}
+
+/* A ticked item is struck through as well as greyed — the same reason the
+   status chip carries a glyph: colour alone doesn't say "done" to everyone. */
+.checkItem[data-done] .checkIcon {
+  color: var(--wd-status-done);
+}
+
+.checkItem[data-done] .checkText {
+  color: var(--rasagram-theme-hint-color);
+  text-decoration: line-through;
+}
+
+.checkText {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+.footNote {
+  margin: 0;
+  font-size: 12px;
+  line-height: 1.9;
+  color: var(--rasagram-theme-hint-color);
+  text-align: center;
+}
+
+.srOnly {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}

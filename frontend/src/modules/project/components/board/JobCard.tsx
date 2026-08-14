@@ -31,12 +31,12 @@ export function JobCard({ job, onOpen }: JobCardProps) {
   const visibleAvatars = assignees.slice(0, MAX_VISIBLE_AVATARS);
   const hiddenAvatars = assignees.length - visibleAvatars.length;
 
-  // The whole card is the control that opens the job for editing. A <button>
-  // rather than a click handler on the <article> because that is what gets
-  // keyboard focus, Enter/Space and the right role for free — and the card has
-  // no interactive children to nest inside it.
+  // The whole card is the control that opens the job. A <button> rather than a
+  // click handler on the <article> because that is what gets keyboard focus,
+  // Enter/Space and the right role for free — and the card has no interactive
+  // children to nest inside it.
   return (
-    <button type="button" className={styles.card} onClick={onOpen} aria-label={`ویرایش ${job.title}`}>
+    <button type="button" className={styles.card} onClick={onOpen} aria-label={`باز کردن ${job.title}`}>
       <div className={styles.top}>
         <h3 className={styles.title}>{job.title}</h3>
         {/* Shape + colour, and the status name is in the title attribute and

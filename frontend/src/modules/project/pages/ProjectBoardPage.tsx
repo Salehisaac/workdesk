@@ -2,6 +2,7 @@ import { Button, DotLoading, Toast } from 'antd-mobile';
 import { AddOutline, ClockCircleOutline, ExclamationCircleOutline, UnorderedListOutline } from 'antd-mobile-icons';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate, useParams, useSearchParams } from 'react-router-dom';
+import { ApiError } from '../../../shared/api/client';
 import { useMe } from '../../../shared/api/me';
 import { EmptyState } from '../../../shared/ui/EmptyState';
 import { useCreateList, useDeleteList, useJobs, useProject } from '../api';
@@ -20,7 +21,7 @@ export function ProjectBoardPage() {
   const { projectId } = useParams<{ projectId: string }>();
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
-  const { data: project, isLoading, isError } = useProject(projectId);
+  const { data: project, isLoading, isError, error } = useProject(projectId);
   const me = useMe();
   const jobs = useJobs();
   const createList = useCreateList(projectId ?? '');
@@ -85,23 +86,24 @@ export function ProjectBoardPage() {
    * project's creator. Anyone in the project can ADD lists and jobs — that's the
    * point of a shared board — so this gates the destructive half only, and
    * mirrors the backend's own canManage exactly.
+   *
+   * Only the list's delete asks any more; a job's own screen makes the same
+   * check for its «ویرایش» button, where the job it applies to is on screen.
    */
   const canManage = useCallback(
     (createdBy: string) => isOwner || (!!me.data && !!createdBy && createdBy === me.data.id),
     [isOwner, me.data],
   );
 
-  // Tapping a card opens the edit form, which is the only screen a job has — so
-  // for someone who may not edit it, there is nothing to open. Saying why beats
-  // a tap that appears to do nothing, and beats a form that refuses on submit.
-  function handleOpenJob(jobId: string) {
-    const job = projectJobs.find((candidate) => candidate.id === jobId);
-    if (job && !canManage(job.createdBy)) {
-      Toast.show({ content: 'ویرایش این کار فقط از سازنده‌اش یا سازنده‌ی پروژه برمی‌آید' });
-      return;
-    }
-    navigate(`/projects/${projectId}/jobs/${jobId}/edit`);
-  }
+  // Tapping a card opens the job, for everyone. It used to open the edit form —
+  // the only screen a job had — which meant a card someone couldn't edit had
+  // nothing behind it and answered the tap with a toast. A job's description,
+  // checklist and assignees are worth reading by the whole project, so the card
+  // now leads to JobDetailPage and «ویرایش» is a button on it.
+  const openJob = useCallback(
+    (jobId: string) => navigate(`/projects/${projectId}/jobs/${jobId}`),
+    [navigate, projectId],
+  );
 
   const registerPage = useCallback((listId: string, node: HTMLElement | null) => {
     if (node) pageRefs.current.set(listId, node);
@@ -191,6 +193,37 @@ export function ProjectBoardPage() {
     });
   }
 
+  const notMine = error instanceof ApiError && (error.status === 403 || error.status === 404);
+
+  // A 403 or 404 isn't a failure to answer — it IS the answer, and on this
+  // screen it arrives routinely: both the project's own announcement and every
+  // list's open this board (startParamRoute), and those messages sit in a forum
+  // group whose members are not the same set as the project's. Anyone added to
+  // the group afterwards can tap a board they were never given. See
+  // JobDetailPage, which says the same thing about the same links.
+  if (notMine) {
+    return (
+      <div className={styles.page}>
+        <ProjectHeader project={null} stats={null} onBack={() => navigate('/projects')} onOpenReport={openReport} />
+        <div className={styles.fill}>
+          <EmptyState
+            icon={<ExclamationCircleOutline />}
+            title="این پروژه را نمی‌بینید"
+            // Both readings, because the screen can't tell them apart from a
+            // 403 alone — and «بازگشت» leads to a project list this reader has
+            // never seen, so home is the only way out that introduces the app.
+            description="ممکن است حذف شده باشد، یا شما عضو این پروژه نباشید. برای دسترسی از سازنده‌ی پروژه بخواهید شما را اضافه کند."
+            action={
+              <Button color="primary" onClick={() => navigate('/')}>
+                رفتن به خانه
+              </Button>
+            }
+          />
+        </div>
+      </div>
+    );
+  }
+
   if (isError) {
     return (
       <div className={styles.page}>
@@ -252,7 +285,7 @@ export function ProjectBoardPage() {
               loading={jobs.isLoading}
               canDelete={canManage(list.createdBy)}
               onDelete={() => handleDeleteList(list.id)}
-              onOpenJob={handleOpenJob}
+              onOpenJob={openJob}
             />
           ))}
         </div>

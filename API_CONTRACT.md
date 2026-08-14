@@ -82,7 +82,7 @@ in the chat (`app/services/projectfeed`, one Bot API `sendMessage` per create):
 | ------- | ----------- | --------------- |
 | Project | the group's **General topic** (`sendMessage` with no `message_thread_id`) | `?startapp=project-<id>` → `/projects/:projectId` |
 | List | the **topic just created for it** (`message_thread_id` = the list's `topicId`) | `?startapp=list-<projectId>-<listId>` → `/projects/:projectId?list=:listId` |
-| Job | the **topic of the list it was filed into** | `?startapp=job-<projectId>-<jobId>` → `/projects/:projectId/jobs/:jobId/edit` |
+| Job | the **topic of the list it was filed into** | `?startapp=job-<projectId>-<jobId>` → `/projects/:projectId/jobs/:jobId` |
 
 - The link is `RASAGRAM_MINIAPP_URL` + `?startapp=<param>` — the same mechanism session/ledger invites use
   (`app/services/invite`). The frontend's `startParamRoute()` (`app/router.tsx`) is the other half of the

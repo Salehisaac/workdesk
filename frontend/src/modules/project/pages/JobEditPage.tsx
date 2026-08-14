@@ -1,4 +1,4 @@
-import { Dialog, DotLoading, Toast } from 'antd-mobile';
+import { Button, Dialog, DotLoading, Toast } from 'antd-mobile';
 import { ExclamationCircleOutline } from 'antd-mobile-icons';
 import { useNavigate, useParams } from 'react-router-dom';
 import { useMe } from '../../../shared/api/me';
@@ -57,7 +57,11 @@ export function JobEditPage() {
         status: values.status,
       });
       Toast.show({ content: 'کار ذخیره شد' });
-      navigate(`/projects/${projectId}`);
+      // Back to the job, not the board: this form is now opened from the job's
+      // own screen, and what someone wants to see after saving is what they
+      // just wrote. Deleting still lands on the board below — there is no job
+      // left to return to.
+      navigate(`/projects/${projectId}/jobs/${jobId}`, { replace: true });
     } catch (error) {
       Toast.show({ content: error instanceof Error ? error.message : 'ذخیره کار با خطا مواجه شد' });
     }
@@ -119,7 +123,17 @@ export function JobEditPage() {
         <EmptyState
           icon={<ExclamationCircleOutline />}
           title="دسترسی ندارید"
-          description="ویرایش و حذف این کار فقط از سازنده‌اش یا سازنده‌ی پروژه برمی‌آید."
+          description="ویرایش و حذف این کار فقط از سازنده‌اش یا سازنده‌ی پروژه برمی‌آید — اما خود کار را می‌توانید ببینید."
+          // Nothing sends anyone here any more (the board and the group's
+          // announcement both open JobDetailPage, which only offers «ویرایش» to
+          // the two who may use it), but this URL is still typeable — and a
+          // refusal that ends the journey is what made the deep link a dead end
+          // in the first place. So it hands over to the screen they can read.
+          action={
+            <Button color="primary" onClick={() => navigate(`/projects/${projectId}/jobs/${jobId}`, { replace: true })}>
+              مشاهده‌ی کار
+            </Button>
+          }
         />
       </div>
     );
